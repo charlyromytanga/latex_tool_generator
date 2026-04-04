@@ -19,3 +19,6 @@ runs/render/*.fdb_latexmk
 runs/render/*.synctex.gz
 runs/render/*.toc
 runs/tmp/
+
+# Private documentation
+README.private.md
