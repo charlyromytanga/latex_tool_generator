@@ -1,0 +1,49 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy API to Render
+      run: |
+        curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID_API }} \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+
+    - name: Deploy App to Render
+      run: |
+        curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID_APP }} \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+
+    - name: Wait for deployment
+      run: |
+        sleep 30
+        curl -f https://${{ secrets.RENDER_SERVICE_URL_API }}/api/v1/health || exit 1
+        curl -f https://${{ secrets.RENDER_SERVICE_URL_APP }}/health || exit 1
+
+    - name: Slack notification
+      if: always()
+      uses: slackapi/slack-github-action@v1
+      with:
+        payload: |
+          {
+            "text": "Render deployment ${{ job.status }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Deployment Status:* ${{ job.status }}\n*Branch:* main\n*Commit:* ${{ github.sha }}"
+                }
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

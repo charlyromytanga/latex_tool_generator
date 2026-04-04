@@ -1,0 +1,43 @@
+# Dockerfile pour Runner (Orchestration Service)
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    postgresql-client \
+    texlive-xetex \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    latexmk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY requirements.txt .
+COPY src/orchestration/requirements.txt requirements-orchestration.txt
+COPY src/channels/requirements.txt requirements-channels.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-orchestration.txt \
+    && pip install --no-cache-dir -r requirements-channels.txt
+
+# Copy application code
+COPY src/ src/
+COPY db/ db/
+COPY templates/ templates/
+COPY data/ data/
+COPY scripts/ scripts/
+
+# Ensure scripts are executable
+RUN chmod +x scripts/*.sh
+
+# Create output directories
+RUN mkdir -p runs/run_cv runs/run_letter runs/run_thank_you \
+    runs/run_recruiter_email runs/run_project_report runs/run_thesis
+
+# Default command: run orchestrator
+CMD ["python", "-m", "src.orchestration.orchestrator"]

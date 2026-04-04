@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Job Offer Metadata",
+  "type": "object",
+  "required": ["offer_id", "company", "role_title", "location", "tier"],
+  "properties": {
+    "offer_id": { "type": "string" },
+    "company": { "type": "string" },
+    "role_title": { "type": "string" },
+    "tier": { "type": ["integer", "string"] },
+    "location": {
+      "type": "object",
+      "properties": {
+        "country": { "type": "string" },
+        "city": { "type": "string" }
+      }
+    },
+    "languages_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+# Render.yaml - Infrastructure as Code for Render.com deployment
+# Deploy with: render deploy --config render.yaml
+
+preview: false
+
+services:
+  # FastAPI Backend Service
+  - type: web
+    name: latex-tool-api
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: >
+      pip install --upgrade pip &&
+      pip install -r requirements.txt &&
+      pip install -r src/orchestration/requirements.txt &&
+      pip install -r src/app/requirements.txt
+    startCommand: >
+      python -m uvicorn src.app.api:app --host 0.0.0.0 --port 8000
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: LOG_LEVEL
+        value: info
+    envVarRefs:
+      - key: DATABASE_URL
+        value: ${{ database_url }}
+      - key: OPENAI_API_KEY
+        value: ${{ openai_api_key }}
+      - key: CLAUDE_API_KEY
+        value: ${{ claude_api_key }}
+      - key: GITHUB_TOKEN
+        value: ${{ github_token }}
+    maxInstances: 3
+    minInstances: 1
+    plan: standard
+    healthCheck:
+      path: /api/v1/health
+      interval: 30
+      timeout: 10
+      startPeriod: 40
+    routes:
+      - pattern: /api/v1/*
+        destination: latex-tool-api
+      - pattern: /docs
+        destination: latex-tool-api
+      - pattern: /openapi.json
+        destination: latex-tool-api
+
+  # Streamlit Frontend Service
+  - type: web
+    name: latex-tool-app
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: >
+      pip install --upgrade pip &&
+      pip install -r requirements.txt &&
+      pip install -r src/app/requirements.txt
+    startCommand: >
+      streamlit run src/app/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: "true"
+    envVarRefs:
+      - key: API_URL
+        value: ${{ api_url }}
+    maxInstances: 2
+    minInstances: 1
+    plan: standard
+    healthCheck:
+      path: /_stcore/health
+      interval: 30
+      timeout: 10
+      startPeriod: 40
+    routes:
+      - pattern: /*
+        destination: latex-tool-app
+
+  # Postgres Database (optional - if using PostgreSQL instead of SQLite)
+  # Uncomment to use
+  # - type: pserv
+  #   name: recruitment-db
+  #   ipAllowList: []
+  #   plan: starter
+  #   postgresMajorVersion: 15
+
+# Databases
+databases:
+  - name: recruitment-data
+    plan: starter
+
+# Backup configuration
+backups:
+  - name: daily-backup
+    schedule: daily
+    retentionDays: 7
+
+# Monitoring
+monitoring:
+  enabled: true
+  alerts:
+    - type: uptime
+      thresholdPercent: 95
+    - type: errors
+      thresholdPercent: 5

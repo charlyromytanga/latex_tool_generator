@@ -1,0 +1,332 @@
+\documentclass[10pt, letterpaper]{article}
+
+% Packages:
+\usepackage{verbatim}
+%\usepackage{comment}
+\usepackage[
+    ignoreheadfoot, % set margins without considering header and footer
+    top=2 cm, % seperation between body and page edge from the top
+    bottom=2 cm, % seperation between body and page edge from the bottom
+    left=2 cm, % seperation between body and page edge from the left
+    right=2 cm, % seperation between body and page edge from the right
+    footskip=1.0 cm, % seperation between body and footer
+    % showframe % for debugging 
+]{geometry} % for adjusting page geometry
+\usepackage{titlesec} % for customizing section titles
+\usepackage{tabularx} % for making tables with fixed width columns
+\usepackage{array} % tabularx requires this
+\usepackage[dvipsnames]{xcolor} % for coloring text
+\definecolor{primaryColor}{RGB}{0, 79, 144} % define primary color
+\usepackage{enumitem} % for customizing lists
+\usepackage{fontawesome5} % for using icons
+\usepackage{amsmath} % for math
+\usepackage[
+    pdftitle={Charly Romy TANGA's CV},
+    pdfauthor={Charly Romy TANGA},
+    pdfcreator={LaTeX with RenderCV},
+    colorlinks=true,
+    urlcolor=primaryColor
+]{hyperref} % for links, metadata and bookmarks
+\usepackage[pscoord]{eso-pic} % for floating text on the page
+\usepackage{calc} % for calculating lengths
+\usepackage{bookmark} % for bookmarks
+\usepackage{lastpage} % for getting the total number of pages
+\usepackage{changepage} % for one column entries (adjustwidth environment)
+\usepackage{paracol} % for two and three column entries
+\usepackage{ifthen} % for conditional statements
+\usepackage{needspace} % for avoiding page brake right after the section title
+\usepackage{iftex} % check if engine is pdflatex, xetex or luatex
+
+% Ensure that generate pdf is machine readable/ATS parsable:
+\ifPDFTeX
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+    % \usepackage[T1]{fontenc} % this breaks sb2nov
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+\fi
+
+
+
+% Some settings:
+\AtBeginEnvironment{adjustwidth}{\partopsep0pt} % remove space before adjustwidth environment
+\pagestyle{empty} % no header or footer
+\setcounter{secnumdepth}{0} % no section numbering
+\setlength{\parindent}{0pt} % no indentation
+\setlength{\topskip}{0pt} % no top skip
+\setlength{\columnsep}{0cm} % set column seperation
+\makeatletter
+\let\ps@customFooterStyle\ps@plain % Copy the plain style to customFooterStyle
+\patchcmd{\ps@customFooterStyle}{\thepage}{
+    \color{gray}\textit{\small Charly Romy TANGA - Page \thepage{} of \pageref*{LastPage}}
+}{}{} % replace number by desired string
+\makeatother
+\pagestyle{customFooterStyle}
+
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
+
+\titlespacing{\section}{
+    % left space:
+    -1pt
+}{
+    % top space:
+    0.3 cm
+}{
+    % bottom space:
+    0.2 cm
+} % section title spacing
+
+\renewcommand\labelitemi{$\circ$} % custom bullet points
+\newenvironment{highlights}{
+    \begin{itemize}[
+        topsep=0.10 cm,
+        parsep=0.10 cm,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=0.4 cm + 10pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights
+
+\newenvironment{highlightsforbulletentries}{
+    \begin{itemize}[
+        topsep=0.10 cm,
+        parsep=0.10 cm,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=10pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights for bullet entries
+
+
+\newenvironment{onecolentry}{
+    \begin{adjustwidth}{
+        0.2 cm + 0.00001 cm
+    }{
+        0.2 cm + 0.00001 cm
+    }
+}{
+    \end{adjustwidth}
+} % new environment for one column entries
+
+\newenvironment{twocolentry}[2][]{
+    \onecolentry
+    \def\secondColumn{#2}
+    \setcolumnwidth{\fill, 4.5 cm}
+    \begin{paracol}{2}
+}{
+    \switchcolumn \raggedleft \secondColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for two column entries
+
+\newenvironment{header}{
+    \setlength{\topsep}{0pt}\par\kern\topsep\centering\linespread{1.5}
+}{
+    \par\kern\topsep
+} % new environment for the header
+
+\newcommand{\placelastupdatedtext}{% \placetextbox{<horizontal pos>}{<vertical pos>}{<stuff>}
+  \AddToShipoutPictureFG*{% Add <stuff> to current page foreground
+    \put(
+        \LenToUnit{\paperwidth-2 cm-0.2 cm+0.05cm},
+        \LenToUnit{\paperheight-1.0 cm}
+    ){\vtop{{\null}\makebox[0pt][c]{
+        \small\color{gray}\textit{Last updated in September 2024}\hspace{\widthof{Last updated in September 2024}}
+    }}}%
+  }%
+}%
+
+% save the original href command in a new command:
+\let\hrefWithoutArrow\href
+
+% new command for external links:
+\renewcommand{\href}[2]{\hrefWithoutArrow{#1}{\ifthenelse{\equal{#2}{}}{ }{#2 }\raisebox{.15ex}{\footnotesize \faExternalLink*}}}
+
+
+\begin{document}
+    \newcommand{\AND}{\unskip
+        \cleaders\copy\ANDbox\hskip\wd\ANDbox
+        \ignorespaces
+    }
+    \newsavebox\ANDbox
+    \sbox\ANDbox{}
+
+    \placelastupdatedtext
+    \begin{header}
+        \textbf{\fontsize{18 pt}{18 pt}\selectfont Three-month internship in the Revelate Data Department, scheduled for 2025.}
+
+        \vspace{0.3 cm}
+
+        \textbf{\fontsize{12 pt}{12 pt}\selectfont Charly-Romy TANGA}
+
+        \vspace{0.3 cm}
+        \normalsize
+        \mbox{{\color{black}\footnotesize\faMapMarker*}\hspace*{0.13cm}Paris France}%
+        \kern 0.25 cm%
+        \AND%
+        \kern 0.25 cm%
+        \mbox{\hrefWithoutArrow{mailto:youremail@yourdomain.com}{\color{black}{\footnotesize\faEnvelope[regular]}\hspace*{0.13cm}charlyromytanga.cytech@gmail.com}}%
+        \kern 0.25 cm%
+        \AND%
+        \kern 0.25 cm%
+        \mbox{\hrefWithoutArrow{tel:+336-1542-25-74}{\color{black}{\footnotesize\faPhone*}\hspace*{0.13cm}+336 1542 25 74}}%
+        \kern 0.25 cm%
+        \AND%
+        \kern 0.25 cm%
+        %\mbox{\hrefWithoutArrow{https://charly-romy-tanga.com/}{\color{black}{\footnotesize\faLink}\hspace*{0.13cm}charly-romy-tanga.com}}%
+        \kern 0.25 cm%
+        \AND%
+        \kern 0.25 cm%
+        \mbox{\hrefWithoutArrow{https://linkedin.com/in/yourusername}{\color{black}{\footnotesize\faLinkedinIn}\hspace*{0.13cm}charly-romy.tanga}}%
+        \kern 0.25 cm%
+        \AND%
+        \kern 0.25 cm%
+        \mbox{\hrefWithoutArrow{https://github.com/yourusername}{\color{black}{\footnotesize\faGithub}\hspace*{0.13cm}charlyromytanga}}%
+    \end{header}
+
+    \vspace{0.3 cm - 0.3 cm}
+
+
+    \section{Driven by Collaboration and Technical Challenges}
+
+        \begin{onecolentry}
+            As an individual deeply committed to applied mathematics and computer science, I aim to further enhance my expertise by collaborating with interdisciplinary teams to address complex, real-world problems that are mathematically modeled and implemented through advanced computational solutions.
+        \end{onecolentry}
+
+        \vspace{0.2 cm}
+        \begin{comment}
+        \begin{onecolentry}
+            The boilerplate content was inspired by \href{https://github.com/dnl-blkv/mcdowell-cv}{Gayle McDowell}.
+        \end{onecolentry}
+        \end{comment}
+
+    \section{Skills}
+
+        \begin{itemize}[label=\textbullet]
+
+            \item \textbf{Mathematical Expertise:} \\
+            Advanced understanding of calculus, linear algebra, and differential equations, with practical application in problem-solving and data analysis. \\
+            \textit{Proficiency Level: Advanced}
+        
+            \item \textbf{Programming Languages:} \\
+            Proficient in Python, with solid experience in Java and C, particularly in algorithm development, data structures, and software applications. \\
+            \textit{Proficiency Level: Intermediate in Python, Java and C}
+        
+            \item \textbf{Data Analysis and Modeling:} \\
+            Competent in statistical analysis and data visualization, with practical use of RStudio, and MySQL Workbench for data traitement and interpretation. \\
+            \textit{Proficiency Level: Intermediate}
+        
+            %\item \textbf{Regulatory Compliance:} \\
+            %Familiar with financial regulations and compliance requirements in the banking sector, ensuring adherence to legal standards during customer advisory roles. \\
+            %\textit{Proficiency Level: Intermediate}
+
+            \item \textbf{Problem Solving:} \\
+            Strong analytical and critical thinking skills, demonstrated through experience in both academic projects and professional roles. Ability to resolve complex issues efficiently, particularly in high-pressure environments. \\
+            \textit{Proficiency Level: Advanced}
+
+            \item \textbf{Interpersonal Skills:} \\
+            Proven ability to work effectively in team environments and establish rapport with clients and colleagues. Strong conflict resolution skills and a commitment to fostering a collaborative work atmosphere. \\
+            \textit{Proficiency Level: Advanced}
+        
+        \end{itemize}
+    \section*{Education}
+
+        \noindent
+        \textbf{Master of Science in Mathematics and Computer Science} – \textit{[CY TECH University ]} (Cergy, France) \\
+        \textit{September 2023 – Present} \\
+        \textbf{Relevant Coursework:} Partial Differential Equations, Deterministic Modeling, Linear Models, Signal Processing, Procedural Programming, Decidability and Complexity, Data Mining \\
+        \textbf{Additional Subjects:} Economics
+        
+        \vspace{10pt}
+        
+        \noindent
+        \textbf{Bachelor of Science in Mathematics and Computer Science} – \textit{[CY TECH University ]} (Cergy, France) \\
+        \textit{September 2020 – June 2023} \\
+        The program focused on advanced mathematical theories and computational methods, emphasizing problem-solving, algorithm development, and software implementation.
+        
+        \vspace{10pt}
+        
+        \noindent
+        \textbf{Preparatory Classes for the French "Grandes Écoles" Entrance Examinations} – \textit{[Sorbone University]} (Paris, France) \\
+        \textit{September 2018 – June 2020} \\
+        Rigorous coursework in higher-level mathematics, physics, and computer science, aimed at preparing for competitive national exams.
+        
+        \vspace{10pt}
+        
+        \noindent
+        \textbf{French Baccalauréat Scientifique (Scientific High School Diploma)} – \textit{Graduated with Honors} – \textit{[Lycée de Pertuis]} (France) \\
+        \textit{June 2018} \\
+        Specialization in mathematics and natural sciences, with a focus on analytical reasoning and scientific methods.
+
+    \section{Data analytics projects in a Business context during an Engineering Internship with a National Gas Data specialist}
+    \begin{itemize}
+
+        \item \textbf{National Reporting Project:} \\
+        Developed and implemented a comprehensive national reporting project utilizing Power BI, specifically designed for the Research and Development department. This project involved data aggregation from multiple sources, resulting in a 40\% reduction in reporting time. Created interactive dashboards that enabled stakeholders to visualize key metrics, enhancing data-driven decision-making across the organization.
+    
+        \item \textbf{Big Data Project for Commercial Direction:} \\
+        Executed a Big Data project for the Commercial Direction, which included the production of detailed Power BI reports. Analyzed large datasets to identify sales trends and customer behavior, contributing to a 25\% increase in sales efficiency. The project provided insights that led to strategic adjustments in marketing campaigns.
+    
+        \item \textbf{Web Project Integration and Improvement:} \\
+        Monitored the integration and enhancement of web projects aimed at providing public data access. Collaborated with the development team using the Angular framework for JavaScript, improving user interface responsiveness by 30\%. Ensured seamless data delivery while enhancing overall user experience, leading to a 15\% increase in user engagement on public data platforms.
+    
+        \item \textbf{Code Refactoring for Automation:} \\
+        Led the refactoring of existing code to automate data processing tasks using Python. Utilized libraries such as PySpark and Pandas, optimizing algorithms for time and space complexity. This automation reduced data processing time by 50\% and decreased manual intervention by 70\%, allowing the team to focus on higher-value analytical tasks.
+    
+    \end{itemize}
+
+    \section*{Professional Qualifications}
+        \begin{itemize}
+
+            \item \textbf{Microsoft Certified: Data Analyst Associate} \textit{(In Progress)} \\
+            Currently undertaking courses to obtain the Microsoft certification for Data Analyst, focusing on the use of Power BI for data visualization and analysis. This certification will enhance my skills in data management and analytical reporting.
+        
+            \item \textbf{AMF Certification} \textit{(In Progress)} \\
+            Enrolled in courses to achieve the Autorité des Marchés Financiers (AMF) certification, which will deepen my understanding of financial regulations and compliance in the investment sector.
+        
+            \item \textbf{Bloomberg Market Concepts (BMC)} \textit{(In Progress)} \\
+            Currently pursuing the Bloomberg Market Concepts certification to enhance my knowledge of financial markets, data analysis, and the Bloomberg Terminal.
+        
+            \item \textbf{Oracle Cloud Architect Certification} \textit{(In Progress)} \\
+            Engaged in foundational courses for the Oracle Cloud Architect certification, aimed at acquiring skills in cloud infrastructure and architecture.
+        
+            \item \textbf{AWS Certified Solutions Architect} \textit{(In Progress)} \\
+            Beginning coursework for the AWS Certified Solutions Architect certification, focusing on the design and deployment of scalable systems on Amazon Web Services.
+        
+            \item \textbf{Cisco Certified Network Associate (CCNA)} \textit{(In Progress)} \\
+            Enrolled in courses for the Cisco Certified Network Associate (CCNA) certification, aimed at gaining knowledge in networking fundamentals and security.
+        
+        \end{itemize}
+    
+    \section{Technologies}
+        \begin{itemize}
+            \item \textbf{Programming Languages:}
+            \begin{itemize}
+                \item Python
+                \item R
+                \item Java
+                \item SQL
+                \item HTML/CSS
+            \end{itemize}
+            
+            \item \textbf{Technologies and Tools:}
+            \begin{itemize}
+                \item Power BI
+                \item Apache Spark
+                \item Git
+                \item Docker
+            \end{itemize}
+
+            \item \textbf{Languages:}
+            \begin{itemize}
+                \item French : Native
+                \item English : B2/C2
+                \item Germany :  B1
+            \end{itemize}
+    \end{itemize}
+
+\end{document}

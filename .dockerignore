@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+.env.*.local
+
+# Documentation
+docs/
+README.md
+LICENSE
+
+# Test files
+tests/
+*_test.py
+
+# Development
+Makefile
+.github/
+scripts/
+runs/archive/
+runs/**/archive/
+
+# Large files
+*.pdf
+*.tar.gz
+*.zip
+*.db
+data/archive/
+data/offers/**/archive/
+
+# OS
+.DS_Store
+Thumbs.db

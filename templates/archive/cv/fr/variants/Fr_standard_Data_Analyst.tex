@@ -1,0 +1,118 @@
+\documentclass[10pt, letterpaper]{article}
+
+\usepackage[
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm
+]{geometry}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{primaryColor}{RGB}{0, 79, 144}
+\usepackage{fontawesome5}
+\usepackage{paracol}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=primaryColor
+}
+\usepackage[french]{babel}
+\usepackage{datetime2}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{lmodern}
+
+% ----- PIED DE PAGE -----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[R]{\small\textit{\color{gray}Dernière mise à jour le \DTMtoday}}
+\fancyfoot[L]{\small\textit{\color{gray}Charly Romy TANGA – Page \thepage\ sur \pageref*{LastPage}}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ----- FORMAT DES SECTIONS -----
+\titleformat{\section}{\large\bfseries\color{primaryColor}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0.2cm}{0.15cm}
+
+\setlist[itemize]{leftmargin=0.5cm, itemsep=3pt}
+
+% ----- DOCUMENT -----
+\begin{document}
+
+% ===== EN-TÊTE =====
+\begin{center}
+    {\Large \textbf{Charly-Romy TANGA}}\\[3pt]
+    {\small Paris, France \quad$\cdot$\quad 
+    \href{mailto:charlyromytanga.cytech@gmail.com}{charlyromytanga.cytech@gmail.com} \quad$\cdot$\quad
+    Tél : +33 6 15 42 25 74}\\[3pt]
+    \href{https://linkedin.com/in/charly-romy.tanga}{\faLinkedinIn\ charly-romy.tanga} \quad$\cdot$\quad
+    \href{https://github.com/charlyromytanga}{\faGithub\ charlyromytanga}
+\end{center}
+
+\vspace{0.2cm}
+
+% ===== RECHERCHE DE POSTE =====
+\section*{Recherche de poste}
+\textbf{Data Analyst – Alteryx / Power BI} \\
+Disponible à Paris, CDI / alternance ou temps plein. Passionné par l'analyse de données, la visualisation et la construction de pipelines fiables pour les besoins métier.
+
+% ===== INTRO =====
+\section*{Présentation}
+Data Analyst en alternance avec une forte appétence pour la préparation, la qualité et la modélisation de données. J’interviens sur la construction de pipelines automatisés, la création de tableaux de bord décisionnels et l’analyse quantitative pour accompagner les métiers dans leurs prises de décision. Je maîtrise les outils de la modern data stack, notamment \textbf{Power BI}, \textbf{Alteryx}-like (Python + pipelines ETL), SQL et les environnements \textbf{Agile/SCRUM}. \\
+Je suis actuellement en dernière année de Master et serai diplômé à la fin de l'année académique \textbf{2025-2026}.
+
+% ===== EXPÉRIENCES =====
+\section*{Expériences}
+
+\textbf{Alternant Data Analyst – NaTran France (Gestionnaire national des données gazières)} 
+\hfill \textit{Septembre 2023 – Présent}\\
+\textit{Département Data – Pipelines, Qualité, Reporting}
+\begin{itemize}
+    \item Préparation, nettoyage et structuration de jeux de données complexes issus de multiples sources (SQL, API internes, fichiers métier), dans une logique de \textbf{qualité et fiabilité des données}.
+    \item Développement de workflows automatisés en \textbf{Python (Pandas, PySpark)} jouant un rôle similaire à \textbf{Alteryx} : standardisation, transformation et validation des données.
+    \item Conception de \textbf{dashboards Power BI} pour le pilotage national, réduisant le temps de reporting de 40\% et améliorant la prise de décision.
+    \item Mise en place de modèles de données optimisés et documentation des flux (data lineage, dictionnaire de données).
+    \item Travail en \textbf{mode Agile/SCRUM} avec les équipes métier pour adapter les analyses aux besoins opérationnels.
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Projet académique – Simulation en finance quantitative (CY Tech)} \hfill \textit{2025 (en cours)}\\
+\textit{Projet personnel, Modélisation quantitative}
+\begin{itemize}
+    \item Implémentation d’un \textbf{pricer C++/Python} pour les options européennes à l’aide du modèle \textbf{Black-Scholes}.
+    \item Simulation de processus stochastiques et utilisation de méthodes de \textbf{Monte Carlo} pour estimer des indicateurs de risque tels que la \textbf{Value-at-Risk (VaR)}.
+    \item Application de méthodes numériques et d’optimisations de performance pour un calcul évolutif.
+\end{itemize}
+
+% ===== COMPÉTENCES ET TECHNOLOGIES =====
+\section*{Compétences et Technologies}
+
+\textbf{Data preparation \& ETL :} Power BI, Alteryx-like (Python + pipelines ETL), SQL, PySpark, automatisation Python\\
+\textbf{Visualisation \& reporting :} Power BI, Tableau, Google Data Studio\\
+\textbf{Langages :} Python, SQL, Java, C\\
+\textbf{Analyse statistique :} Statistiques descriptives, régression, segmentation, contrôle qualité\\
+\textbf{Modern data stack :} Modèles de données, data cleaning, data validation, documentation analytique\\
+\textbf{Développement :} Git, Docker, OOP, tests, optimisation de scripts\\
+\textbf{Méthodes de travail :} Agile/SCRUM, Lean Analytics\\
+\textbf{Langues :} Français (natif), Anglais (C1), Allemand (B1)
+
+% ===== CERTIFICATIONS PROFESSIONNELLES =====
+\section*{Certifications Professionnelles}
+
+\textbf{Microsoft Certified: Data Analyst Associate} (en cours) – Power BI \\
+\textbf{Bloomberg Market Concepts (BMC)} – Bases marchés financiers \\
+\textbf{Certification AMF} (en cours)
+
+% ===== FORMATION =====
+\section*{Formation}
+
+\textbf{Master 2 – Mathématiques appliquées \& Informatique – Spécialisation FinTech} 
+\hfill \textit{CY Tech, Cergy – 2024–2026}\\
+Cours pertinents : Statistiques, Fouille de données, Bases de données, Machine Learning, Data engineering\\
+\textbf{Licence – Mathématiques et Informatique} 
+\hfill \textit{CY Tech, Cergy – 2023–2024}
+
+\end{document}

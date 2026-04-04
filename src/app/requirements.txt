@@ -1,0 +1,22 @@
+# src/app/requirements.txt - FastAPI & Streamlit Application Dependencies
+
+# FastAPI & Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+starlette==0.27.0
+
+# Streamlit
+streamlit==1.29.0
+streamlit-pdf-viewer==0.1.0
+
+# API Documentation
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+PyJWT==2.8.1
+
+# CORS
+fastapi-cors==0.0.6
+
+# Async Support
+anyio==4.1.0
