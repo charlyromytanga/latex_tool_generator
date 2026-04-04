@@ -22,3 +22,8 @@ runs/tmp/
 
 # Private documentation
 README.private.md
+
+# Generated local databases
+db/*.db
+db/*.sqlite
+db/*.sqlite3

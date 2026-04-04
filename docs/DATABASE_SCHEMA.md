@@ -4,6 +4,18 @@
 
 Fichier: `db/schema_init.sql`
 
+Execution locale:
+
+```bash
+bash scripts/init_db.sh
+```
+
+Ou via Makefile:
+
+```bash
+make db-init
+```
+
 ```sql
 -- ============================================================================
 -- TABLE: offers_raw

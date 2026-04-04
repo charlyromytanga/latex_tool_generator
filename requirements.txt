@@ -6,7 +6,6 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # Database
-sqlite3-python==1.0.0
 sqlalchemy==2.0.23
 
 # Logging & Monitoring
