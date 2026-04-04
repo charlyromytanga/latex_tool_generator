@@ -1,0 +1,138 @@
+version: '3.9'
+
+services:
+  # Database Service (SQLite via volume)
+  db:
+    image: keinos/sqlite3:latest
+    container_name: latex-tool-db
+    volumes:
+      - ./db:/data
+      - ./db/schema_init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      SQLITE_DB: recruitment_assistant.db
+    networks:
+      - latex-network
+    restart: unless-stopped
+
+  # FastAPI Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: latex-tool-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./db:/app/db
+      - ./runs:/app/runs
+      - ./data:/app/data
+      - ./templates:/app/templates
+    environment:
+      DATABASE_URL: sqlite:////app/db/recruitment_assistant.db
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+    depends_on:
+      - db
+    networks:
+      - latex-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Streamlit App Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: latex-tool-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src:/app/src
+      - ./templates:/app/templates
+      - ./data:/app/data
+    environment:
+      PYTHONUNBUFFERED: "1"
+      STREAMLIT_SERVER_HEADLESS: "true"
+      API_URL: http://api:8000
+    depends_on:
+      - api
+    networks:
+      - latex-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Runner Service (Orchestration - periodic tasks)
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    container_name: latex-tool-runner
+    volumes:
+      - ./db:/app/db
+      - ./runs:/app/runs
+      - ./data:/app/data
+      - ./templates:/app/templates
+      - ./src:/app/src
+    environment:
+      DATABASE_URL: sqlite:////app/db/recruitment_assistant.db
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+    depends_on:
+      - db
+    networks:
+      - latex-network
+    restart: unless-stopped
+    # Run in background, don't exit
+    command: sleep infinity
+
+  # Monitoring Service (optional)
+  monitoring:
+    image: alpine:latest
+    container_name: latex-tool-monitoring
+    volumes:
+      - ./db:/db:ro
+      - ./data:/data:ro
+      - ./scripts:/scripts:ro
+    environment:
+      TZ: UTC
+    networks:
+      - latex-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+      while true; do
+        echo '=== Database Monitor ===' &&
+        sh /scripts/monitor_db.sh &&
+        echo '' &&
+        echo '=== Data Directory Monitor ===' &&
+        sh /scripts/monitor_data.sh &&
+        echo '' &&
+        sleep 3600;
+      done
+      "
+
+networks:
+  latex-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
+  runs_data:
+    driver: local
+  data_files:
+    driver: local

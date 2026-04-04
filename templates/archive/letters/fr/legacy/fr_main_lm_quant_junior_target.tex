@@ -1,0 +1,47 @@
+\documentclass[10pt, letterpaper]{article}
+
+\usepackage[
+    ignoreheadfoot,
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm,
+    footskip=1.0cm,
+]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=black}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\pagestyle{empty}
+\setcounter{secnumdepth}{0}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+
+% --- Personnalisation candidature ---
+\newcommand{\targetCompany}{Nom de l'entreprise}
+\newcommand{\targetRole}{Ingénieur Quant Junior (C++ / Python / Risk \& Pricing)}
+\newcommand{\targetDesk}{équipe quant / risk / trading}
+\newcommand{\targetWhyCompany}{La combinaison entre exigence technique, impact business et culture d'innovation de votre équipe correspond pleinement à mon projet professionnel.}
+\newcommand{\targetTechStack}{C++, Python, probabilités, modélisation statistique, Monte Carlo, gestion des risques}
+\newcommand{\targetClosing}{Je serais ravi d'échanger avec vous afin de détailler ma motivation pour rejoindre \targetCompany{} en tant que \targetRole{}.}
+
+\begin{document}
+
+\input{sections/lm/quant_junior_target_header.tex}
+
+\vspace{0.8cm}
+
+\input{sections/lm/quant_junior_target_salutation.tex}
+\input{sections/lm/quant_junior_target_body.tex}
+
+\vspace{0.8cm}
+
+\input{sections/lm/quant_junior_target_signature.tex}
+
+\end{document}

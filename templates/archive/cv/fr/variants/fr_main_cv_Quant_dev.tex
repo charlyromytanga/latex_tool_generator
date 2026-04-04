@@ -1,0 +1,105 @@
+\documentclass[10pt, letterpaper]{article}
+
+\usepackage[
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm
+]{geometry}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{primaryColor}{RGB}{0, 79, 144}
+\usepackage{fontawesome5}
+\usepackage{paracol}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=primaryColor
+}
+\usepackage[french]{babel}
+\usepackage{datetime2}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{lmodern}
+
+% ----- PIED DE PAGE -----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[R]{\small\textit{\color{gray}Dernière mise à jour le \DTMtoday}}
+\fancyfoot[L]{\small\textit{\color{gray}Charly Romy TANGA – Page \thepage\ sur \pageref*{LastPage}}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ----- FORMAT DES SECTIONS -----
+\titleformat{\section}{\large\bfseries\color{primaryColor}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0.2cm}{0.15cm}
+
+\setlist[itemize]{leftmargin=0.5cm, itemsep=3pt}
+
+% ----- DOCUMENT -----
+\begin{document}
+
+% ===== EN-TÊTE =====
+\begin{center}
+    {\Large \textbf{Charly-Romy TANGA}}\\[3pt]
+    {\small Paris, France \quad$\cdot$\quad 
+    \href{mailto:charlyromytanga.cytech@gmail.com}{charlyromytanga.cytech@gmail.com} \quad$\cdot$\quad
+    Tél : +33 6 15 42 25 74}\\[3pt]
+    \href{https://linkedin.com/in/charly-romy.tanga}{\faLinkedinIn\ charly-romy.tanga} \quad$\cdot$\quad
+    \href{https://github.com/charlyromytanga}{\faGithub\ charlyromytanga}
+\end{center}
+
+\vspace{0.2cm}
+
+% ===== INTRO =====
+\section*{Porté par la collaboration et les défis techniques}
+Passionné par l’application des mathématiques et de l’informatique à la finance, je vise à développer et optimiser des modèles quantitatifs et des outils d’analyse soutenant les activités de trading et de gestion des risques. Mon objectif est de contribuer à des équipes pluridisciplinaires en concevant du code efficace, évolutif et bien documenté en \textbf{Python} et \textbf{Java} pour des solutions financières fondées sur les données.
+
+% ===== EXPÉRIENCES =====
+\section*{Expériences}
+
+\textbf{Alternant Data Analyst – NaTran France (Spécialiste national des données gazières)} \hfill \textit{Septembre 2023 – Présent}\\
+\textit{Ingénierie de la données, Département Data}
+\begin{itemize}
+    \item Développement de tableaux de bord nationaux sous \textbf{Power BI}, intégrant des jeux de données hétérogènes et réduisant le temps de reporting de 40\%.
+    \item Conception et optimisation de pipelines de traitement de données avec \textbf{Python (Pandas, PySpark)}, automatisant des tâches récurrentes et réduisant le travail manuel de 70\%.
+    \item Création et maintenance de modèles de données SQL pour les rapports analytiques, améliorant la qualité et l’accessibilité des données.
+    \item Contribution à un projet web de visualisation de données (\textbf{Angular/JavaScript}), améliorant la réactivité du système de 30\%.
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Projet académique – Simulation en finance quantitative (CY Tech)} \hfill \textit{2025 (en cours)}\\
+\textit{Projet personnel, Modélisation quantitative}
+\begin{itemize}
+    \item Implémentation d’un \textbf{pricer C++/Python} pour les options européennes à l’aide du modèle \textbf{Black-Scholes}.
+    \item Simulation de processus stochastiques et utilisation de méthodes de \textbf{Monte Carlo} pour estimer des indicateurs de risque tels que la \textbf{Value-at-Risk (VaR)}.
+    \item Application de méthodes numériques et d’optimisations de performance pour un calcul évolutif.
+\end{itemize}
+
+% ===== COMPÉTENCES ET TECHNOLOGIES =====
+\section*{Compétences et Technologies}
+
+\textbf{Langages de programmation :} Python, Java, C, SQL\\
+\textbf{Bibliothèques et outils :} NumPy, pandas, SciPy, scikit-learn, PySpark, Git, Docker\\
+\textbf{Mathématiques et finance :} Probabilités, Statistiques, Processus stochastiques, Algèbre linéaire, Modélisation financière\\
+\textbf{Gestion des données :} Bases SQL/NoSQL, ETL, Pipelines de données\\
+\textbf{Pratiques de développement :} Programmation orientée objet, Tests, Débogage, Documentation\\
+\textbf{Langues :} Français (natif), Anglais (C1), Allemand (B1)
+
+% ===== CERTIFICATIONS PROFESSIONNELLES =====
+\section*{Certifications Professionnelles}
+
+\textbf{Microsoft Certified: Data Analyst Associate} (en cours) – Spécialisation Power BI\\
+\textbf{Bloomberg Market Concepts (BMC)} (en cours) – Fondamentaux des marchés financiers\\
+\textbf{Certification AMF} (en cours) – Réglementation et conformité financières
+
+% ===== FORMATION =====
+\section*{Formation}
+\textbf{Master 2 en Mathématiques appliquées et Informatique – Spécialisation FinTech} \hfill \textit{CY Tech, Cergy – 2024–2026}\\
+\textbf{Licence en Mathématiques et Informatique} \hfill \textit{CY Tech, Cergy – 2023–2024}\\
+Cours pertinents : Probabilités, Statistiques, Processus stochastiques, Fouille de données, Finance computationnelle
+
+\end{document}
