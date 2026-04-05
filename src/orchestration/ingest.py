@@ -9,7 +9,6 @@ import argparse
 import json
 import logging
 import re
-import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +16,7 @@ from typing import Sequence
 from uuid import uuid4
 
 from .config import OrchestrationConfig
+from .database import Database
 
 
 LOGGER = logging.getLogger(__name__)
@@ -139,26 +139,18 @@ class MarkdownOfferParser:
 class OfferRepositoryGateway:
     """Database gateway for offers_raw writes."""
 
-    def __init__(self, db_path: Path, schema_path: Path) -> None:
-        self.db_path = db_path.resolve()
+    def __init__(self, database: Database, schema_path: Path) -> None:
+        self.database = database
         self.schema_path = schema_path.resolve()
 
     def ensure_schema(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.database.has_table("offers_raw"):
+            return
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            table_exists = conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='offers_raw'"
-            ).fetchone()
-            if table_exists:
-                return
+        if not self.schema_path.exists():
+            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
 
-            if not self.schema_path.exists():
-                raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-
-            conn.executescript(self.schema_path.read_text(encoding="utf-8"))
-            conn.commit()
+        self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
 
     def insert_offer(self, record: OfferRecord) -> None:
         sql = """
@@ -197,10 +189,7 @@ class OfferRepositoryGateway:
             "extracted_at": record.extracted_at,
         }
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            conn.execute(sql, payload)
-            conn.commit()
+        self.database.execute(sql, payload)
 
 
 class OfferIngestionOrchestrator:
@@ -209,7 +198,7 @@ class OfferIngestionOrchestrator:
     def __init__(self, config: OrchestrationConfig) -> None:
         self.config = config
         self.parser = MarkdownOfferParser()
-        self.repo = OfferRepositoryGateway(config.db_path, config.schema_path)
+        self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
 
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
         reader = OfferSourceReader(offer_path)

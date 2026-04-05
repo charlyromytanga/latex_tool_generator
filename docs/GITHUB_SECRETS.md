@@ -191,7 +191,7 @@ Trigger manually from GitHub Actions:
 ### Test API Endpoint
 
 ```bash
-curl https://latex-tool-api.onrender.com/api/v1/health
+curl https://latex-tool-api.onrender.com/api/health
 # Expected: {"status": "ok"}
 ```
 

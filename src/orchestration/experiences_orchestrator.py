@@ -12,12 +12,15 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sqlite3
+import os
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import uuid5, NAMESPACE_URL
+
+from orchestration.config import OrchestrationConfig
+from orchestration.database import Database, detect_database_backend, normalize_database_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -176,27 +179,19 @@ class ExperienceNormalizer:
 class ExperienceRepositoryGateway:
     """DB gateway for my_experiences writes."""
 
-    def __init__(self, db_path: Path, schema_path: Path) -> None:
-        self.db_path = db_path.resolve()
+    def __init__(self, database: Database, schema_path: Path) -> None:
+        self.database = database
         self.schema_path = schema_path.resolve()
 
     def ensure_schema(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.database.has_table("my_experiences"):
+            return
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            table_exists = conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='my_experiences'"
-            ).fetchone()
-            if table_exists:
-                return
+        if not self.schema_path.exists():
+            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
 
-            if not self.schema_path.exists():
-                raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-
-            LOGGER.info("my_experiences missing, initializing schema from %s", self.schema_path)
-            conn.executescript(self.schema_path.read_text(encoding="utf-8"))
-            conn.commit()
+        LOGGER.info("my_experiences missing, initializing schema from %s", self.schema_path)
+        self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
 
     def upsert_many(self, records: list[ExperienceRecord]) -> tuple[int, int]:
         sql = """
@@ -239,34 +234,32 @@ class ExperienceRepositoryGateway:
         inserted = 0
         updated = 0
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            for record in records:
-                existed = conn.execute(
-                    "SELECT 1 FROM my_experiences WHERE exp_id = ?",
-                    (record.exp_id,),
-                ).fetchone()
+        existing_ids = {
+            str(row["exp_id"])
+            for row in self.database.fetch_all("SELECT exp_id FROM my_experiences")
+        }
 
-                payload = {
-                    "exp_id": record.exp_id,
-                    "company": record.company,
-                    "role": record.role,
-                    "duration_months": record.duration_months,
-                    "description": record.description,
-                    "skills_json": json.dumps(record.skills, ensure_ascii=True),
-                    "achievements_json": json.dumps(record.achievements, ensure_ascii=True),
-                    "start_date": record.start_date,
-                    "end_date": record.end_date,
-                    "tags_json": json.dumps(record.tags, ensure_ascii=True),
-                }
-                conn.execute(sql, payload)
+        payloads: list[dict[str, Any]] = []
+        for record in records:
+            payload = {
+                "exp_id": record.exp_id,
+                "company": record.company,
+                "role": record.role,
+                "duration_months": record.duration_months,
+                "description": record.description,
+                "skills_json": json.dumps(record.skills, ensure_ascii=True),
+                "achievements_json": json.dumps(record.achievements, ensure_ascii=True),
+                "start_date": record.start_date,
+                "end_date": record.end_date,
+                "tags_json": json.dumps(record.tags, ensure_ascii=True),
+            }
+            payloads.append(payload)
+            if record.exp_id in existing_ids:
+                updated += 1
+            else:
+                inserted += 1
 
-                if existed:
-                    updated += 1
-                else:
-                    inserted += 1
-
-            conn.commit()
+        self.database.execute_many(sql, payloads)
 
         return inserted, updated
 
@@ -277,6 +270,7 @@ class ExperiencesBootstrapOrchestrator:
     def __init__(
         self,
         input_path: Path,
+        database_url: str,
         db_path: Path,
         schema_path: Path,
         dry_run: bool = False,
@@ -284,7 +278,10 @@ class ExperiencesBootstrapOrchestrator:
         self.input_path = input_path.resolve()
         self.dry_run = dry_run
         self.reader = ExperienceSourceReader(self.input_path)
-        self.gateway = ExperienceRepositoryGateway(db_path=db_path, schema_path=schema_path)
+        self.gateway = ExperienceRepositoryGateway(
+            database=Database(database_url),
+            schema_path=schema_path,
+        )
 
     def run(self) -> None:
         LOGGER.info("Starting my_experiences bootstrap from %s", self.input_path)
@@ -388,13 +385,18 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Input file (.json or .md) containing standardized experiences",
     )
     parser.add_argument(
+        "--database-url",
+        default=None,
+        help="Database URL override (postgresql://... or sqlite:///...)",
+    )
+    parser.add_argument(
         "--db-path",
-        default="db/recruitment_assistant.db",
-        help="SQLite database path",
+        default=None,
+        help="SQLite database path fallback (used when --database-url is not set)",
     )
     parser.add_argument(
         "--schema-path",
-        default="db/schema_init.sql",
+        default=None,
         help="Schema file used to initialize DB when needed",
     )
     parser.add_argument(
@@ -418,10 +420,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
 
+    root = Path(__file__).resolve().parents[2]
+    config = OrchestrationConfig.from_repo_root(root)
+    db_path = Path(args.db_path) if args.db_path else config.db_path
+    database_url = normalize_database_url(
+        args.database_url or os.getenv("DATABASE_URL") or f"sqlite:///{db_path}",
+        root,
+        db_path,
+    )
+    backend = detect_database_backend(database_url)
+    schema_path = (
+        Path(args.schema_path)
+        if args.schema_path
+        else (config.postgres_schema_path if backend == "postgresql" else config.sqlite_schema_path)
+    )
+
     orchestrator = ExperiencesBootstrapOrchestrator(
         input_path=Path(args.input_path),
-        db_path=Path(args.db_path),
-        schema_path=Path(args.schema_path),
+        database_url=database_url,
+        db_path=db_path,
+        schema_path=schema_path,
         dry_run=args.dry_run,
     )
 

@@ -20,7 +20,7 @@ DOCKER_RUN_MAIN = docker run --rm -v "$(PRINCIPAL_DIR):$(CONTAINER_SRC)" -v "$(B
 # Docker Compose
 COMPOSE = docker-compose
 
-.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init
+.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init db-init-postgres db-mirror-postgres
 
 uv-sync:
 	$(UV) sync
@@ -78,6 +78,8 @@ help:
 	@echo "  make monitor-db           - Monitor SQLite database"
 	@echo "  make monitor-data         - Monitor data/ directory"
 	@echo "  make db-init              - Initialize SQLite schema"
+	@echo "  make db-init-postgres     - Initialize PostgreSQL mirror schema"
+	@echo "  make db-mirror-postgres   - Mirror SQLite into PostgreSQL"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean                - Clean temporary files"
@@ -146,6 +148,12 @@ monitor-all:
 
 db-init:
 	@bash scripts/init_db.sh
+
+db-init-postgres:
+	@bash scripts/init_postgres_db.sh
+
+db-mirror-postgres:
+	@bash scripts/mirror_sqlite_to_postgres.sh
 
 clean:
 	@echo "Cleaning principal LaTeX auxiliary files"

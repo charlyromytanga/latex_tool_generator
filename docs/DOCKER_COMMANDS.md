@@ -187,7 +187,7 @@ To test connectivity between containers:
 
 ```bash
 # From app container, ping api
-docker-compose exec app curl http://api:8000/api/v1/health
+docker-compose exec app curl http://api:8000/api/health
 
 # From runner, test database
 docker-compose exec runner sqlite3 /app/db/recruitment_assistant.db "SELECT COUNT(*) FROM offers_raw;"
@@ -323,7 +323,7 @@ services:
 
 ```bash
 # Check service health
-docker-compose exec api curl http://localhost:8000/api/v1/health
+docker-compose exec api curl http://localhost:8000/api/health
 
 # View health check history
 docker inspect api | jq '.State.Health'

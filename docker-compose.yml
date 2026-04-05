@@ -14,6 +14,29 @@ services:
       - latex-network
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15
+    container_name: latex-tool-postgres
+    profiles:
+      - postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-recruitment_assistant}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - latex-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-recruitment_assistant}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   # FastAPI Service
   api:
     build:
@@ -28,7 +51,7 @@ services:
       - ./data:/app/data
       - ./templates:/app/templates
     environment:
-      DATABASE_URL: sqlite:////app/db/recruitment_assistant.db
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/db/recruitment_assistant.db}
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: info
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -39,7 +62,7 @@ services:
       - latex-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,7 +109,7 @@ services:
       - ./templates:/app/templates
       - ./src:/app/src
     environment:
-      DATABASE_URL: sqlite:////app/db/recruitment_assistant.db
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/db/recruitment_assistant.db}
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: info
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -131,6 +154,8 @@ networks:
 
 volumes:
   db_data:
+    driver: local
+  postgres_data:
     driver: local
   runs_data:
     driver: local
