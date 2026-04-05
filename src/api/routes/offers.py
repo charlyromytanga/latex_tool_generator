@@ -6,8 +6,8 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.common import LOGGER, api_error, get_config, get_database, repo_root, safe_json_loads
-from app.models.offer import OfferCreateRequest, OfferDetailsResponse, OfferResponse
+from api.common import LOGGER, api_error, get_config, get_database, repo_root, safe_json_loads
+from models.offer import OfferCreateRequest, OfferDetailsResponse, OfferResponse
 from orchestration.ingest import OfferIngestionOrchestrator
 
 

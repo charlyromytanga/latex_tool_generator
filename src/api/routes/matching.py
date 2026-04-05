@@ -6,7 +6,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.common import api_error, get_config, get_database
+from api.common import api_error, get_config, get_database
 
 
 router = APIRouter(prefix="/matching", tags=["matching"])

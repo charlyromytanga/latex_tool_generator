@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from app.streamlit.utils_functions import (
+from streamlit.utils_functions import (
     GenerationInput,
     GenerationOutput,
     MatchingOutput,
