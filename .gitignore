@@ -27,3 +27,26 @@ README.private.md
 db/*.db
 db/*.sqlite
 db/*.sqlite3
+
+# Test and coverage files
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.tox/
+*.coverage
+coverage.xml
+
+# IDE and development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Generated during build
+dist/
+build/
+*.egg
