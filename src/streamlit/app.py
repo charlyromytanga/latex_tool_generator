@@ -7,8 +7,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.streamlit.domain import TabService
-from app.streamlit.pages import (
+from streamlit.domain import TabService
+from streamlit.pages import (
     AnalyzePage,
     GenerationPage,
     MatchingPage,
@@ -16,8 +16,8 @@ from app.streamlit.pages import (
     SettingsPage,
     UploadPage,
 )
-from app.streamlit.services import RecruitmentApiClient
-from app.streamlit.utils_functions import AppSettings, SessionPayload
+from streamlit.services import RecruitmentApiClient
+from streamlit.utils_functions import AppSettings, SessionPayload
 
 
 LOGGER = logging.getLogger(__name__)

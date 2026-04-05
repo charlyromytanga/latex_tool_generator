@@ -7,8 +7,8 @@ import logging
 import streamlit as st
 
 from app.streamlit.components import render_error, render_info_card, render_json_block
-from app.streamlit.pages.base_page import BasePage
-from app.streamlit.services import ApiClientError
+from streamlit.pages.base_page import BasePage
+from streamlit.services import ApiClientError
 
 
 LOGGER = logging.getLogger(__name__)

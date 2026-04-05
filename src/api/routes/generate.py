@@ -11,8 +11,8 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from app.api.common import api_error, get_database, repo_root, safe_json_loads
-from app.models.generation import (
+from api.common import api_error, get_database, repo_root, safe_json_loads
+from models.generation import (
     GenerationRequest,
     GenerationStatusResponse,
     IntegrationSubmitRequest,

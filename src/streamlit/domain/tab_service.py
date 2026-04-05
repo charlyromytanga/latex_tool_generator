@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from app.streamlit.services.api_client import ApiClientError, RecruitmentApiClient
-from app.streamlit.utils_functions import (
+from streamlit.services.api_client import ApiClientError, RecruitmentApiClient
+from streamlit.utils_functions import (
     GenerationInput,
     GenerationOutput,
     MatchingOutput,

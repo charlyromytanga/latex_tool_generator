@@ -8,8 +8,8 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.common import api_error, get_database
-from app.api.routes import (
+from api.common import api_error, get_database
+from api.routes import (
     download_router,
     generate_router,
     integrate_router,

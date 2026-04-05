@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.streamlit.domain import TabService
+from streamlit.domain import TabService
 
 
 class BasePage(ABC):
