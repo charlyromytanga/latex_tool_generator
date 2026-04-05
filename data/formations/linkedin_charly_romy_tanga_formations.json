@@ -1,0 +1,179 @@
+{
+  "profile": {
+    "full_name": "Charly-Romy TANGA",
+    "source": "linkedin_manual",
+    "collected_at": "2026-04-05"
+  },
+  "formations": [
+    {
+      "formation_id": "edu_cytech_engineering",
+      "institution": "CY Tech (ex EISTI)",
+      "program": "Ingenieur Mathematiques Appliquees Finance et Technologie",
+      "degree": "Diplome d'ingenieur",
+      "location": "Cergy, France",
+      "start_date": "2023-09-01",
+      "end_date": null,
+      "is_current": true,
+      "description": "Parcours d'ingenieur axe sur les mathematiques appliquees, la data, l'informatique et la finance, avec une specialisation progressive vers la finance computationnelle et les systemes d'information financiers.",
+      "courses": [
+        "Analyse numerique",
+        "Architecture et Programmation Parallele",
+        "Base de donnees",
+        "Big Data",
+        "Blockchain & Cryptomonnaies",
+        "Business Intelligence",
+        "Compressive sensing",
+        "Corporate Finance",
+        "Data Exploration",
+        "Data Science",
+        "Datamining",
+        "Developpement Web",
+        "Finance computationnelle",
+        "Gestion du risque financier",
+        "Intelligence Artificielle : Applications",
+        "Introduction a la finance",
+        "Introduction aux series temporelles",
+        "Mathematiques pour la finance",
+        "Modeles de prevision",
+        "Optim et IA pour la finance",
+        "Optimisation lineaire",
+        "Probabilites",
+        "Probabilites & simulation",
+        "Programmation pour la Finance",
+        "Securite des donnees",
+        "Simulation Monte Carlo",
+        "Statistiques inferentielles",
+        "Systeme d'Exploitation",
+        "Systeme d'information bancaire",
+        "Theorie des graphes"
+      ],
+      "course_categories": {
+        "Mathematiques": [
+          "Analyse numerique",
+          "Compressive sensing",
+          "Data Exploration",
+          "Finance computationnelle",
+          "Introduction aux series temporelles",
+          "Mathematiques pour la finance",
+          "Modeles de prevision",
+          "Optimisation lineaire",
+          "Probabilites",
+          "Probabilites & simulation",
+          "Simulation Monte Carlo",
+          "Statistiques inferentielles"
+        ],
+        "Informatique": [
+          "Architecture et Programmation Parallele",
+          "Base de donnees",
+          "Business Intelligence",
+          "Developpement Web",
+          "Intelligence Artificielle : Applications",
+          "Programmation pour la Finance",
+          "Securite des donnees",
+          "Systeme d'Exploitation",
+          "Systeme d'information bancaire"
+        ],
+        "Maths et informatique": [
+          "Big Data",
+          "Data Science",
+          "Datamining",
+          "Optim et IA pour la finance",
+          "Theorie des graphes"
+        ],
+        "Finance": [
+          "Corporate Finance",
+          "Gestion du risque financier",
+          "Introduction a la finance"
+        ],
+        "Innovation et entrepreneuriat": [
+          "Blockchain & Cryptomonnaies"
+        ]
+      },
+      "achievements": [
+        "Specialisation progressive vers la finance quantitative, la data et les systemes d'information financiers",
+        "Socle technique couvrant mathematiques appliquees, algorithmique, data engineering et programmation pour la finance",
+        "Exposition a des cours de finance computationnelle, gestion du risque financier et modelisation predictive"
+      ],
+      "tags": [
+        "engineering",
+        "math",
+        "finance",
+        "data",
+        "quant",
+        "computer-science"
+      ]
+    },
+    {
+      "formation_id": "edu_lycee_val_de_durance",
+      "institution": "Lycee Polyvalent Val de Durance",
+      "program": "Terminale Scientifique",
+      "degree": "Baccalaureat scientifique",
+      "location": "Pertuis, France",
+      "start_date": "2019-09-01",
+      "end_date": "2020-06-30",
+      "is_current": false,
+      "description": "Formation scientifique generale avec base solide en mathematiques et sciences physiques.",
+      "courses": [
+        "Mathematiques",
+        "Physique",
+        "Sciences"
+      ],
+      "achievements": [
+        "Preparation reussie pour classe preparatoire"
+      ],
+      "tags": [
+        "lycee",
+        "science"
+      ]
+    },
+    {
+      "formation_id": "edu_cpge_fenelon",
+      "institution": "Lycee Fenelon (Paris)",
+      "program": "CPGE",
+      "degree": "Classe preparatoire",
+      "location": "Paris, France",
+      "start_date": "2020-09-01",
+      "end_date": "2021-06-30",
+      "is_current": false,
+      "description": "Travaux d'initiative personnelle encadree (TIPE) sur l'utilisation des ondes ultrasonores pour fragmenter un calcul renal.",
+      "courses": [
+        "Physique ondulatoire",
+        "Mecanique",
+        "Mathematiques appliquees"
+      ],
+      "achievements": [
+        "Modelisation dynamique bulle/onde/calcul"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "ultrasons"
+      ]
+    },
+    {
+      "formation_id": "edu_cpge_claude_bernard",
+      "institution": "Lycee Claude Bernard",
+      "program": "CPGE",
+      "degree": "Classe preparatoire",
+      "location": "France",
+      "start_date": "2022-09-01",
+      "end_date": "2023-06-30",
+      "is_current": false,
+      "description": "TIPE sur la localisation des fuites d'eau potable a l'aide d'un capteur acoustique (SePem300).",
+      "courses": [
+        "Physique ondulatoire",
+        "Informatique Python",
+        "Physique interdisciplinaire"
+      ],
+      "achievements": [
+        "Approche experimentale et modelisation de detection acoustique"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "python",
+        "acoustique"
+      ]
+    }
+  ]
+}
