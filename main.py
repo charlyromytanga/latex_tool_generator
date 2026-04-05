@@ -26,7 +26,14 @@ def _parse_args(argv: Sequence[str] | None = None) -> tuple[argparse.Namespace, 
     parser.add_argument(
         "--target",
         default="my_projects",
-        choices=["my_projects", "my_experiences", "formations_template"],
+        choices=[
+            "my_projects",
+            "my_experiences",
+            "formations_template",
+            "offers_ingest",
+            "offers_llm",
+            "offers_pipeline",
+        ],
         help="Select orchestration target",
     )
     return parser.parse_known_args(argv)
@@ -48,6 +55,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             from orchestration.experiences_orchestrator import main as orchestrator_main
         elif args.target == "formations_template":
             from orchestration.formations_orchestrator import main as orchestrator_main
+        elif args.target == "offers_ingest":
+            from orchestration.ingest import main as orchestrator_main
+        elif args.target == "offers_llm":
+            from orchestration.llm_extractors import main as orchestrator_main
+        elif args.target == "offers_pipeline":
+            from orchestration.orchestrator import main as orchestrator_main
         else:
             from orchestration.projects_orchestrator import main as orchestrator_main
 
