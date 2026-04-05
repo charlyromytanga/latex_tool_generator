@@ -1,5 +1,6 @@
 """Orchestration package for project ingestion workflows."""
 
-from .orchestrator import ProjectBootstrapOrchestrator
+from .experiences_orchestrator import ExperiencesBootstrapOrchestrator
+from .projects_orchestrator import ProjectBootstrapOrchestrator
 
-__all__ = ["ProjectBootstrapOrchestrator"]
+__all__ = ["ProjectBootstrapOrchestrator", "ExperiencesBootstrapOrchestrator"]
