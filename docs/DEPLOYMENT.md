@@ -125,50 +125,59 @@ jobs:
 
 ## 2. Déploiement sur Render
 
+### Runtime multi-base et bascule PostgreSQL
+
+Le runtime supporte désormais SQLite et PostgreSQL via la variable d'environnement DATABASE_URL.
+
+Règles de fonctionnement:
+- SQLite local par défaut si DATABASE_URL n'est pas défini
+- PostgreSQL activé dès que DATABASE_URL pointe vers postgresql://...
+- Le service API applique automatiquement le schéma PostgreSQL sur Render via preDeployCommand
+- Le workflow GitHub Actions applique aussi le schéma initial via le job migrate-db
+
+Artifacts ajoutés pour cette transition:
+- `db/schema_postgres.sql`
+- `src/orchestration/database.py`
+- `scripts/init_postgres_db.sh`
+- `scripts/mirror_sqlite_to_postgres.sh`
+- `python -m orchestration.postgres_mirror`
+
+Exemple local:
+
+```bash
+POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/init_postgres_db.sh
+POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/mirror_sqlite_to_postgres.sh
+```
+
+Activation locale PostgreSQL avec Docker Compose:
+
+```bash
+COMPOSE_PROFILES=postgres \
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment_assistant \
+docker-compose up -d postgres api app runner
+```
+
+Initialisation du schéma local PostgreSQL:
+
+```bash
+POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/init_postgres_db.sh
+```
+
+Miroir optionnel SQLite vers PostgreSQL:
+
+```bash
+POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/mirror_sqlite_to_postgres.sh
+```
+
 ### Render Service Configuration
 
 **Fichier: `render.yaml`** (root)
 
-```yaml
-services:
-  - type: web
-    name: recruitment-api
-    runtime: python311
-    buildCommand: uv sync && uv run alembic upgrade head
-    startCommand: uv run uvicorn src.app.api:app --host 0.0.0.0 --port $PORT
-    
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: DATABASE_URL
-        value: sqlite:///db/recruitment_assistant.db
-      - key: LLM_API_KEY
-        fromService:
-          type: env
-          property: LLM_API_KEY
-      - key: ENVIRONMENT
-        value: "production"
-    
-    connectToPostgres: false  # Optionnel: pour future migration DB
-    
-    # Health check
-    healthCheckPath: /api/health
-    healthCheckInterval: 600  # 10 min
-
-  - type: web
-    name: recruitment-streamlit
-    runtime: python311
-    buildCommand: uv sync
-    startCommand: streamlit run src/app/streamlit_app.py --server.port=$PORT --server.address=0.0.0.0
-    
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: STREAMLIT_SERVER_MAXUPLOADSIZE
-        value: "10"
-      - key: API_BASE_URL
-        value: "https://recruitment-app.onrender.com"
-```
+Le blueprint Render est maintenant configuré pour:
+- créer une base Render Postgres `recruitment-db`
+- injecter DATABASE_URL depuis `fromDatabase.connectionString`
+- exécuter `bash scripts/init_postgres_db.sh` avant chaque déploiement API
+- exposer la santé API sur `/api/health`
 
 ### Étapes Manuelles (First Time)
 
@@ -187,18 +196,16 @@ services:
 2. **Configurer Environment Variables:**
    ```
    PYTHONUNBUFFERED=1
-   DATABASE_URL=sqlite:///db/recruitment_assistant.db
    LLM_API_KEY=<your-key>
    ENVIRONMENT=production
    ```
 
-3. **Setup Database:**
-   ```bash
-   # Via SSH into Render instance
-   ssh <render-instance>
-   cd /opt/render/project
-   uv run python -c "from src.orchestration.db import init_db; init_db()"
-   ```
+3. **Secrets GitHub / Render pour PostgreSQL:**
+  ```
+  RENDER_POSTGRES_DSN=<external postgres url for CI migration job>
+  OPENAI_API_KEY=<your-key>
+  CLAUDE_API_KEY=<your-key>
+  ```
 
 4. **Test:**
    ```bash
@@ -215,7 +222,9 @@ services:
 ```
 RENDER_SERVICE_ID       = srv-1a2b3c4d5e6f7g
 RENDER_API_KEY          = rnd_abcdefghijklmnop
-LLM_API_KEY             = sk-proj-... (OpenAI ou autre)
+RENDER_POSTGRES_DSN     = postgresql://...
+OPENAI_API_KEY          = sk-proj-...
+CLAUDE_API_KEY          = claude-...
 CODECOV_TOKEN           = (optional)
 ```
 

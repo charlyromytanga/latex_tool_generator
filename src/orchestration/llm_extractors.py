@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +15,7 @@ from typing import Any, Sequence
 from uuid import uuid4
 
 from .config import OrchestrationConfig
+from .database import Database
 
 
 LOGGER = logging.getLogger(__name__)
@@ -65,19 +65,17 @@ class OfferKeywords:
 class MatchingRepositoryGateway:
     """Gateway for loading profile entities and persisting extraction/matching results."""
 
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = db_path.resolve()
+    def __init__(self, database: Database) -> None:
+        self.database = database
 
     def fetch_offer(self, offer_id: str) -> dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute(
-                "SELECT offer_id, raw_text, sections_json FROM offers_raw WHERE offer_id = ?",
-                (offer_id,),
-            ).fetchone()
-            if row is None:
-                raise ValueError(f"Offer not found: {offer_id}")
-            return dict(row)
+        row = self.database.fetch_one(
+            "SELECT offer_id, raw_text, sections_json FROM offers_raw WHERE offer_id = :offer_id",
+            {"offer_id": offer_id},
+        )
+        if row is None:
+            raise ValueError(f"Offer not found: {offer_id}")
+        return row
 
     def upsert_offer_keywords(self, offer_keywords: OfferKeywords, model_version: str) -> None:
         payload = {
@@ -100,33 +98,22 @@ class MatchingRepositoryGateway:
         VALUES (:keyword_id, :offer_id, :keywords_json, :model_version)
         """
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(sql, payload)
-            conn.commit()
+        self.database.execute(sql, payload)
 
     def fetch_experiences(self) -> list[dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT exp_id, company, role, description, skills_json FROM my_experiences"
-            ).fetchall()
-            return [dict(row) for row in rows]
+        return self.database.fetch_all(
+            "SELECT exp_id, company, role, description, skills_json FROM my_experiences"
+        )
 
     def fetch_projects(self) -> list[dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT project_id, repo_name, description, languages_json, technologies_json FROM my_projects"
-            ).fetchall()
-            return [dict(row) for row in rows]
+        return self.database.fetch_all(
+            "SELECT project_id, repo_name, description, languages_json, technologies_json FROM my_projects"
+        )
 
     def fetch_formations(self) -> list[dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT formation_id, institution, program, courses_json, course_categories_json FROM formations"
-            ).fetchall()
-            return [dict(row) for row in rows]
+        return self.database.fetch_all(
+            "SELECT formation_id, institution, program, courses_json, course_categories_json FROM formations"
+        )
 
     def insert_matching_score(
         self,
@@ -150,24 +137,32 @@ class MatchingRepositoryGateway:
             reasoning,
             model_version,
             computed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (
+            :match_id,
+            :offer_id,
+            :match_type,
+            :exp_id,
+            :project_id,
+            :match_score,
+            :reasoning,
+            :model_version,
+            :computed_at
+        )
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                sql,
-                (
-                    str(uuid4()),
-                    offer_id,
-                    match_type,
-                    exp_id,
-                    project_id,
-                    score,
-                    reasoning,
-                    model_version,
-                    datetime.utcnow().isoformat(timespec="seconds") + "Z",
-                ),
-            )
-            conn.commit()
+        self.database.execute(
+            sql,
+            {
+                "match_id": str(uuid4()),
+                "offer_id": offer_id,
+                "match_type": match_type,
+                "exp_id": exp_id,
+                "project_id": project_id,
+                "match_score": score,
+                "reasoning": reasoning,
+                "model_version": model_version,
+                "computed_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            },
+        )
 
     def insert_formation_matching_score(
         self,
@@ -187,22 +182,28 @@ class MatchingRepositoryGateway:
             reasoning,
             model_version,
             computed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (
+            :match_id,
+            :offer_id,
+            :formation_id,
+            :match_score,
+            :reasoning,
+            :model_version,
+            :computed_at
+        )
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                sql,
-                (
-                    str(uuid4()),
-                    offer_id,
-                    formation_id,
-                    score,
-                    reasoning,
-                    model_version,
-                    datetime.utcnow().isoformat(timespec="seconds") + "Z",
-                ),
-            )
-            conn.commit()
+        self.database.execute(
+            sql,
+            {
+                "match_id": str(uuid4()),
+                "offer_id": offer_id,
+                "formation_id": formation_id,
+                "match_score": score,
+                "reasoning": reasoning,
+                "model_version": model_version,
+                "computed_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            },
+        )
 
 
 class HeuristicKeywordExtractor:
@@ -234,7 +235,7 @@ class OfferLLMOrchestrator:
 
     def __init__(self, config: OrchestrationConfig) -> None:
         self.config = config
-        self.repo = MatchingRepositoryGateway(config.db_path)
+        self.repo = MatchingRepositoryGateway(Database(config.database_url))
         self.extractor = HeuristicKeywordExtractor()
 
     def run(self, offer_id: str) -> dict[str, Any]:

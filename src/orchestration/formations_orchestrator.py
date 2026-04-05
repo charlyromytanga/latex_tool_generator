@@ -12,12 +12,15 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sqlite3
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import NAMESPACE_URL, uuid5
+
+from orchestration.config import OrchestrationConfig
+from orchestration.database import Database, detect_database_backend, normalize_database_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -171,37 +174,25 @@ class FormationNormalizer:
 class FormationRepositoryGateway:
     """DB gateway for formations writes."""
 
-    def __init__(self, db_path: Path, schema_path: Path) -> None:
-        self.db_path = db_path.resolve()
+    def __init__(self, database: Database, schema_path: Path) -> None:
+        self.database = database
         self.schema_path = schema_path.resolve()
 
     def ensure_schema(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.database.has_table("formations"):
+            if not self.schema_path.exists():
+                raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            table_exists = conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='formations'"
-            ).fetchone()
-            if not table_exists:
-                if not self.schema_path.exists():
-                    raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
+            LOGGER.info("formations missing, initializing schema from %s", self.schema_path)
+            self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
+            return
 
-                LOGGER.info("formations missing, initializing schema from %s", self.schema_path)
-                conn.executescript(self.schema_path.read_text(encoding="utf-8"))
-                conn.commit()
-                return
-
-            columns = {
-                row[1]
-                for row in conn.execute("PRAGMA table_info(formations)").fetchall()
-            }
-            if "course_categories_json" not in columns:
-                LOGGER.info("Adding missing column course_categories_json to formations")
-                conn.execute(
-                    "ALTER TABLE formations ADD COLUMN course_categories_json TEXT NOT NULL DEFAULT '{}'"
-                )
-                conn.commit()
+        columns = self.database.column_names("formations")
+        if "course_categories_json" not in columns:
+            LOGGER.info("Adding missing column course_categories_json to formations")
+            self.database.execute(
+                "ALTER TABLE formations ADD COLUMN course_categories_json TEXT NOT NULL DEFAULT '{}'"
+            )
 
     def upsert_many(self, records: list[FormationRecord]) -> tuple[int, int]:
         sql = """
@@ -253,43 +244,40 @@ class FormationRepositoryGateway:
         inserted = 0
         updated = 0
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            for record in records:
-                existed = conn.execute(
-                    "SELECT 1 FROM formations WHERE formation_id = ?",
-                    (record.formation_id,),
-                ).fetchone()
+        existing_ids = {
+            str(row["formation_id"])
+            for row in self.database.fetch_all("SELECT formation_id FROM formations")
+        }
 
-                conn.execute(
-                    sql,
-                    {
-                        "formation_id": record.formation_id,
-                        "institution": record.institution,
-                        "program": record.program,
-                        "degree": record.degree,
-                        "location": record.location,
-                        "start_date": record.start_date,
-                        "end_date": record.end_date,
-                        "is_current": int(record.is_current),
-                        "description": record.description,
-                        "courses_json": json.dumps(record.courses, ensure_ascii=True),
-                        "course_categories_json": json.dumps(
-                            record.course_categories,
-                            ensure_ascii=True,
-                            sort_keys=True,
-                        ),
-                        "achievements_json": json.dumps(record.achievements, ensure_ascii=True),
-                        "tags_json": json.dumps(record.tags, ensure_ascii=True),
-                    },
-                )
+        payloads: list[dict[str, Any]] = []
+        for record in records:
+            payloads.append(
+                {
+                    "formation_id": record.formation_id,
+                    "institution": record.institution,
+                    "program": record.program,
+                    "degree": record.degree,
+                    "location": record.location,
+                    "start_date": record.start_date,
+                    "end_date": record.end_date,
+                    "is_current": int(record.is_current),
+                    "description": record.description,
+                    "courses_json": json.dumps(record.courses, ensure_ascii=True),
+                    "course_categories_json": json.dumps(
+                        record.course_categories,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                    ),
+                    "achievements_json": json.dumps(record.achievements, ensure_ascii=True),
+                    "tags_json": json.dumps(record.tags, ensure_ascii=True),
+                }
+            )
+            if record.formation_id in existing_ids:
+                updated += 1
+            else:
+                inserted += 1
 
-                if existed:
-                    updated += 1
-                else:
-                    inserted += 1
-
-            conn.commit()
+        self.database.execute_many(sql, payloads)
 
         return inserted, updated
 
@@ -349,6 +337,7 @@ class FormationsTemplateOrchestrator:
         self,
         input_path: Path,
         output_path: Path,
+        database_url: str,
         db_path: Path,
         schema_path: Path,
         dry_run: bool = False,
@@ -357,7 +346,10 @@ class FormationsTemplateOrchestrator:
         self.output_path = output_path.resolve()
         self.dry_run = dry_run
         self.reader = FormationSourceReader(self.input_path)
-        self.gateway = FormationRepositoryGateway(db_path=db_path, schema_path=schema_path)
+        self.gateway = FormationRepositoryGateway(
+            database=Database(database_url),
+            schema_path=schema_path,
+        )
         self.writer = LatexFormationTemplateWriter(self.output_path)
 
     def run(self) -> None:
@@ -497,13 +489,18 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Generated LaTeX output path",
     )
     parser.add_argument(
+        "--database-url",
+        default=None,
+        help="Database URL override (postgresql://... or sqlite:///...)",
+    )
+    parser.add_argument(
         "--db-path",
-        default="db/recruitment_assistant.db",
-        help="SQLite database path",
+        default=None,
+        help="SQLite database path fallback (used when --database-url is not set)",
     )
     parser.add_argument(
         "--schema-path",
-        default="db/schema_init.sql",
+        default=None,
         help="Schema file used to initialize DB when needed",
     )
     parser.add_argument("--dry-run", action="store_true", help="Run without writing output file")
@@ -523,11 +520,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
 
+    root = Path(__file__).resolve().parents[2]
+    config = OrchestrationConfig.from_repo_root(root)
+    db_path = Path(args.db_path) if args.db_path else config.db_path
+    database_url = normalize_database_url(
+        args.database_url or os.getenv("DATABASE_URL") or f"sqlite:///{db_path}",
+        root,
+        db_path,
+    )
+    backend = detect_database_backend(database_url)
+    schema_path = (
+        Path(args.schema_path)
+        if args.schema_path
+        else (config.postgres_schema_path if backend == "postgresql" else config.sqlite_schema_path)
+    )
+
     orchestrator = FormationsTemplateOrchestrator(
         input_path=Path(args.input_path),
         output_path=Path(args.output_path),
-        db_path=Path(args.db_path),
-        schema_path=Path(args.schema_path),
+        database_url=database_url,
+        db_path=db_path,
+        schema_path=schema_path,
         dry_run=args.dry_run,
     )
 

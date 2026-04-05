@@ -41,6 +41,7 @@ build/
 docs/
 README.md
 LICENSE
+!README.md
 
 # Test files
 tests/

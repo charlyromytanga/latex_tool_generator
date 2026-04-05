@@ -10,13 +10,16 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sqlite3
+import os
 import subprocess
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Sequence
 from uuid import uuid4
+
+from orchestration.config import OrchestrationConfig
+from orchestration.database import Database, detect_database_backend, normalize_database_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -168,29 +171,20 @@ class ReadmeProjectParser:
 class ProjectRepositoryGateway:
     """Database gateway for the my_projects table."""
 
-    def __init__(self, db_path: Path, schema_path: Path) -> None:
-        self.db_path = db_path.resolve()
+    def __init__(self, database: Database, schema_path: Path) -> None:
+        self.database = database
         self.schema_path = schema_path.resolve()
 
     def ensure_schema(self) -> None:
         """Create schema from file if my_projects table is missing."""
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.database.has_table("my_projects"):
+            return
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            table_exists = conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='my_projects'"
-            ).fetchone()
+        if not self.schema_path.exists():
+            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
 
-            if table_exists:
-                return
-
-            if not self.schema_path.exists():
-                raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-
-            LOGGER.info("my_projects missing, initializing schema from %s", self.schema_path)
-            conn.executescript(self.schema_path.read_text(encoding="utf-8"))
-            conn.commit()
+        LOGGER.info("my_projects missing, initializing schema from %s", self.schema_path)
+        self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
 
     def upsert_project(self, project: ProjectRecord) -> None:
         """Insert or update one project record in my_projects."""
@@ -239,10 +233,7 @@ class ProjectRepositoryGateway:
             indexed_at = CURRENT_TIMESTAMP
         """
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            conn.execute(sql, payload)
-            conn.commit()
+        self.database.execute(sql, payload)
 
 
 class ProjectBootstrapOrchestrator:
@@ -251,6 +242,7 @@ class ProjectBootstrapOrchestrator:
     def __init__(
         self,
         repo_path: Path,
+        database_url: str,
         db_path: Path,
         schema_path: Path,
         branch: str = "main",
@@ -264,7 +256,10 @@ class ProjectBootstrapOrchestrator:
             docker_image=docker_image,
         )
         self.parser = ReadmeProjectParser()
-        self.gateway = ProjectRepositoryGateway(db_path=db_path, schema_path=schema_path)
+        self.gateway = ProjectRepositoryGateway(
+            database=Database(database_url),
+            schema_path=schema_path,
+        )
 
     def run(self) -> None:
         """Execute full bootstrap workflow with robust logging and error handling."""
@@ -311,13 +306,18 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--repo-path", default=".", help="Local git repository path")
     parser.add_argument("--branch", default="main", help="Target branch to read README from")
     parser.add_argument(
+        "--database-url",
+        default=None,
+        help="Database URL override (postgresql://... or sqlite:///...)",
+    )
+    parser.add_argument(
         "--db-path",
-        default="db/recruitment_assistant.db",
-        help="SQLite database path",
+        default=None,
+        help="SQLite database path fallback (used when --database-url is not set)",
     )
     parser.add_argument(
         "--schema-path",
-        default="db/schema_init.sql",
+        default=None,
         help="Schema file used to initialize DB when needed",
     )
     parser.add_argument(
@@ -342,10 +342,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
 
+    root = Path(__file__).resolve().parents[2]
+    config = OrchestrationConfig.from_repo_root(root)
+    db_path = Path(args.db_path) if args.db_path else config.db_path
+    database_url = normalize_database_url(
+        args.database_url or os.getenv("DATABASE_URL") or f"sqlite:///{db_path}",
+        root,
+        db_path,
+    )
+    backend = detect_database_backend(database_url)
+    schema_path = (
+        Path(args.schema_path)
+        if args.schema_path
+        else (config.postgres_schema_path if backend == "postgresql" else config.sqlite_schema_path)
+    )
+
     orchestrator = ProjectBootstrapOrchestrator(
         repo_path=Path(args.repo_path),
-        db_path=Path(args.db_path),
-        schema_path=Path(args.schema_path),
+        database_url=database_url,
+        db_path=db_path,
+        schema_path=schema_path,
         branch=args.branch,
         docker_image=args.docker_image,
     )

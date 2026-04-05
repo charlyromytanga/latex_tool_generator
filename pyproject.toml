@@ -35,6 +35,7 @@ dependencies = [
     "pydantic==2.5.3",
     "pydantic-settings==2.1.0",
     "sqlalchemy==2.0.23",
+    "psycopg[binary]==3.2.9",
     "requests==2.31.0",
     "httpx==0.25.2",
     "aiohttp==3.9.1",
@@ -109,6 +110,7 @@ cvrepo = "cvrepo.cli:main"
 orchestrator = "orchestration.projects_orchestrator:main"
 orchestrator-experiences = "orchestration.experiences_orchestrator:main"
 orchestrator-formations = "orchestration.formations_orchestrator:main"
+orchestrator-postgres-mirror = "orchestration.postgres_mirror:main"
 
 [project.urls]
 Homepage = "https://github.com/cytech/latex_tool_generator"

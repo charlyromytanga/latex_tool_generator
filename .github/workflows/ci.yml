@@ -34,6 +34,23 @@ jobs:
         source .venv/bin/activate
         uv sync --dev
 
+    # Future PostgreSQL mirror validation (kept commented until Render Postgres is enabled)
+    # - name: Start local PostgreSQL for mirror validation
+    #   run: |
+    #     docker run -d --rm \
+    #       --name ci-postgres \
+    #       -e POSTGRES_DB=recruitment_assistant \
+    #       -e POSTGRES_USER=postgres \
+    #       -e POSTGRES_PASSWORD=postgres \
+    #       -p 5432:5432 postgres:15
+    #
+    # - name: Validate SQLite to PostgreSQL mirror
+    #   run: |
+    #     source .venv/bin/activate
+    #     until docker exec ci-postgres pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
+    #     POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/init_postgres_db.sh
+    #     POSTGRES_DSN=postgresql://postgres:postgres@localhost:5432/recruitment_assistant bash scripts/mirror_sqlite_to_postgres.sh
+
     - name: Lint with pylint (errors only)
       run: |
         source .venv/bin/activate
@@ -53,6 +70,10 @@ jobs:
       run: |
         source .venv/bin/activate
         pytest tests/ --cov=src --cov-report=xml --cov-report=term || true
+
+    # - name: Stop local PostgreSQL mirror validation container
+    #   if: always()
+    #   run: docker rm -f ci-postgres || true
 
   build:
     runs-on: ubuntu-latest

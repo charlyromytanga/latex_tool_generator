@@ -1,12 +1,14 @@
 # Global requirements.txt - Common dependencies across all services
 
-# Core
+# Core (dotenv is required for runtime env loading)
 python-dotenv==1.0.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # Database
 sqlalchemy==2.0.23
+pysqlite3-binary==0.5.4
+psycopg[binary]==3.2.9
 
 # Logging & Monitoring
 python-json-logger==2.0.7
