@@ -16,6 +16,23 @@ Ou via Makefile:
 make db-init
 ```
 
+## Evolution v002 (formations)
+
+Nouvelles tables ajoutees dans le schema:
+
+- `formations`: stockage riche des formations (institution, programme, diplome, dates, cours, categories de cours, achievements, tags).
+- `formation_matching_scores`: table de correspondance future entre offre et formations.
+
+Migration associee:
+
+```text
+db/migrations/002_add_formations_tables.sql
+```
+
+Champ notable ajoute dans `formations`:
+
+- `course_categories_json`: JSON objet pour conserver les cours regroupes par categorie, utile pour le matching futur et la generation de CV.
+
 ```sql
 -- ============================================================================
 -- TABLE: offers_raw
