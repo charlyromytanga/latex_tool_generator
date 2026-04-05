@@ -1,0 +1,84 @@
+/* ===========================
+   VARIABLES CSS - THEME 2025
+=========================== */
+:root {
+    --color-1: #FFC600;
+    --color-2: #214B4D;
+    --color-3: #265B88;
+    --color-4: #327342;
+    --color-5: #543361;
+    --color-6: #AE2E4B;
+    --color-7: #FE9666;
+    --color-8: #A66999;
+    --color-9: #3599B8;
+    --color-10: #DFBFBF;
+    --color-11: #4AC5BB;
+    --color-12: #5F6B6D;
+    --color-13: #FB8281;
+    --color-14: #F4D25A;
+    --color-15: #7F898A;
+    --color-16: #A4DDEE;
+    --color-17: #FDAB89;
+    --color-18: #B687AC;
+    --color-19: #28738A;
+    --color-20: #A78F8F;
+    --color-21: #168980;
+    --color-22: #293537;
+    --color-23: #BB4A4A;
+    --color-24: #B59525;
+    --color-25: #475052;
+    --color-26: #6A9FB0;
+    --color-27: #BD7150;
+    --color-28: #7B4F71;
+    --color-29: #1B4D5C;
+    --color-30: #706060;
+    --color-31: #0F5C55;
+    --color-32: #1C2325;
+
+    --font-default: 'Segoe UI', sans-serif;
+    --font-title: 'Segoe UI', sans-serif;
+    --font-title-bold: 'Segoe UI Bold', sans-serif;
+
+    --font-size-title: 14px;
+    --sidebar-width: 250px;
+}
+
+html, body, [class*="css"] {
+    font-family: var(--font-default);
+}
+
+.stApp {
+    background: linear-gradient(160deg, #f8fafc 0%, #f2f8ff 45%, #f7fbf8 100%);
+    color: #1b2430;
+}
+
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
+    border-right: 1px solid #d9e2ec;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-title-bold);
+    color: var(--color-2);
+}
+
+div[data-testid="stMetricValue"] {
+    color: var(--color-3);
+}
+
+button[kind="primary"] {
+    background: linear-gradient(135deg, var(--color-3), var(--color-9));
+    border: none;
+    color: #ffffff;
+}
+
+/* Dark override (theme switch runtime) */
+[data-theme="dark"] .stApp {
+    background: linear-gradient(160deg, #171f2a 0%, #12212c 45%, #17231f 100%);
+    color: #dbe7f3;
+}
+
+[data-theme="dark"] section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1a2632 0%, #15202a 100%);
+    border-right: 1px solid #2a3a4a;
+}

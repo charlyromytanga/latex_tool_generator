@@ -4,14 +4,17 @@
 
 Ce document decrit la cible fonctionnelle UI.
 
-- Etat du code: `src/app/streamlit_app.py` n'est pas encore implemente dans cette phase.
-- Usage: reference de conception pour la future Phase 4 (API + UI).
+- Etat du code: un scaffold modulaire OOP est en place.
+- Point d'entree: `src/app/streamlit_app.py` (wrapper).
+- Architecture UI: `src/app/streamlit/` avec modules `pages/`, `components/`, `services/`, `domain/`, `utils_functions.py`, `assets/theme.css`.
+- Theme par defaut: clair, avec option de bascule light/dark via Settings.
+- Usage: base stable et maintenable pour la Phase 4 (API + UI).
 
 ## Vue d'ensemble
 
 Interface utilisateur intuitive pour orchestrer le pipeline complet offre → CV/LM.
 
-**Localisation:** `src/app/streamlit_app.py`
+**Localisation:** `src/app/streamlit_app.py` et `src/app/streamlit/`
 
 **Déploiement:** Local (`streamlit run src/app/streamlit_app.py`) ou via Render
 
