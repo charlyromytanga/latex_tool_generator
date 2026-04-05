@@ -1,5 +1,12 @@
 # API Specification - FastAPI
 
+## Statut actuel
+
+Ce document decrit la cible d'API.
+
+- Etat du code: `src/app/api.py` et les routes associees ne sont pas encore implementes dans cette phase.
+- Usage: contrat fonctionnel pour la future Phase 4 (API + UI), apres finalisation des phases ingestion et LLM.
+
 ## Vue d'ensemble
 
 L'API expose les fonctionnalités d'orchestration en 3 niveaux via endpoints REST JSON.

@@ -1,5 +1,12 @@
 # Streamlit App Specification
 
+## Statut actuel
+
+Ce document decrit la cible fonctionnelle UI.
+
+- Etat du code: `src/app/streamlit_app.py` n'est pas encore implemente dans cette phase.
+- Usage: reference de conception pour la future Phase 4 (API + UI).
+
 ## Vue d'ensemble
 
 Interface utilisateur intuitive pour orchestrer le pipeline complet offre → CV/LM.
