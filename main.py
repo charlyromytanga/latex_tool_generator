@@ -6,9 +6,11 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import Sequence
 
 
 def _bootstrap_import_path() -> None:
@@ -19,7 +21,18 @@ def _bootstrap_import_path() -> None:
         sys.path.insert(0, str(src_path))
 
 
-def main() -> int:
+def _parse_args(argv: Sequence[str] | None = None) -> tuple[argparse.Namespace, list[str]]:
+    parser = argparse.ArgumentParser(description="Root dispatcher for orchestration modules")
+    parser.add_argument(
+        "--target",
+        default="my_projects",
+        choices=["my_projects", "my_experiences"],
+        help="Select orchestration target",
+    )
+    return parser.parse_known_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
     """Run orchestrator from repository root with robust top-level error handling."""
     logging.basicConfig(
         level=logging.INFO,
@@ -28,11 +41,16 @@ def main() -> int:
     logger = logging.getLogger("root-main")
 
     try:
+        args, remaining = _parse_args(argv)
         _bootstrap_import_path()
-        from orchestration.orchestrator import main as orchestrator_main
 
-        logger.info("Launching orchestration bootstrap from root main.py")
-        return orchestrator_main()
+        if args.target == "my_experiences":
+            from orchestration.experiences_orchestrator import main as orchestrator_main
+        else:
+            from orchestration.projects_orchestrator import main as orchestrator_main
+
+        logger.info("Launching orchestration target=%s from root main.py", args.target)
+        return orchestrator_main(remaining)
     except Exception:  # pylint: disable=broad-except
         logger.exception("Fatal error in root main entrypoint")
         return 1

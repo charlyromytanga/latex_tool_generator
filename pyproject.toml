@@ -106,7 +106,8 @@ full = [
 
 [project.scripts]
 cvrepo = "cvrepo.cli:main"
-orchestrator = "orchestration.orchestrator:main"
+orchestrator = "orchestration.projects_orchestrator:main"
+orchestrator-experiences = "orchestration.experiences_orchestrator:main"
 
 [project.urls]
 Homepage = "https://github.com/cytech/latex_tool_generator"
