@@ -285,15 +285,19 @@ git push origin main
 
 ## 🔄 Next Phase: Implementation
 
-With this infrastructure in place, implementation can now proceed:
+With this infrastructure in place, implementation status is now:
 
-1. **Phase 1:** Initialize SQLite DB, implement Level 1 (ingest.py)
-2. **Phase 2:** Implement Level 2 (llm_extractors.py)
-3. **Phase 3:** Implement Level 3 (channels/)
-4. **Phase 4:** Implement FastAPI routes + Streamlit UI
-5. **Phase 5:** Configure Render secrets, deploy to production
+1. **Phase 1 (partially completed):**
+  - SQLite DB initialized
+  - Migrations merged into `db/migrations/001_initial_schema.sql`
+  - Candidate-data orchestrators implemented (`my_projects`, `my_experiences`, `formations_template`)
+  - Remaining item: offer ingestion pipeline (`src/orchestration/ingest.py`)
+2. **Phase 2 (to do):** Implement Level 2 (`llm_extractors.py`)
+3. **Phase 3 (to do):** Extend Level 3 (`channels/`)
+4. **Phase 4 (to do):** Implement FastAPI routes + Streamlit UI
+5. **Phase 5 (to do):** Configure Render secrets, deploy to production
 
-All infrastructure is ready to support development!
+Infrastructure remains ready to support the next implementation phases.
 
 ---
 

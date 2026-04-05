@@ -232,10 +232,15 @@ curl http://localhost:8000/api/preview/gen-123
 
 ## 📋 Checklist Implémentation
 
-### Phase 1 (Fondations)
-- [ ] Lire [ARCHITECTURE_COMPLETE.md](ARCHITECTURE_COMPLETE.md)
-- [ ] Créer DB + schema (`db/schema_init.sql`)
-- [ ] Implémenter `src/orchestration/ingest.py` (Niveau 1)
+### Phase 1 (Fondations) - Partiellement réalisée
+- [x] Lire [ARCHITECTURE_COMPLETE.md](ARCHITECTURE_COMPLETE.md)
+- [x] Créer DB + schema (`db/schema_init.sql`)
+- [x] Fusionner les migrations dans `db/migrations/001_initial_schema.sql`
+- [x] Implémenter les orchestrateurs candidat:
+  - `my_projects` (DB)
+  - `my_experiences` (DB)
+  - `formations_template` (DB + template LaTeX)
+- [ ] Implémenter `src/orchestration/ingest.py` (Niveau 1 offre)
 - [ ] Tests: ingestion offre brute → DB
 
 ### Phase 2 (LLM Intelligence)
@@ -258,6 +263,10 @@ curl http://localhost:8000/api/preview/gen-123
 - [ ] Render setup + secrets
 - [ ] Database backups
 - [ ] Monitoring (scripts de surveillance)
+
+Notes:
+- Le socle DB et les orchestrateurs des donnees candidat sont operationnels.
+- Les phases API/UI et ingestion offre restent a implementer.
 
 ---
 
@@ -297,6 +306,6 @@ Pour des questions spécifiques:
 
 ---
 
-**Dernière mise à jour:** 2026-04-05  
+**Derniere mise a jour:** 2026-04-05  
 **Version:** 2.0 (Orchestration + LLM + Multi-canaux)  
-**Statut:** Documentation complète, implémentation en cours
+**Statut:** Documentation synchronisee avec l'etat reel du code (Phase 1 partielle)
