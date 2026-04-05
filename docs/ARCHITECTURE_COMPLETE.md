@@ -79,10 +79,13 @@ Texte libre descriptif de l'offre.
 | `offer_keywords` | Keywords extraits par LLM model 1 |
 | `my_experiences` | Expériences personnelles (résumé) |
 | `my_projects` | Projets Git personnels (README + metadata) |
+| `formations` | Formations académiques (avec `course_categories_json`) |
 | `matching_scores` | Résultats matching LLM model 2 (offre vs exp/projet) |
+| `formation_matching_scores` | Matching LLM formations vs offres |
 | `generations` | Traces CV/LM générés (links offre + artifacts) |
+| `archive_manifest` | Manifest des archives finales |
 
-**Schema détaillé:** voir `docs/DATABASE_SCHEMA.md`
+**Schema détaillé:** voir `db/schema_init.sql` et `db/migrations/001_initial_schema.sql`
 
 ---
 
@@ -178,13 +181,17 @@ Texte libre descriptif de l'offre.
 │   └── WORKFLOWS.md                   (workflows existants, mis à jour)
 │
 ├── db/
-│   ├── recruitment_assistant.db       (SQLite, créé au premier run)
-│   ├── schema_init.sql                (DDL sur initialization)
-│   └── migrations/                    (versions futures)
+│   ├── recruitment_assistant.db       (SQLite, créé au premier run — 9 tables)
+│   ├── schema_init.sql                (DDL canonique, source de vérité)
+│   └── migrations/
+│       └── 001_initial_schema.sql     (schéma complet fusionné, 9 tables)
 │
 ├── data/
 │   ├── offers/                        (offres brutes en Markdown)
 │   │   └── {year}/Q{x}/tier-{n}/{country}/{company}/offer.md
+│   ├── formations/                    (✅ données formations candidat)
+│   │   ├── linkedin_charly_romy_tanga_formations.json
+│   │   └── linkedin_charly_romy_tanga_formations.md
 │   └── schemas/
 │       ├── offer_input.schema.json
 │       └── (autres)
@@ -200,12 +207,15 @@ Texte libre descriptif de l'offre.
 │   │   ├── validation.py
 │   │   └── paths.py
 │   │
-│   ├── orchestration/                 (NOUVEAU - orchestration Niveau 1/2/3)
+│   ├── orchestration/                 (orchestration Niveau 1/2/3)
 │   │   ├── __init__.py
-│   │   ├── ingest.py                  (Niveau 1: ingestion + DB)
-│   │   ├── llm_extractors.py          (Niveau 2: LLM keywords + matching)
-│   │   ├── orchestrator.py            (Pivot principal: appelle 1→2→3)
-│   │   └── config.py                  (settings LLM, thresholds, etc.)
+│   │   ├── projects_orchestrator.py   (✅ my_projects → DB)
+│   │   ├── experiences_orchestrator.py (✅ my_experiences → DB)
+│   │   ├── formations_orchestrator.py (✅ formations → DB + LaTeX)
+│   │   ├── ingest.py                  (à venir: Niveau 1 — ingestion offres)
+│   │   ├── llm_extractors.py          (à venir: Niveau 2 — LLM keywords + matching)
+│   │   ├── orchestrator.py            (à venir: Pivot principal 1→2→3)
+│   │   └── config.py                  (à venir: settings LLM, thresholds)
 │   │
 │   ├── channels/                      (NOUVEAU - canal-spécifique)
 │   │   ├── __init__.py
@@ -288,12 +298,15 @@ Texte libre descriptif de l'offre.
 │   │   └── en/
 │   │       ├── main.tex
 │   │       └── sections/
+│   ├── formations/                    (✅ section formations générée)
+│   │   └── formation_section.tex      (auto-généré par formations_orchestrator)
 │   └── channels/
 │       ├── thank_you/
 │       ├── recruiter_email/
 │       ├── project_report/
 │       └── thesis/
 │
+├── main.py                            (✅ dispatcher --target my_projects|my_experiences|formations_template)
 ├── pyproject.toml
 ├── Makefile
 ├── Dockerfile                         (pour render LaTeX + LLM services)
@@ -466,27 +479,35 @@ find data/offers -type f | wc -l
 
 ---
 
-## 9. Prochaines Phases
+## 9. Feuille de Route
 
-### Phase 1 (In Progress)
-- [ ] Setup structure répertoires
-- [ ] Créer doc DATABASE_SCHEMA.md
-- [ ] Implémenter `src/orchestration/ingest.py`
-- [ ] Setup SQLite DB + migrations
+### Phase 1 — Données candidat et DB (✅ Complétée — Avril 2026)
+- [x] Setup structure répertoires
+- [x] Setup SQLite DB + migrations (9 tables, `001_initial_schema.sql`)
+- [x] Orchestrateur `my_projects` → DB (`my_projects`, 1 projet)
+- [x] Orchestrateur `my_experiences` → DB (`my_experiences`, 8 expériences)
+- [x] Orchestrateur `formations_template` → DB + LaTeX (`formations`, 4 formations enrichies depuis PDFs)
+- [x] Dispatcher `main.py` (`--target my_projects|my_experiences|formations_template`)
+- [x] Données formations enrichies (30 cours, 5 catégories, depuis transcripts PDF CY Tech)
+- [ ] Créer doc `DATABASE_SCHEMA.md` (documentation formelle du schéma)
 
-### Phase 2
-- [ ] Implémenter LLM extractors (Level 2)
-- [ ] Intégrer LLM API (OpenAI, Claude, local)
-- [ ] Validater matching logic
+### Phase 2 — Ingestion offres + LLM (🔲 À faire)
+- [ ] Implémenter `src/orchestration/ingest.py` (ingestion offres brutes → `offers_raw`)
+- [ ] Implémenter `src/orchestration/llm_extractors.py`
+  - [ ] LLM Model 1 : extraction keywords offre → `offer_keywords`
+  - [ ] LLM Model 2 : matching offre ↔ expériences/projets → `matching_scores`
+  - [ ] LLM Model 3 : matching offre ↔ formations → `formation_matching_scores`
+- [ ] Intégrer LLM API (OpenAI, Claude, ou local)
+- [ ] Valider les seuils de confiance (0.5 / 0.75)
 
-### Phase 3
-- [ ] Améliorer `src/cvrepo/` (Level 3)
-- [ ] Ajouter autres canaux
-- [ ] FastAPI routes
+### Phase 3 — Génération multi-canaux (🔲 À faire)
+- [ ] Améliorer `src/cvrepo/` (Level 3 : personnalisation fine par offre)
+- [ ] Ajouter canaux `src/channels/` (lettre remerciement, email recruteur, rapport projet)
+- [ ] Exposer FastAPI (`src/app/api.py`)
 
-### Phase 4
-- [ ] Streamlit app
-- [ ] CI/CD complet
+### Phase 4 — UI et Déploiement (🔲 À faire)
+- [ ] Interface Streamlit (`src/app/streamlit_app.py`)
+- [ ] CI/CD complet (GitHub Actions : tests + build Docker + deploy)
 - [ ] Déploiement Render
 
 ---
