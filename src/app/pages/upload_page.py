@@ -30,9 +30,14 @@ class UploadPage(BasePage):
 
             try:
                 output = self.service.submit_offer(markdown_content)
-                st.session_state.offer_id = output.offer_id
-                render_success(f"Offre creee: {output.offer_id}")
+                # DEBUG: Affiche le contenu brut de output
+                st.write("DEBUG output:", output)
+                st.session_state.offer_id = getattr(output, "offer_id", "")
+                render_success(f"Offre creee: {getattr(output, 'offer_id', 'Aucun ID')}")
                 render_json_block(output.model_dump(), "Resultat")
             except ApiClientError as exc:
                 LOGGER.exception("Upload page failed")
-                render_error(str(exc))
+                render_error(f"Erreur API: {exc}")
+            except Exception as exc:
+                LOGGER.exception("Erreur inattendue upload")
+                render_error(f"Erreur inattendue: {exc}")

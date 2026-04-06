@@ -16,6 +16,7 @@ router = APIRouter(prefix="/offers", tags=["offers"])
 
 @router.post("", response_model=OfferResponse, status_code=201)
 def create_offer(payload: OfferCreateRequest) -> OfferResponse:
+    LOGGER.info(f"Payload reçu pour création d'offre : {payload.json()}")
     try:
         root = repo_root()
         temp_dir = root / "runs" / "tmp" / "api_uploads"

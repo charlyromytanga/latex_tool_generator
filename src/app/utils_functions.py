@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -63,7 +64,7 @@ class GenerationOutput(BaseModel):
 class AppSettings(BaseModel):
     """UI settings stored in session state."""
 
-    api_base_url: str = "http://localhost:8000"
+    api_base_url: str = os.environ.get("API_URL", "http://localhost:8000")
     theme: str = "light"
     default_language: str = "fr"
     threshold: float = 0.0
