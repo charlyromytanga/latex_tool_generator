@@ -6,9 +6,9 @@ import logging
 
 import streamlit as st
 
-from streamlit.components import render_error, render_info_card, render_json_block, render_success
-from streamlit.pages.base_page import BasePage
-from streamlit.services import ApiClientError
+from app.components.widgets import render_error, render_info_card, render_json_block, render_success
+from app.pages.base_page import BasePage
+from app.services import ApiClientError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -17,11 +17,11 @@ LOGGER = logging.getLogger(__name__)
 class UploadPage(BasePage):
     """Handle offer markdown submission."""
 
-    name = "Upload Offre"
+    name = "Chargement de l'offre"
 
     def render(self) -> None:
-        render_info_card("Upload Offre", "Collez le markdown de l'offre puis soumettez.")
-        markdown_content = st.text_area("Markdown", height=260, key="upload_markdown")
+        render_info_card("Chargement de l'offre", "Collez le markdown de l'offre puis soumettez.")
+        markdown_content = st.text_area("Markdown", height=500, key="upload_markdown")
 
         if st.button("Valider et Analyser", type="primary", key="btn_upload"):
             if not markdown_content.strip():
