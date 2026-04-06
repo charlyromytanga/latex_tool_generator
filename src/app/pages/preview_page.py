@@ -6,9 +6,9 @@ import logging
 
 import streamlit as st
 
-from streamlit.components import render_error, render_info_card, render_json_block
-from streamlit.pages.base_page import BasePage
-from streamlit.services import ApiClientError
+from app.components.widgets import render_error, render_info_card, render_json_block
+from app.pages.base_page import BasePage
+from app.services import ApiClientError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -22,9 +22,9 @@ class PreviewPage(BasePage):
     def render(self) -> None:
         render_info_card("Preview", "Affiche le statut de generation courant.")
 
-        generation_id = st.text_input(
+        generation_id: str = st.text_input(
             "Generation ID",
-            value=st.session_state.get("generation_id", ""),
+            value=str(st.session_state.get("generation_id") or ""),
             key="preview_generation_id",
         )
 

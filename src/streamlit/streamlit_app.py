@@ -17,7 +17,7 @@ def _bootstrap_import_path() -> None:
 def main() -> None:
     """Run modular Streamlit application."""
     _bootstrap_import_path()
-    from app.streamlit import run_streamlit_app
+    from .app import run_streamlit_app
 
     run_streamlit_app()
 

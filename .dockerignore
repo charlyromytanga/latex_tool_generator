@@ -50,7 +50,7 @@ tests/
 # Development
 Makefile
 .github/
-scripts/
+### scripts/ n'est plus ignoré pour le build Docker
 runs/archive/
 runs/**/archive/
 

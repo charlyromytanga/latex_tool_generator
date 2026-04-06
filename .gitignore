@@ -22,6 +22,7 @@ runs/tmp/
 
 # Private documentation
 README.private.md
+src/streamlit/*
 
 # Generated local databases
 db/*.db

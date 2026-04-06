@@ -3,7 +3,7 @@
 # LaTeX & PDF
 pylatexenc==2.10
 latexcodec==2.0
-PyPDF2==4.0.1
+PyPDF2==3.0.1
 
 # Email Generation
 Jinja2==3.1.2

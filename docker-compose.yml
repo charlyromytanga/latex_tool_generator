@@ -1,7 +1,8 @@
-version: '3.9'
+
 
 services:
   # Database Service (SQLite via volume)
+
   db:
     image: keinos/sqlite3:latest
     container_name: latex-tool-db
@@ -14,11 +15,11 @@ services:
       - latex-network
     restart: unless-stopped
 
+
   postgres:
     image: postgres:15
     container_name: latex-tool-postgres
-    profiles:
-      - postgres
+    profiles: [postgres]
     ports:
       - "5432:5432"
     environment:
@@ -38,6 +39,7 @@ services:
       start_period: 20s
 
   # FastAPI Service
+
   api:
     build:
       context: .
@@ -69,6 +71,7 @@ services:
       start_period: 40s
 
   # Streamlit App Service
+
   app:
     build:
       context: .
@@ -97,6 +100,7 @@ services:
       start_period: 40s
 
   # Runner Service (Orchestration - periodic tasks)
+
   runner:
     build:
       context: .
@@ -108,6 +112,7 @@ services:
       - ./data:/app/data
       - ./templates:/app/templates
       - ./src:/app/src
+      - ./scripts:/app/scripts
     environment:
       DATABASE_URL: ${DATABASE_URL:-sqlite:////app/db/recruitment_assistant.db}
       PYTHONUNBUFFERED: "1"
@@ -119,13 +124,14 @@ services:
     networks:
       - latex-network
     restart: unless-stopped
-    # Run in background, don't exit
     command: sleep infinity
 
   # Monitoring Service (optional)
+
   monitoring:
     image: alpine:latest
     container_name: latex-tool-monitoring
+    profiles: [monitoring]
     volumes:
       - ./db:/db:ro
       - ./data:/data:ro
@@ -148,16 +154,11 @@ services:
       done
       "
 
+
 networks:
   latex-network:
     driver: bridge
 
 volumes:
-  db_data:
-    driver: local
   postgres_data:
-    driver: local
-  runs_data:
-    driver: local
-  data_files:
     driver: local

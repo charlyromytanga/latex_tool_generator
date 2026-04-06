@@ -1,201 +1,43 @@
 [project]
 name = "latex-tool-generator"
-version = "0.1.0"
-description = "Plateforme de génération intelligente et multi-canaux de documentations de candidature — Transforme des offres d'emploi brutes en CV, lettres et documentations personnalisées grâce à une orchestration IA."
-readme = "README.md"
-requires-python = ">=3.11"
+version = "0.2.0"
+description = "Plateforme de génération intelligente de documents de candidature (CV, lettres, etc.) orchestrée par IA."
 authors = [
     { name = "Cytech", email = "dev@cytech.local" }
 ]
-keywords = [
-    "cv-generation",
-    "job-matching",
-    "llm-orchestration",
-    "recruiter-automation",
-    "latex",
-    "fastapi",
-    "streamlit"
-]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Environment :: Console",
-    "Topic :: Office/Business"
-]
+readme = "README.md"
+requires-python = ">=3.12"
 license = { text = "MIT" }
+keywords = ["cv", "streamlit", "fastapi", "orchestration", "llm", "latex"]
 
-# Core dependencies (common across all services)
 dependencies = [
-    "python-dotenv==1.0.0",
-    "pydantic==2.5.3",
-    "pydantic-settings==2.1.0",
-    "sqlalchemy==2.0.23",
-    "psycopg[binary]==3.2.9",
-    "requests==2.31.0",
-    "httpx==0.25.2",
-    "aiohttp==3.9.1",
-    "tenacity==8.2.3",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.5.3",
+    "pydantic-settings>=2.1.0",
+    "sqlalchemy>=2.0.23",
+    "psycopg[binary]>=3.2.9",
+    "requests>=2.31.0",
+    "httpx>=0.25.2",
+    "aiohttp>=3.9.1",
+    "tenacity>=8.2.3",
+    "python-dateutil>=2.8.2",
+    "pytz>=2023.3",
+    "python-json-logger>=2.0.7",
+    "prometheus-client>=0.19.0",
+    "streamlit>=1.32.0",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0"
 ]
 
 [project.optional-dependencies]
-# Orchestration layer (Level 1-2: Ingest + LLM Matching)
-orchestration = [
-    "openai==1.3.10",
-    "anthropic==0.7.11",
-    "markdown==3.5.1",
-    "pdfplumber==0.10.3",
-    "pypdf==4.0.1",
-    "APScheduler==3.10.4",
-    "alembic==1.13.0",
-]
-
-# Channels layer (Level 3: Multi-channel generation)
-channels = [
-    "Jinja2==3.1.2",
-    "PyGithub==2.1.1",
-    "python-docx==0.8.11",
-]
-
-# API service (FastAPI)
 api = [
-    "fastapi==0.104.1",
-    "uvicorn[standard]==0.24.0",
-    "python-multipart==0.0.6",
-    "python-jose[cryptography]==3.3.0",
-    "passlib[bcrypt]==1.7.4",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0"
 ]
-
-# App service (Streamlit)
 app = [
-    "streamlit==1.29.0",
-    "streamlit-pdf-viewer==0.1.0",
+    "streamlit>=1.32.0"
 ]
-
-# Development tools
-dev = [
-    "pytest==7.4.3",
-    "pytest-cov==4.1.0",
-    "pytest-asyncio==0.21.1",
-    "black==23.12.0",
-    "pylint==3.0.3",
-    "mypy==1.7.1",
-    "isort==5.13.2",
-    "flake8==6.1.0",
-    "pre-commit==3.5.0",
-]
-
-# Docker & deployment
-docker = [
-    "docker==7.0.0",
-    "docker-compose==1.29.2",
-]
-
-# All production dependencies
-all = [
-    "latex-tool-generator[orchestration,channels,api,app]"
-]
-
-# Development environment (all + dev)
-full = [
-    "latex-tool-generator[all,dev,docker]"
-]
-
-[project.scripts]
-cvrepo = "cvrepo.cli:main"
-orchestrator = "orchestration.projects_orchestrator:main"
-orchestrator-experiences = "orchestration.experiences_orchestrator:main"
-orchestrator-formations = "orchestration.formations_orchestrator:main"
-orchestrator-postgres-mirror = "orchestration.postgres_mirror:main"
-
-[project.urls]
-Homepage = "https://github.com/cytech/latex_tool_generator"
-Documentation = "https://github.com/cytech/latex_tool_generator/tree/main/docs"
-Repository = "https://github.com/cytech/latex_tool_generator.git"
-Issues = "https://github.com/cytech/latex_tool_generator/issues"
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.package-dir]
-"" = "src"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-# Black configuration
-[tool.black]
-line-length = 100
-target-version = ["py311", "py312"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | __pycache__
-)/
-'''
-
-# Pytest configuration
-[tool.pytest.ini_options]
-minversion = "7.0"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-addopts = "-v --tb=short --strict-markers"
-markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-    "slow: Slow tests",
-    "e2e: End-to-end tests",
-]
-
-# Coverage configuration
-[tool.coverage.run]
-source = ["src"]
-omit = [
-    "*/tests/*",
-    "*/__main__.py",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "if typing.TYPE_CHECKING:",
-]
-
-# Pylint configuration
-[tool.pylint."messages control"]
-disable = [
-    "C0111",  # missing-docstring
-    "R0913",  # too-many-arguments
-    "C0302",  # too-many-lines
-]
-
-# MyPy configuration
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true

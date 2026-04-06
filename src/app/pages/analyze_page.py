@@ -6,9 +6,9 @@ import logging
 
 import streamlit as st
 
-from streamlit.components import render_error, render_info_card, render_json_block
-from streamlit.pages.base_page import BasePage
-from streamlit.services import ApiClientError
+from app.components.widgets import render_error, render_info_card, render_json_block
+from app.pages.base_page import BasePage
+from app.services import ApiClientError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -22,8 +22,8 @@ class AnalyzePage(BasePage):
     def render(self) -> None:
         render_info_card("Analyse Offre", "Charge une offre depuis son identifiant.")
 
-        default_offer_id = st.session_state.get("offer_id", "")
-        offer_id = st.text_input("Offer ID", value=default_offer_id, key="analyze_offer_id")
+        default_offer_id: str = str(st.session_state.get("offer_id") or "")
+        offer_id: str = st.text_input("Offer ID", value=default_offer_id, key="analyze_offer_id")
 
         if st.button("Charger l'offre", key="btn_analyze"):
             if not offer_id.strip():
