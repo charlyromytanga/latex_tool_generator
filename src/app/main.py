@@ -53,19 +53,21 @@ class StreamlitApplication:
         css_path = Path(__file__).resolve().parent / "assets" / "theme.css"
         try:
             css_content = css_path.read_text(encoding="utf-8")
-            current_theme = st.session_state.get("theme", "light")
-            css_override = ""
-            if current_theme == "dark":
-                css_override = """
-                .stApp {
-                    background: linear-gradient(160deg, #171f2a 0%, #12212c 45%, #17231f 100%);
-                    color: #dbe7f3;
-                }
-                section[data-testid=\"stSidebar\"] {
-                    background: linear-gradient(180deg, #1a2632 0%, #15202a 100%);
-                    border-right: 1px solid #2a3a4a;
-                }
-                """
+            # Forcer le thème clair partout
+            css_override = """
+            html, body, .stApp {
+                background: #fff !important;
+                color: var(--color-2, #1a2632) !important;
+            }
+            section[data-testid=\"stSidebar\"] {
+                background: #fff !important;
+                color: var(--color-2, #1a2632) !important;
+                border-right: 1px solid #e0e0e0;
+            }
+            .stMarkdown, .stText, .stCaption, .stHeader, .stTitle, .stDataFrame, .stTable, .stTextInput, .stTextArea, .stButton, .stSelectbox, .stRadio, .stCheckbox, .stSlider, .stNumberInput, .stDateInput, .stTimeInput, .stColorPicker, .stFileUploader, .stForm, .stFormSubmitButton, .stMetric, .stTabs, .stTab, .stExpander, .stAlert, .stSuccess, .stWarning, .stError, .stInfo, .stCodeBlock, .stJson, .stImage, .stAudio, .stVideo, .stDownloadButton, .stProgress, .stSpinner, .stGraph, .stPlotlyChart, .stVegaLiteChart, .stDeckGlChart, .stBokehChart, .stPyDeckChart, .stAltairChart, .stMap, .stGraphvizChart, .stPlot, .stLatex, .stMarkdownContainer, .stMarkdownBlock, .stMarkdownText, .stMarkdownInline, .stMarkdownList, .stMarkdownTable, .stMarkdownCode, .stMarkdownMath, .stMarkdownLink, .stMarkdownImage, .stMarkdownHtml, .stMarkdownHr, .stMarkdownBlockquote, .stMarkdownHeading, .stMarkdownParagraph, .stMarkdownListItem, .stMarkdownTableCell, .stMarkdownTableRow, .stMarkdownTableHeader, .stMarkdownTableBody, .stMarkdownTableFooter, .stMarkdownTableCaption, .stMarkdownTableColgroup, .stMarkdownTableCol, .stMarkdownTableHead, .stMarkdownTableFoot, .stMarkdownTableRowGroup, .stMarkdownTableRowHeader, .stMarkdownTableRowBody, .stMarkdownTableRowFooter, .stMarkdownTableRowColgroup, .stMarkdownTableRowCol, .stMarkdownTableRowHead, .stMarkdownTableRowFoot, .stMarkdownTableRowBody, .stMarkdownTableRowHeader, .stMarkdownTableRowFooter, .stMarkdownTableRowColgroup, .stMarkdownTableRowCol, .stMarkdownTableRowHead, .stMarkdownTableRowFoot, .stMarkdownTableRowBody, .stMarkdownTableRowHeader, .stMarkdownTableRowFooter, .stMarkdownTableRowColgroup, .stMarkdownTableRowCol, .stMarkdownTableRowHead, .stMarkdownTableRowFoot, .stMarkdownTableRowBody, .stMarkdownTableRowHeader, .stMarkdownTableRowFooter {
+                color: var(--color-2, #1a2632) !important;
+            }
+            """
             st.markdown(f"<style>{css_content}\n{css_override}</style>", unsafe_allow_html=True)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception("Unable to apply Streamlit CSS theme")
