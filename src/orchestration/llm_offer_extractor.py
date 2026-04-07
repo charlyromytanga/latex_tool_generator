@@ -305,6 +305,7 @@ def extract_offer_fields_with_openai(markdown_content: str) -> dict:
         )
         # Extraction du JSON de la réponse
         content = response.choices[0].message.content
+        print("[DEBUG] Réponse OpenAI brute :\n", content)
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             return json.loads(match.group(0))
