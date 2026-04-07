@@ -51,3 +51,6 @@ coverage.xml
 dist/
 build/
 *.egg.env
+
+# .env file containing sensitive information
+.env
