@@ -1,0 +1,1 @@
+SELECT * FROM offers_raw WHERE offer_id = 'offer-20260407190310-4ec02f02';

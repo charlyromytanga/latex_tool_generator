@@ -1,7 +1,110 @@
+input::placeholder,
+textarea::placeholder,
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: #888 !important;
+    opacity: 1 !important;
+}
+/* Boutons Streamlit */
+.stButton > button {
+    background-color: var(--color-3) !important;
+    color: #fff !important;
+    border: 1px solid var(--color-1) !important;
+}
+.stButton > button:hover {
+    background-color: var(--color-19) !important;
+}
+
+/* Selectbox */
+.stSelectbox, .stSelectbox select {
+    background-color: var(--color-16) !important;
+    color: var(--color-2) !important;
+}
+
+/* Cases à cocher */
+.stCheckbox input[type="checkbox"] {
+    accent-color: var(--color-3) !important;
+    background-color: var(--color-16) !important;
+    border: 1px solid var(--color-2) !important;
+}
+/* Personnalisation des zones de saisie Streamlit */
+input, textarea, select, .stTextInput input, .stTextArea textarea {
+    background-color: #fff !important;
+    color: var(--color-2) !important;
+    border: 1px solid var(--color-2) !important;
+}
+/* ===========================
+   FOOTER PERSONNALISÉ
+=========================== */
+.custom-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #FFC600;
+    color: black;
+    text-align: center;
+    font-size: 12px;
+    padding: 10px;
+    font-family: var(--font-default);
+    z-index: 999;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+.custom-footer p {
+    margin: 0;
+}
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.footer-left,
+.footer-center,
+.footer-right {
+    flex: 1;
+    text-align: center;
+}
+.footer-left {
+    text-align: left;
+}
+.footer-right {
+    text-align: right;
+}
+/* ===========================
+     RESPONSIVE DESIGN
+=========================== */
+@media (max-width: 900px) {
+    .stApp {
+        padding: 0.5rem !important;
+    }
+    h1, h2, h3 {
+        font-size: 1.2em !important;
+    }
+    .stButton, .stTextInput, .stSelectbox, .stRadio, .stCheckbox {
+        font-size: 1em !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .stApp {
+        padding: 0.2rem !important;
+    }
+    h1, h2, h3 {
+        font-size: 1em !important;
+    }
+    .stButton, .stTextInput, .stSelectbox, .stRadio, .stCheckbox {
+        font-size: 0.95em !important;
+    }
+    .stDataFrame, .stTable {
+        font-size: 0.9em !important;
+        overflow-x: auto !important;
+    }
+}
 /* En-tête Streamlit (barre noire du haut) en blanc */
 header[data-testid="stHeader"] {
     background: #fff !important;
-    color: var(--color-2) !important;
+    color: var(--color-32) !important;
     box-shadow: 0 1px 0 #ececec;
 }
 /* ===========================
@@ -41,23 +144,33 @@ header[data-testid="stHeader"] {
     --color-31: #0F5C55;
     --color-32: #1C2325;
 
-    --font-default: 'Segoe UI', sans-serif;
-    --font-title: 'Segoe UI', sans-serif;
-    --font-title-bold: 'Segoe UI Bold', sans-serif;
+    --font-default: Calibri, Arial, Helvetica, sans-serif;
+    --font-title: Calibri, Arial, Helvetica, sans-serif;
+    --font-title-bold: Calibri, Arial, Helvetica, sans-serif;
 
-    --font-size-title: 14px;
+    --font-size-title: 16px;
     --sidebar-width: 250px;
 }
 
 html, body, .stApp {
     background: #fff !important;
     color: var(--color-2) !important;
+    font-family: var(--font-default) !important;
+    font-size: 16px !important;
 }
+
+/* Fond de page légèrement sombre quand un champ est focus */
+.stApp:focus-within {
+    background: #efeeee !important;
+    transition: background 0s; 
+}
+
 
 section[data-testid="stSidebar"] {
     background: #fff !important;
     color: var(--color-2) !important;
     border-right: 1px solid #e0e0e0;
+    font-family: var(--font-default) !important;
 }
 
 /* Couleur du texte de la sidebar (titres, liens, etc.) */
@@ -70,6 +183,11 @@ section[data-testid="stSidebar"] .css-1aumxhk /* fallback */ {
     color: var(--color-2) !important;
 }
 
-h1, h2, h3 {
-    /* ...suite du CSS... */
+.hero {
+    background: linear-gradient(120deg, var(--color-2), var(--color-3), var(--color-5));
+    color: white;
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.15);
 }

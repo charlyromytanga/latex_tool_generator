@@ -1,20 +1,22 @@
+
 """Main OOP Streamlit application orchestrator."""
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+import streamlit as st
 from pathlib import Path
 
-import streamlit as st
 
 from app.domain.tab_service import TabService
-from app.pages import (
-    AnalyzePage,
-    GenerationPage,
-    MatchingPage,
-    PreviewPage,
-    SettingsPage,
-    UploadPage,
+from app.components.widgets import (
+    upload_offer_widget,
+    analyze_offer_widget,
+    matching_widget,
+    generation_widget,
+    preview_widget,
+    settings_widget,
 )
 from app.services import RecruitmentApiClient
 from app.utils_functions import AppSettings, SessionPayload
@@ -35,8 +37,8 @@ class StreamlitApplication:
         st.set_page_config(page_title="Recruitment Assistant", layout="wide")
         self._init_session_state()
         self._apply_styles()
-        self._render_sidebar()
         self._render_pages()
+        self._render_footer()
 
     def _init_session_state(self) -> None:
         payload = SessionPayload(
@@ -73,38 +75,50 @@ class StreamlitApplication:
             LOGGER.exception("Unable to apply Streamlit CSS theme")
 
     def _render_sidebar(self) -> None:
-        with st.sidebar:
-            st.markdown("## Recruitment Assistant")
-            st.caption("Design inspire de l'experience JobTeaser CY Tech")
-            st.caption(f"API base URL: {self.settings.api_base_url}")
-            try:
-                health = self.api_client.health()
-                st.success(f"API: {health.get('status', 'unknown')}")
-            except Exception:  # pylint: disable=broad-except
-                LOGGER.exception("API health check failed")
-                st.warning("API indisponible")
+        # Désactivé : plus de sidebar
+        pass
 
     def _render_pages(self) -> None:
-        upload_tab, analyze_tab, matching_tab, generation_tab, preview_tab, settings_tab = st.tabs(
-            ["Upload Offre", "Analyse", "Matching", "Generation", "Preview", "Settings"]
+        st.markdown(
+            """
+            <div class='hero'>
+                <h1>Recruitment Assistant</h1>
+                <p>Candidate management and recruitment assistance.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
+        # Appelle des widgets
+        col_updoad, col_analyze = st.columns(2)
+        with col_updoad:
+            upload_offer_widget(self.tab_service)
+        with col_analyze:
+            analyze_offer_widget(self.tab_service)
+        matching_widget(self.tab_service)
+        generation_widget(self.tab_service)
+        preview_widget(self.tab_service)
+        settings_widget()
 
-        pages = [
-            (upload_tab, UploadPage(self.tab_service)),
-            (analyze_tab, AnalyzePage(self.tab_service)),
-            (matching_tab, MatchingPage(self.tab_service)),
-            (generation_tab, GenerationPage(self.tab_service)),
-            (preview_tab, PreviewPage(self.tab_service)),
-            (settings_tab, SettingsPage(self.tab_service)),
-        ]
+    def _render_footer(self) -> None:
+        try:
+            health = self.api_client.health()
+            api_status = f"API: {health.get('status', 'unknown')}"
+        except Exception:
+            LOGGER.exception("API health check failed")
+            api_status = "API indisponible"
 
-        for tab, page in pages:
-            with tab:
-                try:
-                    page.render()
-                except Exception:  # pylint: disable=broad-except
-                    LOGGER.exception("Unhandled page error: %s", page.name)
-                    st.error(f"Erreur inattendue dans l'onglet: {page.name}")
+        st.markdown(
+            f'''
+            <footer class="custom-footer">
+                <div class="footer-content">
+                    <div class="footer-left"><strong>Recruitment Assistant</strong></div>
+                    <div class="footer-center">API base URL : <strong>{self.settings.api_base_url}</strong></div>
+                    <div class="footer-right">{api_status} | © {datetime.now().year}</div>
+                </div>
+            </footer>
+            ''',
+            unsafe_allow_html=True
+        )
 
 
 def run_streamlit_app() -> None:

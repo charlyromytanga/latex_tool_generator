@@ -7,7 +7,7 @@ import logging
 import streamlit as st
 
 from app.components.widgets import render_error, render_info_card, render_json_block
-from app.pages.base_page import BasePage
+from app.navigator_pages.base_page import BasePage
 from app.services import ApiClientError
 
 

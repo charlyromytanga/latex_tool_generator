@@ -197,21 +197,23 @@ class OfferIngestionOrchestrator:
 
     def __init__(self, config: OrchestrationConfig) -> None:
         self.config = config
-        self.parser = MarkdownOfferParser()
+        # self.parser = MarkdownOfferParser()  # Désormais inutilisé
         self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
 
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
+        from .llm_offer_extractor import extract_offer_fields_with_openai
         reader = OfferSourceReader(offer_path)
         raw_text = reader.read()
-        sections = self.parser.parse(raw_text)
+        # Extraction via OpenAI
+        sections = extract_offer_fields_with_openai(raw_text)
 
         offer_id = f"offer-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:8]}"
         record = OfferRecord(
             offer_id=offer_id,
-            company_name=str(sections["company"]),
-            location=str(sections["location"]),
-            country=str(sections["country"]),
-            tier=str(sections["tier"]),
+            company_name=str(sections.get("company_name", "Unknown Company")),
+            location=str(sections.get("location", "Unknown")),
+            country=str(sections.get("country", "Unknown")),
+            tier=str(sections.get("tier", "tier-2")),
             raw_text=raw_text,
             sections_json=json.dumps(sections, ensure_ascii=True),
             source_file=str(offer_path),

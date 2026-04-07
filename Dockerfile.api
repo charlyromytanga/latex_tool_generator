@@ -13,10 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+
+# Installer les dépendances Python centralisées
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Install API dependencies from project metadata.
 COPY pyproject.toml README.md ./
 
-# Copier le code source (tout est maintenant dans src)
 COPY src ./src
 RUN pip install --upgrade pip && pip install -e ".[api]"
 

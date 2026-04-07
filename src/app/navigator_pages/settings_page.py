@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.pages.base_page import BasePage
+from app.navigator_pages.base_page import BasePage
 
 
 class SettingsPage(BasePage):

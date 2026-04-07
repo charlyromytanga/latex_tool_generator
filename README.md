@@ -22,7 +22,7 @@ Plateforme Python pour automatiser la génération de documents de candidature (
 
 ### 1) Prérequis
 
-- Python 3.11+
+- Python 3.12+
 - `uv` (recommandé)
 - LaTeX (si rendu PDF local hors Docker)
 
