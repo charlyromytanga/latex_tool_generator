@@ -1,0 +1,84 @@
+{
+  "project_id": "api_prime_pricing",
+  "repo_name": "api_prime_pricing",
+  "title": "API Prime Pricing",
+  "description": "Projet de prédiction de prime auto basé sur deux modèles ML (fréquence et sévérité), exposés via une API FastAPI et une application Streamlit.",
+  "stack": [
+    "Python 3.11+",
+    "FastAPI",
+    "Streamlit",
+    "scikit-learn",
+    "pandas",
+    "uv",
+    "SQLite",
+    "Docker",
+    "GitHub Actions"
+  ],
+  "main_features": [
+    "API FastAPI pour l'inférence ML (fréquence, sévérité, prime)",
+    "Application Streamlit pour la simulation utilisateur",
+    "Modèles ML exportés et utilisés en inference",
+    "Base de données SQLite locale",
+    "CI/CD automatisé avec GitHub Actions et Render"
+  ],
+  "folders": {
+    "src/app/": "Application Streamlit principale",
+    "src/api/backend/": "API FastAPI",
+    "src/models/": "Pipeline et scripts ML",
+    "output_models/modeles/": "Artefacts JSON des modèles",
+    "db/": "Base SQLite locale"
+  },
+  "prod_urls": {
+    "api": "https://api-prime-pricing.onrender.com",
+    "app": "https://api-prime-pricing-app-cas.onrender.com"
+  },
+  "api_endpoints": [
+    "GET /",
+    "GET /health",
+    "GET /predictio_frequence/health",
+    "GET /predictio_severite/health",
+    "POST /predict_frequence",
+    "POST /predict_severite",
+    "POST /predict_price",
+    "GET /contrats?limit=20",
+    "GET /contrats/{id_contrat}",
+    "POST /contrats",
+    "PUT /contrats/{id_contrat}",
+    "GET /docs (OpenAPI)"
+  ],
+  "install": [
+    "uv venv",
+    "source .venv/bin/activate",
+    "uv pip install -r requirements.txt"
+  ],
+  "run": [
+    "uvicorn src.api.backend.server:app --host 0.0.0.0 --port 8000",
+    "streamlit run src/app/app.py --server.address=0.0.0.0 --server.port=8501"
+  ],
+  "quality": [
+    "bash lint_and_typecheck.sh"
+  ],
+  "test": [
+    "pytest"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Format/lint: black, ruff, flake8, pylint",
+      "Tests: pytest",
+      "Validation Docker: build + smoke test des endpoints"
+    ],
+    "cd": [
+      "Déclenchement automatique si la CI est success sur main",
+      "Appel des deux deploy hooks Render: api_prime_pricing, api_prime_pricing_app"
+    ]
+  },
+  "contributors": [
+    "charlyromytanga",
+    "DiamantNoire"
+  ],
+  "languages": {
+    "Python": 96.8,
+    "CSS": 2.8,
+    "Other": 0.4
+  }
+}

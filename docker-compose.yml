@@ -41,7 +41,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: src/api/Dockerfile
     container_name: latex-tool-api
     ports:
       - "8000:8000"
@@ -73,7 +73,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.app
+      dockerfile: src/app/Dockerfile
     container_name: latex-tool-app
     ports:
       - "8501:8501"
@@ -103,7 +103,7 @@ services:
   runner:
     build:
       context: .
-      dockerfile: Dockerfile.runner
+      dockerfile: src/orchestration/Dockerfile
     container_name: latex-tool-runner
     volumes:
       - ./db:/app/db

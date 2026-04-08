@@ -1,4 +1,4 @@
-[project]
+ [project]
 name = "latex-tool-generator"
 version = "0.2.0"
 description = "Plateforme de génération intelligente de documents de candidature (CV, lettres, etc.) orchestrée par IA."
@@ -56,6 +56,51 @@ dependencies = [
     "torch",
     "keybert",
     "langdetect"
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi",
+    "uvicorn[standard]",
+    "spacy",
+    "keybert",
+    "sentence-transformers",
+    "langdetect",
+    "sqlalchemy",
+    "psycopg[binary]",
+    "pysqlite3-binary",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+    "requests",
+    "httpx",
+    "aiohttp",
+    "tenacity",
+    "python-dateutil",
+    "pytz",
+    "python-json-logger",
+    "prometheus-client",
+    "ollama",
+    "bleach",
+    "markdownify",
+    "Jinja2",
+    "PyPDF2",
+    "latexcodec",
+    "pylatexenc",
+    "python-docx",
+    "markdown",
+    "chevron",
+    "anthropic"
+]
+app = [
+    "streamlit",
+    "streamlit-antd-components",
+    "pydantic",
+    "pydantic-settings",
+    "requests",
+    "httpx",
+    "aiohttp",
+    "python-dotenv"
 ]
 
 [build-system]

@@ -1,0 +1,46 @@
+{
+  "project_id": "energy_derivatives_pricing",
+  "repo_name": "energy_derivatives_pricing",
+  "title": "Energy Derivatives Pricing",
+  "description": "C++ pricing engines pour power, gas et spreads (Spark, Crack, Forwards), avec bindings Python et framework de benchmark.",
+  "stack": [
+    "C++20",
+    "Eigen",
+    "Boost",
+    "CMake",
+    "GoogleTest",
+    "pybind11"
+  ],
+  "main_features": [
+    "Spark Spread",
+    "Crack Spread",
+    "Forward contracts",
+    "Python bindings (pybind11)",
+    "Benchmark framework"
+  ],
+  "folders": {},
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "cmake -S . -B build",
+    "cmake --build build"
+  ],
+  "run": [],
+  "quality": [],
+  "test": [
+    "ctest",
+    "GoogleTest"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Lint, tests, build CMake"
+    ],
+    "cd": []
+  },
+  "contributors": [],
+  "languages": {
+    "C++": 90,
+    "CMake": 5,
+    "Python": 5
+  }
+}

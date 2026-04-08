@@ -9,7 +9,7 @@ import argparse
 import json
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Sequence
@@ -24,19 +24,16 @@ from .spacy_offer_extractor import extract_entities
 LOGGER = logging.getLogger(__name__)
 
 
+
+# Nouveau record pour la table offers unifiée
 @dataclass(frozen=True)
 class OfferRecord:
-    """Normalized payload persisted in offers_raw."""
-
     offer_id: str
-    company_name: str
-    location: str
-    country: str
-    tier: str
-    raw_text: str
-    sections_json: str
-    source_file: str
-    extracted_at: str
+    offer_text: str
+    metadata_json: str
+    entities_json: str
+    keywords_json: str
+    created_at: str
 
 
 class OfferSourceReader:
@@ -138,60 +135,40 @@ class MarkdownOfferParser:
         return "tier-2"
 
 
+
 class OfferRepositoryGateway:
-    """Database gateway for offers_raw writes."""
+    """Database gateway for offers (nouvelle structure)."""
 
     def __init__(self, database: Database, schema_path: Path) -> None:
         self.database = database
         self.schema_path = schema_path.resolve()
 
     def ensure_schema(self) -> None:
-        if self.database.has_table("offers_raw"):
+        if self.database.has_table("offers"):
             return
-
         if not self.schema_path.exists():
             raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-
         self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
 
     def insert_offer(self, record: OfferRecord) -> None:
         sql = """
-        INSERT INTO offers_raw (
+        INSERT INTO offers (
             offer_id,
-            company_name,
-            location,
-            country,
-            tier,
-            raw_text,
-            sections_json,
-            source_file,
-            extracted_at
+            offer_text,
+            metadata_json,
+            entities_json,
+            keywords_json,
+            created_at
         ) VALUES (
             :offer_id,
-            :company_name,
-            :location,
-            :country,
-            :tier,
-            :raw_text,
-            :sections_json,
-            :source_file,
-            :extracted_at
+            :offer_text,
+            :metadata_json,
+            :entities_json,
+            :keywords_json,
+            :created_at
         )
         """
-
-        payload = {
-            "offer_id": record.offer_id,
-            "company_name": record.company_name,
-            "location": record.location,
-            "country": record.country,
-            "tier": record.tier,
-            "raw_text": record.raw_text,
-            "sections_json": record.sections_json,
-            "source_file": record.source_file,
-            "extracted_at": record.extracted_at,
-        }
-
-        self.database.execute(sql, payload)
+        self.database.execute(sql, asdict(record))
 
 
 class OfferIngestionOrchestrator:
@@ -202,6 +179,7 @@ class OfferIngestionOrchestrator:
         # self.parser = MarkdownOfferParser()  # Désormais inutilisé
         self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
 
+
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
         from .spacy_offer_extractor import extract_entities
         from .keywords_extractor import extract_keywords
@@ -209,51 +187,32 @@ class OfferIngestionOrchestrator:
         import uuid
         reader = OfferSourceReader(offer_path)
         raw_text = reader.read()
-        # Extraction via spaCy
         entities = extract_entities(raw_text, lang="fr")
-        # Extraction de mots-clés
         keywords = extract_keywords(raw_text, top_k=10)
-        # Structuration des sections
-        sections = {
-            "entities": entities,
-            "keywords": keywords
-        }
 
         offer_id = f"offer-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
+        now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        metadata = {
+            "source_file": str(offer_path),
+            "ingested_at": now
+        }
         record = OfferRecord(
             offer_id=offer_id,
-            company_name=str(sections.get("company_name", "Unknown Company")),
-            location=str(sections.get("location", "Unknown")),
-            country=str(sections.get("country", "Unknown")),
-            tier=str(sections.get("tier", "tier-2")),
-            raw_text=raw_text,
-            sections_json=json.dumps(sections, ensure_ascii=True),
-            source_file=str(offer_path),
-            extracted_at=datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            offer_text=raw_text,
+            metadata_json=json.dumps(metadata, ensure_ascii=True),
+            entities_json=json.dumps(entities, ensure_ascii=True),
+            keywords_json=json.dumps(keywords, ensure_ascii=True),
+            created_at=now
         )
-
         self.repo.ensure_schema()
         self.repo.insert_offer(record)
-
-        # Insertion des mots-clés dans offer_keywords
-        keywords_payload = {
-            "keyword_id": f"kw-{uuid.uuid4().hex[:12]}",
-            "offer_id": offer_id,
-            "keywords_json": json.dumps(keywords, ensure_ascii=True),
-            "model_version": "spacy-hf-v1"
-        }
-        sql = """
-        INSERT INTO offer_keywords (keyword_id, offer_id, keywords_json, model_version)
-        VALUES (:keyword_id, :offer_id, :keywords_json, :model_version)
-        """
-        self.repo.database.execute(sql, keywords_payload)
-
         LOGGER.info("Offer ingested: offer_id=%s source=%s", offer_id, offer_path)
         return {
             "offer_id": offer_id,
-            "company_name": record.company_name,
-            "tier": record.tier,
-            "country": record.country,
+            "offer_text": raw_text,
+            "entities": entities,
+            "keywords": keywords,
+            "metadata": metadata,
         }
 
 

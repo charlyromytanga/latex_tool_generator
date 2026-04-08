@@ -331,6 +331,11 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Logging verbosity",
     )
+    parser.add_argument(
+        "--all-json",
+        action="store_true",
+        help="Insère tous les projets JSON trouvés dans data/projects/ au lieu du README du repo courant."
+    )
     return parser.parse_args(argv)
 
 
@@ -357,22 +362,88 @@ def main(argv: Sequence[str] | None = None) -> int:
         else (config.postgres_schema_path if backend == "postgresql" else config.sqlite_schema_path)
     )
 
-    orchestrator = ProjectBootstrapOrchestrator(
-        repo_path=Path(args.repo_path),
-        database_url=database_url,
-        db_path=db_path,
-        schema_path=schema_path,
-        branch=args.branch,
-        docker_image=args.docker_image,
-    )
+    if getattr(args, "all_json", False):
+        # Mode insertion de tous les projets JSON
+        from uuid import uuid4
+        projects_dir = Path("data/projects")
+        if not projects_dir.exists():
+            LOGGER.error("Le dossier data/projects/ n'existe pas.")
+            return 1
+        import json as pyjson
+        from orchestration.database import Database
+        db = Database(database_url)
+        # S'assurer que la table existe
+        gateway = ProjectRepositoryGateway(db, schema_path)
+        gateway.ensure_schema()
+        count = 0
+        for json_path in projects_dir.glob("*.json"):
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = pyjson.load(f)
+            payload = {
+                "project_id": str(uuid4()),
+                "repo_name": data.get("repo_name", ""),
+                "repo_url": data.get("repo_url", f"file://{json_path.stem}"),
+                "description": data.get("description", ""),
+                "languages_json": pyjson.dumps(data.get("languages", {}), ensure_ascii=True),
+                "technologies_json": pyjson.dumps(data.get("stack", {}), ensure_ascii=True),
+                "readme_full_text": data.get("description", ""),
+                "stars": None,
+                "last_updated": None,
+            }
+            sql = """
+            INSERT INTO my_projects (
+                project_id,
+                repo_name,
+                repo_url,
+                description,
+                languages_json,
+                technologies_json,
+                readme_full_text,
+                stars,
+                last_updated
+            ) VALUES (
+                :project_id,
+                :repo_name,
+                :repo_url,
+                :description,
+                :languages_json,
+                :technologies_json,
+                :readme_full_text,
+                :stars,
+                :last_updated
+            )
+            ON CONFLICT(repo_name) DO UPDATE SET
+                repo_url = excluded.repo_url,
+                description = excluded.description,
+                languages_json = excluded.languages_json,
+                technologies_json = excluded.technologies_json,
+                readme_full_text = excluded.readme_full_text,
+                stars = excluded.stars,
+                last_updated = excluded.last_updated,
+                indexed_at = CURRENT_TIMESTAMP
+            """
+            db.execute(sql, payload)
+            count += 1
+            LOGGER.info(f"Projet inséré/MAJ : {payload['repo_name']}")
+        LOGGER.info(f"Insertion terminée : {count} projets traités.")
+        return 0
+    else:
+        orchestrator = ProjectBootstrapOrchestrator(
+            repo_path=Path(args.repo_path),
+            database_url=database_url,
+            db_path=db_path,
+            schema_path=schema_path,
+            branch=args.branch,
+            docker_image=args.docker_image,
+        )
 
-    try:
-        orchestrator.run()
-    except Exception:  # pylint: disable=broad-except
-        LOGGER.exception("Bootstrap failed")
-        return 1
+        try:
+            orchestrator.run()
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception("Bootstrap failed")
+            return 1
 
-    return 0
+        return 0
 
 
 if __name__ == "__main__":

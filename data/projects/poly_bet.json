@@ -1,0 +1,64 @@
+{
+  "project_id": "poly_bet",
+  "repo_name": "poly_bet",
+  "title": "POLY BET",
+  "description": "La plateforme où l’info devient un jeu. Plateforme de paris décentralisée avec frontend React, backend Node.js, smart contracts Ethereum, et orchestration Docker.",
+  "stack": [
+    "React (Vite)",
+    "Node.js",
+    "Express",
+    "Solidity (Ethereum)",
+    "web3.js",
+    "Docker",
+    "nginx"
+  ],
+  "main_features": [
+    "Frontend SPA responsive (React)",
+    "Backend API REST (Node.js/Express)",
+    "Smart contracts Ethereum (Solidity)",
+    "Oracles pour résolution de paris",
+    "Gamification (badges, niveaux)",
+    "Tunnel HTTPS mobile (ngrok)",
+    "DevOps Docker-compose, nginx, scripts shell"
+  ],
+  "folders": {
+    "frontend/": "SPA React (Vite)",
+    "backend/": "API Node.js/Express",
+    "contracts/": "Smart contracts Solidity",
+    "scripts/": "Shell setup/tests",
+    "docs/": "Documentation onboarding",
+    "infra/": "Docker-compose, nginx"
+  },
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "cd frontend && npm install",
+    "cd backend && npm install"
+  ],
+  "run": [
+    "docker-compose up --build"
+  ],
+  "quality": [],
+  "test": [
+    "npm test (frontend)",
+    "npm test (backend)"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Lint, tests, build Docker"
+    ],
+    "cd": [
+      "Déploiement orchestré Docker/nginx"
+    ]
+  },
+  "contributors": [
+    "charlyromytanga"
+  ],
+  "languages": {
+    "JavaScript": 62.0,
+    "HTML": 22.9,
+    "Shell": 9.5,
+    "Dockerfile": 5.0,
+    "CSS": 0.6
+  }
+}

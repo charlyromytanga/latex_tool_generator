@@ -1,0 +1,50 @@
+{
+  "project_id": "proj_sbt_scala_cmd",
+  "repo_name": "proj_sbt_scala_cmd",
+  "title": "Projet Scala S3 - proj_sbt_scala_cmd",
+  "description": "Projet Scala utilisant SBT pour la gestion des dépendances, configuration Spark, logging, et environnement de développement sous IntelliJ IDEA.",
+  "stack": [
+    "Scala 2.13.15",
+    "SBT",
+    "Apache Spark 3.3.0",
+    "IntelliJ IDEA"
+  ],
+  "main_features": [
+    "Analyse de données distribuées avec Spark",
+    "Gestion des dépendances avec SBT",
+    "Configuration avancée du logging (log4j)",
+    "Environnement de développement IntelliJ IDEA"
+  ],
+  "folders": {
+    "SBT/": "Gestion des dépendances et configuration (build.sbt)",
+    "LOGGING/": "Configuration des logs (log4j.properties)",
+    "ENVIRONMENT/": "Environnement de développement IntelliJ IDEA",
+    "src/": "Code source Scala",
+    "target/": "Fichiers générés",
+    "project/": "Fichiers de configuration SBT"
+  },
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "sbt compile"
+  ],
+  "run": [
+    "sbt run"
+  ],
+  "quality": [],
+  "test": [
+    "sbt test"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Build and test Scala project with SBT"
+    ],
+    "cd": []
+  },
+  "contributors": [
+    "charlyromytanga"
+  ],
+  "languages": {
+    "Scala": 100.0
+  }
+}

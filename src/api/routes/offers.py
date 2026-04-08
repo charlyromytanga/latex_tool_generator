@@ -50,27 +50,28 @@ def create_offer(payload: OfferCreateRequest) -> OfferResponse:
         raise api_error(500, "Unexpected error during offer ingestion", exc=exc) from exc
 
 
+
 @router.get("/{offer_id}", response_model=OfferDetailsResponse)
 def get_offer(offer_id: str) -> OfferDetailsResponse:
     try:
         config = get_config()
         database = get_database()
         offer_row = database.fetch_one(
-            "SELECT offer_id, company_name, tier, country, raw_text, sections_json FROM offers_raw WHERE offer_id = :offer_id",
+            "SELECT offer_id, offer_text, metadata_json, entities_json, keywords_json, created_at FROM offers WHERE offer_id = :offer_id",
             {"offer_id": offer_id},
         )
-
         if offer_row is None:
             raise api_error(404, f"Offer not found: {offer_id}")
 
-        keywords_row = database.fetch_one(
-            "SELECT keywords_json, model_version, extraction_timestamp FROM offer_keywords WHERE offer_id = :offer_id ORDER BY extraction_timestamp DESC LIMIT 1",
-            {"offer_id": offer_id},
-        )
+        # Extraction des champs JSON
+        metadata = safe_json_loads(offer_row.get("metadata_json", "{}"), fallback={})
+        entities = safe_json_loads(offer_row.get("entities_json", "[]"), fallback=[])
+        keywords = safe_json_loads(offer_row.get("keywords_json", "[]"), fallback=[])
 
+        # Matching
         matching_rows = database.fetch_all(
             """
-            SELECT match_type, exp_id, project_id, match_score, reasoning
+            SELECT match_type, target_id, match_score, reasoning
             FROM matching_scores
             WHERE offer_id = :offer_id
             ORDER BY match_score DESC
@@ -78,51 +79,41 @@ def get_offer(offer_id: str) -> OfferDetailsResponse:
             """,
             {"offer_id": offer_id},
         )
-
-        response = dict(offer_row)
-        sections = safe_json_loads(response.pop("sections_json", "{}"), fallback={})
-        keywords = (
-            safe_json_loads(str(keywords_row["keywords_json"]), fallback={}) if keywords_row else None
-        )
-
-        top_experiences: list[dict[str, object]] = []
-        top_projects: list[dict[str, object]] = []
+        top_formations, top_experiences, top_projects = [], [], []
         for row in matching_rows:
             item = dict(row)
             normalized = {
                 "score": float(item["match_score"]),
                 "reasoning": str(item["reasoning"]),
+                "target_id": item["target_id"]
             }
-            if item["match_type"] == "experience":
-                normalized["exp_id"] = item["exp_id"]
+            if item["match_type"] == "formation":
+                top_formations.append(normalized)
+            elif item["match_type"] == "experience":
                 top_experiences.append(normalized)
-            else:
-                normalized["project_id"] = item["project_id"]
+            elif item["match_type"] == "project":
                 top_projects.append(normalized)
 
-        scores: list[float] = []
-        for entry in top_experiences + top_projects:
-            score_value = entry.get("score")
-            if isinstance(score_value, (int, float)):
-                scores.append(float(score_value))
+        scores = [float(e["score"]) for e in top_formations + top_experiences + top_projects if isinstance(e.get("score"), (int, float))]
         confidence = round(float(sum(scores)) / len(scores), 4) if scores else 0.0
 
         recommendation = "SKIP"
-        if confidence >= config.go_threshold:
+        if confidence >= getattr(config, "go_threshold", 0.8):
             recommendation = "GO_TO_LEVEL3"
-        elif confidence >= config.review_threshold:
+        elif confidence >= getattr(config, "review_threshold", 0.5):
             recommendation = "REVIEW"
 
         return OfferDetailsResponse(
-            offer_id=str(response["offer_id"]),
-            company_name=str(response["company_name"]),
-            tier=str(response["tier"]),
-            country=str(response["country"]),
-            raw_text=str(response["raw_text"]),
-            sections=sections,
+            offer_id=str(offer_row["offer_id"]),
+            company_name=metadata.get("company_name", ""),
+            tier=metadata.get("tier", ""),
+            country=metadata.get("country", ""),
+            raw_text=str(offer_row["offer_text"]),
+            sections={"entities": entities},
             keywords_extracted=keywords,
             matching_results={
                 "confidence": confidence,
+                "top_formations": top_formations,
                 "top_experiences": top_experiences,
                 "top_projects": top_projects,
             },

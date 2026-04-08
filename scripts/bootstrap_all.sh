@@ -10,4 +10,4 @@ PYTHONPATH=src python3 src/orchestration/formations_orchestrator.py --db-path db
 PYTHONPATH=src python3 src/orchestration/experiences_orchestrator.py --db-path db/recruitment_assistant.db --schema-path db/schema_init.sql --log-level INFO
 
 # Appel orchestrateur projets
-PYTHONPATH=src python3 src/orchestration/projects_orchestrator.py --repo-path . --db-path db/recruitment_assistant.db --schema-path db/schema_init.sql --log-level INFO
+PYTHONPATH=src python3 src/orchestration/projects_orchestrator.py --db-path db/recruitment_assistant.db --schema-path db/schema_init.sql --log-level INFO --all-json

@@ -1,0 +1,44 @@
+{
+  "project_id": "cpp_finance_utils",
+  "repo_name": "cpp_finance_utils",
+  "title": "C++ Finance Utils",
+  "description": "Modules C++ pour maths, statistiques et optimisation.",
+  "stack": [
+    "C++20",
+    "Eigen",
+    "CMake",
+    "GoogleTest"
+  ],
+  "main_features": [
+    "Random number generation",
+    "Normal distribution",
+    "Statistics utilities",
+    "Time series helpers",
+    "Optimization functions"
+  ],
+  "folders": {},
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "cmake -S . -B build",
+    "cmake --build build"
+  ],
+  "run": [],
+  "quality": [],
+  "test": [
+    "ctest",
+    "GoogleTest"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Lint, tests, build CMake"
+    ],
+    "cd": []
+  },
+  "contributors": [],
+  "languages": {
+    "C++": 90,
+    "CMake": 5,
+    "Python": 5
+  }
+}

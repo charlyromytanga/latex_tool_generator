@@ -1,0 +1,52 @@
+{
+  "project_id": "portfolio_optimizer_demo",
+  "repo_name": "portfolio_optimizer_demo",
+  "title": "Portfolio Optimizer - Démo Web",
+  "description": "Démonstrateur d’optimisation de portefeuille basé sur Streamlit, landing page QR code, monitoring Grafana/Prometheus/Loki, orchestration Docker Compose.",
+  "stack": [
+    "Python",
+    "Streamlit",
+    "Docker Compose",
+    "Grafana",
+    "Prometheus",
+    "Loki",
+    "ngrok"
+  ],
+  "main_features": [
+    "Landing page QR code",
+    "Application web Streamlit",
+    "Monitoring Grafana/Prometheus/Loki",
+    "Démo smartphone via QR code",
+    "Orchestration Docker Compose"
+  ],
+  "folders": {
+    "apps/streamlit/": "Application web Streamlit",
+    "demo/": "Landing page QR code",
+    "docker-compose.yml": "Orchestration Docker"
+  },
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "docker compose up -d --build"
+  ],
+  "run": [
+    "docker compose up -d --build"
+  ],
+  "quality": [],
+  "test": [
+    "docker compose ps",
+    "docker compose logs -f landing",
+    "docker compose logs -f streamlit"
+  ],
+  "ci_cd": {
+    "ci": [],
+    "cd": []
+  },
+  "contributors": [],
+  "languages": {
+    "Python": 80,
+    "Shell": 10,
+    "Dockerfile": 5,
+    "YAML": 5
+  }
+}

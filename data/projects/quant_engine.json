@@ -1,0 +1,45 @@
+{
+  "project_id": "quant_engine",
+  "repo_name": "quant_engine",
+  "title": "Quant Engine",
+  "description": "C++20 quantitative finance engine : Black-Scholes, Monte Carlo, Greeks, Portfolio VaR, framework de benchmark.",
+  "stack": [
+    "C++20",
+    "CMake",
+    "GoogleTest",
+    "Eigen",
+    "pybind11"
+  ],
+  "main_features": [
+    "Black-Scholes option pricing",
+    "Monte Carlo simulation",
+    "Calcul des Greeks",
+    "Portfolio Value-at-Risk (VaR)",
+    "Framework de benchmark"
+  ],
+  "folders": {},
+  "prod_urls": {},
+  "api_endpoints": [],
+  "install": [
+    "cmake -S . -B build",
+    "cmake --build build"
+  ],
+  "run": [],
+  "quality": [],
+  "test": [
+    "ctest",
+    "GoogleTest"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Lint, tests, build CMake"
+    ],
+    "cd": []
+  },
+  "contributors": [],
+  "languages": {
+    "C++": 90,
+    "CMake": 5,
+    "Python": 5
+  }
+}

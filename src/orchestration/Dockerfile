@@ -15,19 +15,17 @@ RUN apt-get update && apt-get install -y \
     latexmk \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files
 
-COPY requirements.txt .
-
-# Install Python dependencies
+# Copier les dépendances Python
+COPY src/orchestration/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY src/ src/
-COPY db/ db/
-COPY templates/ templates/
-COPY data/ data/
-COPY scripts/ scripts/
+# Copier le code source (build context = racine du projet)
+COPY src ./src
+COPY db ./db
+COPY templates ./templates
+COPY data ./data
+COPY scripts ./scripts
 
 # Ensure scripts are executable
 RUN chmod +x scripts/*.sh

@@ -1,0 +1,78 @@
+{
+  "project_id": "steam_reco_system",
+  "repo_name": "steam_reco_system",
+  "title": "Steam Reco System (Low Latency + Search)",
+  "description": "Système de recommandation et recherche temps réel inspiré de Steam. Recommandations < 100ms, recherche + ranking intégrés, simulation d’architecture production (API, search, observabilité).",
+  "stack": [
+    "Python 3.11+",
+    "FastAPI",
+    "Streamlit",
+    "MongoDB",
+    "Elasticsearch",
+    "SQLite FTS5",
+    "Whoosh",
+    "Prometheus",
+    "Grafana",
+    "Docker",
+    "GitHub Actions"
+  ],
+  "main_features": [
+    "Recommandation temps réel (<100ms)",
+    "Recherche avancée multi-moteurs (Elasticsearch, SQLite FTS5, Whoosh)",
+    "Benchmarks automatisés (latence, mémoire, cache)",
+    "Observabilité complète (Prometheus, Grafana)",
+    "Déploiement full stack Docker/Render"
+  ],
+  "folders": {
+    "pipelines/ingestion/": "Ingestion Kaggle, MongoDB",
+    "pipelines/preprocessing/": "Nettoyage et features",
+    "pipelines/features/": "Features avancées",
+    "pipelines/indexing/": "Indexation Elasticsearch",
+    "services/api/app/": "API FastAPI + moteurs de recherche",
+    "services/frontend/": "App Streamlit",
+    "infra/observability/": "Stack Prometheus + Grafana",
+    "notebooks/": "Exploration/ingestion",
+    "models/": "Modèles de ranking",
+    "scripts/": "Benchmarks, orchestration"
+  },
+  "prod_urls": {},
+  "api_endpoints": [
+    "GET /search",
+    "GET /recommend",
+    "GET /metrics",
+    "GET /metrics-json"
+  ],
+  "install": [
+    "uv venv .venv",
+    "source .venv/bin/activate",
+    "uv pip install -r pipelines/ingestion/requirements.txt"
+  ],
+  "run": [
+    "bash scripts/run_pipeline.sh",
+    "docker compose -f infra/docker-compose.yml up --build"
+  ],
+  "quality": [],
+  "test": [
+    "pytest tests/pipelines_tests/",
+    "pytest tests/services_tests/"
+  ],
+  "ci_cd": {
+    "ci": [
+      "Lint, tests, build Docker, bench endpoints"
+    ],
+    "cd": [
+      "Déploiement Render via deploy hooks"
+    ]
+  },
+  "contributors": [
+    "charlyromytanga",
+    "anasthasia06"
+  ],
+  "languages": {
+    "Python": 82.3,
+    "Jupyter Notebook": 9.3,
+    "Shell": 5.3,
+    "CSS": 2.1,
+    "Dockerfile": 1.0
+  }
+}
