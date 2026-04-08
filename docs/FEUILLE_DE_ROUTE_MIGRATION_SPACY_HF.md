@@ -51,21 +51,6 @@
 
 ---
 
-## 3. Exemple d’intégration (pseudo-code)
-
-```python
-from .spacy_offer_extractor import extract_offer_fields_with_spacy
-from .keywords_extractor import extract_keywords
-
-def run_from_file(self, offer_path: Path) -> dict[str, object]:
-    reader = OfferSourceReader(offer_path)
-    raw_text = reader.read()
-    sections = extract_offer_fields_with_spacy(raw_text)
-    sections['keywords'] = extract_keywords(raw_text)
-    # ... suite comme avant ...
-```
-
----
 
 ## 4. Conseils
 - Commencer par l’extraction d’entités (spaCy), puis ajouter les mots-clés, puis le matching.

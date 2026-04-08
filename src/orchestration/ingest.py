@@ -17,6 +17,8 @@ from uuid import uuid4
 
 from .config import OrchestrationConfig
 from .database import Database
+from .keywords_extractor import extract_keywords
+from .spacy_offer_extractor import extract_entities
 
 
 LOGGER = logging.getLogger(__name__)
@@ -201,13 +203,23 @@ class OfferIngestionOrchestrator:
         self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
 
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
-        from .llm_offer_extractor import extract_offer_fields_with_openai
+        from .spacy_offer_extractor import extract_entities
+        from .keywords_extractor import extract_keywords
+        import json
+        import uuid
         reader = OfferSourceReader(offer_path)
         raw_text = reader.read()
-        # Extraction via OpenAI
-        sections = extract_offer_fields_with_openai(raw_text)
+        # Extraction via spaCy
+        entities = extract_entities(raw_text, lang="fr")
+        # Extraction de mots-clés
+        keywords = extract_keywords(raw_text, top_k=10)
+        # Structuration des sections
+        sections = {
+            "entities": entities,
+            "keywords": keywords
+        }
 
-        offer_id = f"offer-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:8]}"
+        offer_id = f"offer-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
         record = OfferRecord(
             offer_id=offer_id,
             company_name=str(sections.get("company_name", "Unknown Company")),
@@ -222,6 +234,19 @@ class OfferIngestionOrchestrator:
 
         self.repo.ensure_schema()
         self.repo.insert_offer(record)
+
+        # Insertion des mots-clés dans offer_keywords
+        keywords_payload = {
+            "keyword_id": f"kw-{uuid.uuid4().hex[:12]}",
+            "offer_id": offer_id,
+            "keywords_json": json.dumps(keywords, ensure_ascii=True),
+            "model_version": "spacy-hf-v1"
+        }
+        sql = """
+        INSERT INTO offer_keywords (keyword_id, offer_id, keywords_json, model_version)
+        VALUES (:keyword_id, :offer_id, :keywords_json, :model_version)
+        """
+        self.repo.database.execute(sql, keywords_payload)
 
         LOGGER.info("Offer ingested: offer_id=%s source=%s", offer_id, offer_path)
         return {

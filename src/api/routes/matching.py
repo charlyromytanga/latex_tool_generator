@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from api.common import api_error, get_config, get_database
+from orchestration.matching import compute_matching_for_offer
 
 
 router = APIRouter(prefix="/matching", tags=["matching"])
@@ -102,3 +103,32 @@ def get_matching(offer_id: str, threshold: float = 0.0, limit: int = 10) -> dict
         raise
     except Exception as exc:  # pylint: disable=broad-except
         raise api_error(500, "Unexpected error while computing matching", exc=exc) from exc
+
+
+@router.get("/semantic/{offer_id}")
+def get_semantic_matching(offer_id: str, top_k: int = 5) -> dict:
+    """
+    Calcule dynamiquement le matching sémantique entre les mots-clés de l'offre et toutes les formations, expériences et projets.
+    """
+    database = get_database()
+    result = compute_matching_for_offer(database, offer_id, top_k=top_k)
+    return result
+
+
+@router.post("/semantic/{offer_id}/persist")
+def persist_semantic_matching(
+    offer_id: str, top_k: int = 5, background_tasks: BackgroundTasks = None
+) -> dict:
+    """
+    Calcule et insère les scores de matching sémantique pour l'offre dans la base (formations, expériences, projets).
+    """
+    database = get_database()
+    # Exécution en tâche de fond si background_tasks fourni
+    if background_tasks:
+        background_tasks.add_task(
+            compute_matching_for_offer, database, offer_id, top_k, True
+        )
+        return {"status": "processing", "offer_id": offer_id}
+    else:
+        result = compute_matching_for_offer(database, offer_id, top_k=top_k, persist=True)
+        return result

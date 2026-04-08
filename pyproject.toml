@@ -53,7 +53,9 @@ dependencies = [
     "spacy",
     "transformers",
     "sentence-transformers",
-    "torch"
+    "torch",
+    "keybert",
+    "langdetect"
 ]
 
 [build-system]
