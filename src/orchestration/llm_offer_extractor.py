@@ -292,8 +292,17 @@ def extract_offer_fields_with_openai(markdown_content: str) -> dict:
         ---
     ''') + markdown_content + '\n---\n'
 
+    from pathlib import Path
+    debug_log = Path("runs/openai_debug.log")
+    debug_log.parent.mkdir(parents=True, exist_ok=True)
+    # Log d'entrée dans la fonction
+    with debug_log.open("a", encoding="utf-8") as f:
+        f.write(f"[TRACE] Appel extract_offer_fields_with_openai, OPENAI_API_KEY present: {'OPENAI_API_KEY' in os.environ}\n{'-'*80}\n")
     try:
+        # Log après création du client OpenAI
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        with debug_log.open("a", encoding="utf-8") as f:
+            f.write(f"[TRACE] Client OpenAI instancié\n{'-'*80}\n")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -305,10 +314,14 @@ def extract_offer_fields_with_openai(markdown_content: str) -> dict:
         )
         # Extraction du JSON de la réponse
         content = response.choices[0].message.content
+        with debug_log.open("a", encoding="utf-8") as f:
+            f.write(f"[DEBUG] Réponse OpenAI brute :\n{content}\n{'-'*80}\n")
         print("[DEBUG] Réponse OpenAI brute :\n", content)
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             return json.loads(match.group(0))
         raise ValueError("Aucun JSON trouvé dans la réponse OpenAI :\n" + content)
     except Exception as e:
+        with debug_log.open("a", encoding="utf-8") as f:
+            f.write(f"[ERROR] Exception lors de l'appel OpenAI : {e}\n{'-'*80}\n")
         raise RuntimeError(f"Erreur lors de l'extraction de l'offre avec OpenAI : {e}")

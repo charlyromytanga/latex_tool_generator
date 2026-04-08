@@ -55,7 +55,6 @@ services:
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: info
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
       RECRUITMENT_SCHEMA_PATH: /app/db/schema_init.sql
     depends_on:
       - db

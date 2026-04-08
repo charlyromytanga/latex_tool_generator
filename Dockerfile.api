@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY pyproject.toml README.md ./
 
 COPY src ./src
-RUN pip install --upgrade pip && pip install -e ".[api]"
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --upgrade pip
 
 # Runtime folders used by routes and local artifacts.
 RUN mkdir -p /app/runs/tmp/api_uploads /app/db
@@ -33,5 +34,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
-# FastAPI entrypoint (nouveau chemin après déplacement)
-CMD ["uvicorn", "api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PYTHONPATH=/app/src
+# FastAPI entrypoint (chemin correct depuis /app)
+CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
