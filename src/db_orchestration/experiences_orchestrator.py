@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any, Sequence
 from uuid import uuid5, NAMESPACE_URL
 
-from orchestration.config import OrchestrationConfig
-from orchestration.database import Database, detect_database_backend, normalize_database_url
+from db_orchestration.config import OrchestrationConfig
+from db_orchestration.database import Database, detect_database_backend, normalize_database_url
 
 
 LOGGER = logging.getLogger(__name__)

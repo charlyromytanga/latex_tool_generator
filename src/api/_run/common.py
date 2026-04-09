@@ -10,8 +10,8 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from orchestration.config import OrchestrationConfig
-from orchestration.database import Database
+from db_orchestration.config import OrchestrationConfig
+from db_orchestration.database import Database
 
 
 LOGGER = logging.getLogger("app.api")

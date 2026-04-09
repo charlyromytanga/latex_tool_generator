@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Sequence
 from uuid import uuid4
 
-from orchestration.config import OrchestrationConfig
-from orchestration.database import Database, detect_database_backend, normalize_database_url
+from db_orchestration.config import OrchestrationConfig
+from db_orchestration.database import Database, detect_database_backend, normalize_database_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -370,7 +370,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             LOGGER.error("Le dossier data/projects/ n'existe pas.")
             return 1
         import json as pyjson
-        from orchestration.database import Database
+        from db_orchestration.database import Database
         db = Database(database_url)
         # S'assurer que la table existe
         gateway = ProjectRepositoryGateway(db, schema_path)

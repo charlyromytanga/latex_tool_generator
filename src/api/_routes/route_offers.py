@@ -1,13 +1,116 @@
-"""Matching API routes."""
+"""Offers API routes."""
 
 from __future__ import annotations
 
 from datetime import datetime
 
+from fastapi import APIRouter, HTTPException
+
+from api._run.common import LOGGER, api_error, get_config, get_database, repo_root, safe_json_loads
+from api._run.engine_offer import OfferCreateRequest, OfferDetailsResponse
+from db_orchestration.ingest import OfferIngestionOrchestrator
+
+
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 
-from api.common import api_error, get_config, get_database
-from orchestration.matching import compute_matching_for_offer
+from api._run.common import api_error, get_config, get_database
+from api._run.engine_offer.engine_matching_score import compute_matching_for_offer
+
+
+router = APIRouter(prefix="/offers", tags=["offers"])
+
+
+@router.post("", response_model=OfferDetailsResponse, status_code=201)
+def create_offer(payload: OfferCreateRequest) -> OfferDetailsResponse:
+    LOGGER.info(f"Payload reçu pour création d'offre : {payload.json()}")
+    try:
+        root = repo_root()
+        temp_dir = root / "runs" / "tmp" / "api_uploads"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        file_name = f"offer_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.md"
+        temp_offer_path = temp_dir / file_name
+        temp_offer_path.write_text(payload.offer_input, encoding="utf-8")
+
+        config = get_config()
+        orchestrator = OfferIngestionOrchestrator(config)
+        result = orchestrator.run_from_file(temp_offer_path)
+
+        return OfferDetailsResponse(
+            offer_id=str(result["offer_id"]),
+            score=0.0,
+            formations=[],
+            experiences=[],
+            projets=[],
+        )
+    except FileNotFoundError as exc:
+        raise api_error(400, f"Invalid source file: {exc}", exc=exc) from exc
+    except ValueError as exc:
+        raise api_error(400, f"Invalid offer format: {exc}", exc=exc) from exc
+    except Exception as exc:  # pylint: disable=broad-except
+        raise api_error(500, "Unexpected error during offer ingestion", exc=exc) from exc
+
+
+
+@router.get("/{offer_id}", response_model=OfferDetailsResponse)
+def get_offer(offer_id: str) -> OfferDetailsResponse:
+    try:
+        config = get_config()
+        database = get_database()
+        offer_row = database.fetch_one(
+            "SELECT offer_id, offer_text, metadata_json, entities_json, keywords_json, created_at FROM offers WHERE offer_id = :offer_id",
+            {"offer_id": offer_id},
+        )
+        if offer_row is None:
+            raise api_error(404, f"Offer not found: {offer_id}")
+
+        # Extraction des champs JSON
+        metadata = safe_json_loads(offer_row.get("metadata_json", "{}"), fallback={})
+        entities = safe_json_loads(offer_row.get("entities_json", "[]"), fallback=[])
+        keywords = safe_json_loads(offer_row.get("keywords_json", "[]"), fallback=[])
+
+        # Matching
+        matching_rows = database.fetch_all(
+            """
+            SELECT match_type, target_id, match_score, reasoning
+            FROM matching_scores
+            WHERE offer_id = :offer_id
+            ORDER BY match_score DESC
+            LIMIT 10
+            """,
+            {"offer_id": offer_id},
+        )
+        formations, experiences, projets = [], [], []
+        for row in matching_rows:
+            item = dict(row)
+            normalized = {
+                "id": item["target_id"],
+                "score": float(item["match_score"]),
+                "reasoning": str(item["reasoning"])
+            }
+            if item["match_type"] == "formation":
+                formations.append(normalized)
+            elif item["match_type"] == "experience":
+                experiences.append(normalized)
+            elif item["match_type"] == "project":
+                projets.append(normalized)
+
+        scores = [float(e["score"]) for e in formations + experiences + projets if isinstance(e.get("score"), (int, float))]
+        score = round(float(sum(scores)) / len(scores), 4) if scores else 0.0
+
+        return OfferDetailsResponse(
+            offer_id=str(offer_row["offer_id"]),
+            score=score,
+            formations=formations,
+            experiences=experiences,
+            projets=projets,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # pylint: disable=broad-except
+        raise api_error(500, "Unexpected error while fetching offer", exc=exc) from exc
 
 
 router = APIRouter(prefix="/matching", tags=["matching"])
@@ -132,3 +235,4 @@ def persist_semantic_matching(
     else:
         result = compute_matching_for_offer(database, offer_id, top_k=top_k, persist=True)
         return result
+

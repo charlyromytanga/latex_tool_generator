@@ -52,17 +52,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         _bootstrap_import_path()
 
         if args.target == "my_experiences":
-            from orchestration.experiences_orchestrator import main as orchestrator_main
+            from db_orchestration.experiences_orchestrator import main as orchestrator_main
         elif args.target == "formations_template":
-            from orchestration.formations_orchestrator import main as orchestrator_main
+            from db_orchestration.formations_orchestrator import main as orchestrator_main
         elif args.target == "offers_ingest":
-            from orchestration.ingest import main as orchestrator_main
+            from db_orchestration.ingest import main as orchestrator_main
         elif args.target == "offers_llm":
-            from orchestration.llm_extractors import main as orchestrator_main
+            from db_orchestration.llm_extractors import main as orchestrator_main
         elif args.target == "offers_pipeline":
-            from orchestration.orchestrator import main as orchestrator_main
+            from db_orchestration.orchestrator import main as orchestrator_main
         else:
-            from orchestration.projects_orchestrator import main as orchestrator_main
+            from db_orchestration.projects_orchestrator import main as orchestrator_main
 
         logger.info("Launching orchestration target=%s from root main.py", args.target)
         return orchestrator_main(remaining)

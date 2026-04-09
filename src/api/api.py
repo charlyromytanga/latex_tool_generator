@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import logging
+import spacy
 from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.common import api_error, get_database
-from api.routes import (
+from api._run.common import api_error, get_database
+from api._routes import (
     download_router,
     generate_router,
     integrate_router,
-    matching_router,
     offers_router,
     preview_router,
 )
@@ -43,7 +43,6 @@ def create_app() -> FastAPI:
     )
 
     api.include_router(offers_router, prefix="/api")
-    api.include_router(matching_router, prefix="/api")
     api.include_router(generate_router, prefix="/api")
     api.include_router(preview_router, prefix="/api")
     api.include_router(download_router, prefix="/api")
@@ -54,14 +53,16 @@ def create_app() -> FastAPI:
         """Lightweight health endpoint used for local checks and deployment probes."""
         try:
             db_connected = get_database().can_connect()
-        except Exception as exc:  # pylint: disable=broad-except
+            spacy.load("en_core_web_sm")  
+            spacy.load("fr_core_news_sm")  
+        except Exception as exc: 
             raise api_error(500, "Health check failed", exc=exc) from exc
 
         return {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "timestamp": datetime.now().isoformat(timespec="seconds") + "Z",
             "db_connected": db_connected,
-            "llm_available": True,
+            "models_available": True,
         }
 
     return api

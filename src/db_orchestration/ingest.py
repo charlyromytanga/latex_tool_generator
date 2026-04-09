@@ -17,15 +17,14 @@ from uuid import uuid4
 
 from .config import OrchestrationConfig
 from .database import Database
-from .keywords_extractor import extract_keywords
-from .spacy_offer_extractor import extract_entities
+from ..api._run.engine_keywords_extractor import extract_keywords
+from ..api._run.engine_spacy_offer_extractor import extract_entities
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 
-# Nouveau record pour la table offers unifiée
 @dataclass(frozen=True)
 class OfferRecord:
     offer_id: str
@@ -181,8 +180,8 @@ class OfferIngestionOrchestrator:
 
 
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
-        from .spacy_offer_extractor import extract_entities
-        from .keywords_extractor import extract_keywords
+        from ..api._run.engine_spacy_offer_extractor import extract_entities
+        from ..api._run.engine_keywords_extractor import extract_keywords
         import json
         import uuid
         reader = OfferSourceReader(offer_path)
