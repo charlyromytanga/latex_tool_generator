@@ -202,7 +202,7 @@ def compute_matching_for_offer(database, offer_id: str, top_k: int = 5, persist:
         score_threshold = env_score_threshold
 
     # Récupérer les mots-clés de l'offre
-    row = database.fetch_one("SELECT keywords_json FROM offer_keywords WHERE offer_id = :offer_id", {"offer_id": offer_id})
+    row = database.fetch_one("SELECT keywords_json FROM offers WHERE offer_id = :offer_id", {"offer_id": offer_id})
     if not row:
         return {"error": f"Aucun mot-clé trouvé pour l'offre {offer_id}"}
     keywords = json.loads(row["keywords_json"])

@@ -17,9 +17,9 @@ from uuid import uuid4
 
 from .config import OrchestrationConfig
 from .database import Database
-from ..api._run.engine_keywords_extractor import extract_keywords
-from ..api._run.engine_spacy_offer_extractor import extract_entities
-
+from api._run.engine_offer import extract_entities, extract_keywords
+import json
+import uuid
 
 LOGGER = logging.getLogger(__name__)
 
@@ -180,17 +180,14 @@ class OfferIngestionOrchestrator:
 
 
     def run_from_file(self, offer_path: Path) -> dict[str, object]:
-        from ..api._run.engine_spacy_offer_extractor import extract_entities
-        from ..api._run.engine_keywords_extractor import extract_keywords
-        import json
-        import uuid
+
         reader = OfferSourceReader(offer_path)
         raw_text = reader.read()
         entities = extract_entities(raw_text, lang="fr")
         keywords = extract_keywords(raw_text, top_k=10)
 
-        offer_id = f"offer-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
-        now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        offer_id = f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
+        now = datetime.now().isoformat(timespec="seconds") + "Z"
         metadata = {
             "source_file": str(offer_path),
             "ingested_at": now

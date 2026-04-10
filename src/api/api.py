@@ -11,11 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api._run.common import api_error, get_database
 from api._routes import (
-    download_router,
     generate_router,
-    integrate_router,
-    offers_router,
-    preview_router,
+    offer_router,
 )
 
 
@@ -42,11 +39,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    api.include_router(offers_router, prefix="/api")
+    api.include_router(offer_router, prefix="/api")
     api.include_router(generate_router, prefix="/api")
-    api.include_router(preview_router, prefix="/api")
-    api.include_router(download_router, prefix="/api")
-    api.include_router(integrate_router, prefix="/api")
 
     @api.get("/api/health", tags=["health"])
     def health() -> dict[str, object]:
@@ -54,7 +48,8 @@ def create_app() -> FastAPI:
         try:
             db_connected = get_database().can_connect()
             spacy.load("en_core_web_sm")  
-            spacy.load("fr_core_news_sm")  
+            spacy.load("fr_core_news_md")  
+            spacy.load("en_core_web_sm")  
         except Exception as exc: 
             raise api_error(500, "Health check failed", exc=exc) from exc
 
