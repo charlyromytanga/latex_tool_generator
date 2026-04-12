@@ -1,7 +1,8 @@
-import openai
+
 import os
 import json
 import re
+import openai
 
 def extract_offer_fields_with_openai(markdown_content: str) -> dict:
     """Extrait les champs d'une offre markdown via l'API OpenAI."""

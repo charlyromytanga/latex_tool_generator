@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from api._run.common import LOGGER, api_error, get_config, get_database, repo_root, safe_json_loads
@@ -10,7 +11,6 @@ from api._run.engine_offer import OfferCreateRequest, OfferDetailsResponse
 from db_orchestration.ingest import OfferIngestionOrchestrator
 
 from api._run.common import api_error, get_config, get_database
-from api._run.engine_offer import compute_matching_for_offer
 
 
 router = APIRouter(prefix="/offer", tags=["offer"])
@@ -30,22 +30,20 @@ def create_offer(payload: OfferCreateRequest) -> OfferDetailsResponse:
 
         config = get_config()
         orchestrator = OfferIngestionOrchestrator(config)
-        result = orchestrator.run_from_file(temp_offer_path)
+        result: Dict[str, object] = orchestrator.run_from_payload(
+            payload.offer_input,
+            payload.company,
+            payload.location,
+            payload.offer_title,
+            temp_offer_path
+        )
 
         offer_id = str(result["offer_id"])
-        database = get_database()
-        matching = compute_matching_for_offer(database, offer_id)
-        formations = matching.get("formation_scores", [])
-        experiences = matching.get("experience_scores", [])
-        projets = matching.get("project_scores", [])
-        all_scores = [f.get("max", 0.0) for f in formations] + [e.get("max", 0.0) for e in experiences] + [p.get("max", 0.0) for p in projets]
-        score = round(float(sum(all_scores)) / len(all_scores), 4) if all_scores else 0.0
+        keywords = result["keywords"]
+
         return OfferDetailsResponse(
             offer_id=offer_id,
-            score=score,
-            formations=formations,
-            experiences=experiences,
-            projets=projets,
+            keywords=keywords,
         )
 
     except FileNotFoundError as exc:
@@ -63,25 +61,18 @@ def get_offer(offer_id: str) -> OfferDetailsResponse:
         database = get_database()
         # Vérifier l'existence de l'offre (sinon 404)
         offer_row = database.fetch_one(
-            "SELECT offer_id FROM offers WHERE offer_id = :offer_id",
-            {"offer_id": offer_id},
+            "SELECT offer_id, keywords FROM offers WHERE offer_id = :offer_id",
+            {
+                "offer_id": offer_id,
+                "keywords": "keywords"
+            },
         )
         if offer_row is None:
             raise api_error(404, f"Offer not found: {offer_id}")
 
-        # Utiliser la logique centrale de matching
-        matching = compute_matching_for_offer(database, offer_id)
-        formations = matching.get("formation_scores", [])
-        experiences = matching.get("experience_scores", [])
-        projets = matching.get("project_scores", [])
-        all_scores = [f.get("max", 0.0) for f in formations] + [e.get("max", 0.0) for e in experiences] + [p.get("max", 0.0) for p in projets]
-        score = round(float(sum(all_scores)) / len(all_scores), 4) if all_scores else 0.0
         return OfferDetailsResponse(
             offer_id=offer_id,
-            score=score,
-            formations=formations,
-            experiences=experiences,
-            projets=projets,
+            keywords=offer_row["keywords"],
         )
     except HTTPException:
         raise

@@ -54,3 +54,7 @@ build/
 
 # .env file containing sensitive information
 .env.*
+
+
+# Notebooks
+src/db_orchestration/manip.ipynb

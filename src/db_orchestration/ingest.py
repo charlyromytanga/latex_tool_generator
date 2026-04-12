@@ -1,6 +1,9 @@
-"""Offer ingestion orchestration (Level 1).
+"""
+Offer ingestion orchestration :
+Lecture d'une offre depuis un fichier JSON, extraction des champs principaux (company, location, title),
+extraction de mots-clés, et insertion dans la base de données (table offers).
 
-Reads a markdown offer file, extracts normalized sections and stores it in `offers_raw`.
+Entités et extraction avancée désactivées (pipeline simplifié, extraction directe depuis le JSON).
 """
 
 from __future__ import annotations
@@ -12,14 +15,22 @@ import re
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Optional, Dict, List, Any
 from uuid import uuid4
+import unicodedata
+import re
+from langdetect import detect
 
-from .config import OrchestrationConfig
+from .config import OrchestrationConfig, LLMConfig
 from .database import Database
-from api._run.engine_offer import extract_entities, extract_keywords
 import json
 import uuid
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,16 +38,18 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class OfferRecord:
-    offer_id: str
-    offer_text: str
-    metadata_json: str
-    entities_json: str
-    keywords_json: str
-    created_at: str
+    offer_id: Optional[str]
+    offer_text: Optional[str]
+    metadata_json: Optional[str]
+    keywords_json: Optional[str]
+    created_at: Optional[str]
+    company: Optional[str]
+    location: Optional[str]
+    title: Optional[str]
 
 
 class OfferSourceReader:
-    """Load raw markdown content from disk."""
+    """Load raw content from disk."""
 
     def __init__(self, input_path: Path) -> None:
         self.input_path = input_path.resolve()
@@ -46,92 +59,6 @@ class OfferSourceReader:
             raise FileNotFoundError(f"Offer file not found: {self.input_path}")
         return self.input_path.read_text(encoding="utf-8")
 
-
-class MarkdownOfferParser:
-    """Parse markdown headings into canonical offer fields."""
-
-    SECTION_PATTERN = re.compile(r"^##\s+(.+?)\s*$")
-
-    def parse(self, markdown_content: str) -> dict[str, object]:
-        lines = markdown_content.splitlines()
-        title = self._extract_title(lines)
-        sections = self._extract_sections(lines)
-
-        company_name = self._first_line(sections.get("entreprise", "")) or "Unknown Company"
-        location = self._first_line(sections.get("localisation", "")) or "Unknown"
-        tier_raw = self._first_line(sections.get("tier", "tier-2"))
-        tier = self._normalize_tier(tier_raw)
-
-        country = "Unknown"
-        if "," in location:
-            country = location.split(",")[-1].strip() or "Unknown"
-
-        return {
-            "title": title,
-            "company": company_name,
-            "location": location,
-            "country": country,
-            "tier": tier,
-            "description": sections.get("description", "").strip(),
-            "responsibilities": self._to_list(sections.get("responsabilites", "")),
-            "skills": self._to_list(sections.get("competences requises", "")),
-            "qualifications": self._to_list(sections.get("qualifications", "")),
-            "benefits": self._to_list(sections.get("benefices", "")),
-        }
-
-    @staticmethod
-    def _extract_title(lines: list[str]) -> str:
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("# "):
-                return stripped.removeprefix("# ").strip()
-        return "Untitled Offer"
-
-    def _extract_sections(self, lines: list[str]) -> dict[str, str]:
-        sections: dict[str, list[str]] = {}
-        current_key = ""
-
-        for line in lines:
-            header_match = self.SECTION_PATTERN.match(line.strip())
-            if header_match:
-                current_key = header_match.group(1).strip().lower()
-                sections[current_key] = []
-                continue
-
-            if current_key:
-                sections[current_key].append(line)
-
-        return {key: "\n".join(value).strip() for key, value in sections.items()}
-
-    @staticmethod
-    def _to_list(raw: str) -> list[str]:
-        values: list[str] = []
-        for line in raw.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("-"):
-                candidate = stripped.removeprefix("-").strip()
-                if candidate:
-                    values.append(candidate)
-        return values
-
-    @staticmethod
-    def _first_line(raw: str) -> str:
-        for line in raw.splitlines():
-            stripped = line.strip()
-            if stripped:
-                return stripped
-        return ""
-
-    @staticmethod
-    def _normalize_tier(raw: str) -> str:
-        normalized = raw.strip().lower()
-        if normalized in {"tier-1", "tier-2", "tier-3"}:
-            return normalized
-        if normalized in {"tier 1", "1"}:
-            return "tier-1"
-        if normalized in {"tier 3", "3"}:
-            return "tier-3"
-        return "tier-2"
 
 
 
@@ -155,61 +82,152 @@ class OfferRepositoryGateway:
             offer_id,
             offer_text,
             metadata_json,
-            entities_json,
             keywords_json,
-            created_at
+            created_at,
+            company,
+            location,
+            title
         ) VALUES (
             :offer_id,
             :offer_text,
             :metadata_json,
-            :entities_json,
             :keywords_json,
-            :created_at
+            :created_at,
+            :company,
+            :location,
+            :title
         )
         """
         self.database.execute(sql, asdict(record))
 
 
 class OfferIngestionOrchestrator:
-    """Coordinates file read, parsing and persistence for a new offer."""
 
     def __init__(self, config: OrchestrationConfig) -> None:
+        """
+        Orchestrateur d'ingestion d'offre :
+        - Prend un fichier JSON d'offre en entrée
+        - Extrait les champs principaux (company, location, title)
+        - Extrait les mots-clés
+        - Insère l'offre dans la base
+        """
         self.config = config
-        # self.parser = MarkdownOfferParser()  # Désormais inutilisé
         self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
 
+    def _detect_language(self, offer_input: str) -> str:
+        """
+        Détecte la langue du texte d'offre (français ou anglais, fallback fr).
+        """
+        try:
+            lang = detect(offer_input)
+            if lang not in ("fr", "en"):
+                lang = "fr"
+        except Exception:
+            lang = "fr"
+        return lang
 
-    def run_from_file(self, offer_path: Path) -> dict[str, object]:
+    def extract_offer_text(self, raw) -> str:
+        """
+        Extrait le texte d'offre à partir du JSON (clé offer_input ou offer_text).
+        """
+        if isinstance(raw, dict):
+            return raw.get("offer_input") or raw.get("offer_text") or ""
+        return str(raw)
 
-        reader = OfferSourceReader(offer_path)
-        raw_text = reader.read()
-        entities = extract_entities(raw_text, lang="fr")
-        keywords = extract_keywords(raw_text, top_k=10)
+    def _normalize_keyword(self, kw: str) -> str:
+        """
+        Normalise un mot-clé (minuscule, sans accents, sans ponctuation).
+        """
+        kw = kw.lower().strip()
+        kw = ''.join(c for c in unicodedata.normalize('NFD', kw) if unicodedata.category(c) != 'Mn')
+        kw = re.sub(r"[\W_]+", " ", kw)
+        kw = re.sub(r"\s+", " ", kw).strip()
+        return kw
+
+    def extract_company(self, raw, entities, description) -> Optional[str]:
+        """
+        Extrait le nom de l'entreprise depuis le JSON (clé company ou company_name).
+        """
+        if isinstance(raw, dict):
+            company = raw.get("company") or raw.get("company_name")
+            if company and str(company).strip():
+                return company
+        return None
+
+    def extract_location(self, raw, entities, description) -> Optional[str]:
+        """
+        Extrait le lieu depuis le JSON (clé location).
+        """
+        if isinstance(raw, dict):
+            location = raw.get("location")
+            if location and str(location).strip():
+                return location
+        return None
+
+    def extract_title(self, raw, entities, description) -> Optional[str]:
+        """
+        Extrait le titre depuis le JSON (clé offer_title ou title).
+        """
+        if isinstance(raw, dict):
+            title = raw.get("offer_title") or raw.get("title")
+            if title and str(title).strip():
+                return title
+        return None
+
+    def run_from_payload(self, offer_input: str, company: str, location: str, title: str, offer_path: Path) -> dict[str, object]:
+        """
+        Pipeline principal : prend les champs du payload, extrait les mots-clés, et insère en base.
+        """
+        self.llm_config = LLMConfig(model_version="all-MiniLM-L6-v2")
+        description = offer_input
+        lang = self._detect_language(offer_input=description)
+        keywords = self.llm_config.extract_keywords(description, top_k=100)
+        preprocessed_keywords = [self._normalize_keyword(kw) for kw in keywords if isinstance(kw, str)]
 
         offer_id = f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
         now = datetime.now().isoformat(timespec="seconds") + "Z"
         metadata = {
             "source_file": str(offer_path),
-            "ingested_at": now
+            "ingested_at": now,
+            "lang": lang,
+            "has_sections": False
         }
+
+        # Robustesse : lever une erreur explicite si un champ clé est manquant ou vide
+        missing = []
+        if not company or not str(company).strip():
+            missing.append("company")
+        if not location or not str(location).strip():
+            missing.append("location")
+        if not title or not str(title).strip():
+            missing.append("title")
+        if missing:
+            raise ValueError(f"Champ(s) obligatoire(s) manquant(s) ou vide(s) dans l'offre : {', '.join(missing)}")
+
         record = OfferRecord(
             offer_id=offer_id,
-            offer_text=raw_text,
+            offer_text=description,
             metadata_json=json.dumps(metadata, ensure_ascii=True),
-            entities_json=json.dumps(entities, ensure_ascii=True),
-            keywords_json=json.dumps(keywords, ensure_ascii=True),
-            created_at=now
+            keywords_json=json.dumps(preprocessed_keywords, ensure_ascii=True),
+            created_at=now,
+            company=company,
+            location=location,
+            title=title
         )
         self.repo.ensure_schema()
         self.repo.insert_offer(record)
-        LOGGER.info("Offer ingested: offer_id=%s source=%s", offer_id, offer_path)
+        LOGGER.info("Offer ingested: offer_id=%s source=%s lang=%s", offer_id, offer_path, lang)
+
         return {
             "offer_id": offer_id,
-            "offer_text": raw_text,
-            "entities": entities,
-            "keywords": keywords,
-            "metadata": metadata,
+            "company": company,
+            "location": location,
+            "title": title,
+            "keywords": preprocessed_keywords,
         }
+
+
+
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -225,7 +243,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = Path(__file__).resolve().parents[2]
     config = OrchestrationConfig.from_repo_root(root)
     orchestrator = OfferIngestionOrchestrator(config)
-    result = orchestrator.run_from_file(args.offer_path)
+    # Pour test CLI : lire le fichier comme texte brut et passer des valeurs factices pour company, location, title
+    offer_input = args.offer_path.read_text(encoding="utf-8")
+    company = "CLI_COMPANY"
+    location = "CLI_LOCATION"
+    title = "CLI_TITLE"
+    result = orchestrator.run_from_payload(offer_input, company, location, title, args.offer_path)
     LOGGER.info("Ingestion result: %s", result)
     return 0
 

@@ -8,15 +8,19 @@ ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
+
 # Dépendances système minimales
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Installer uv (gestionnaire de dépendances rapide)
+RUN pip install --upgrade pip uv
+
 # Étape 1 : Copier et installer les dépendances Python (requirements.txt local à src/api/)
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt && pip install --upgrade pip
+RUN uv pip install --system -r requirements.txt
 
 # Étape 2 : Installer les modèles spaCy nécessaires
 RUN python -m spacy download fr_core_news_md && python -m spacy download en_core_web_md && python -m spacy download en_core_web_sm 
