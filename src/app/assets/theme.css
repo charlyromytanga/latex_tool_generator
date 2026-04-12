@@ -12,6 +12,9 @@ div[data-testid="stForm"] button[data-testid="btn-upload"]:hover {
     background-color: var(--color-19) !important;
     color: #fff !important;
 }
+
+
+
 /* ===========================
    HEADER LOGO & NOM
 =========================== */
@@ -89,7 +92,7 @@ div[data-testid="stExpander"] .stExpanderHeader {
     justify-content: center !important;
     text-align: center !important;
     background: linear-gradient(90deg, var(--color-16) 0%, var(--color-3) 100%) !important;
-    color: var(--color-2) !important;
+    color: #fff !important;
     border-radius: 8px 8px 0 0 !important;
     font-weight: 600;
     font-size: 1.1rem;
@@ -106,6 +109,10 @@ div[data-testid="stExpander"] .stExpanderContent {
     border-radius: 0 0 8px 8px !important;
 }
 
+.streamlit-expanderHeader {
+    color: #fff !important;
+    font-weight: 600;
+}
 
 input::placeholder,
 textarea::placeholder,
@@ -115,13 +122,23 @@ textarea::placeholder,
     opacity: 1 !important;
 }
 /* Boutons Streamlit */
-.stButton > button {
-    background-color: var(--color-3) !important;
-    color: #fff !important;
-    border: 1px solid var(--color-1) !important;
+
+.stButton > button[data-testid="btn_reset_offer"] {
+    background: #f0f2f6 !important;
+    color: #31333f !important;
+    border: 1.5px solid #d3d3d3 !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
-.stButton > button:hover {
-    background-color: var(--color-19) !important;
+.stButton > button[data-testid="btn_reset_offer"]:hover,
+.stButton > button[data-testid="btn_reset_offer"]:focus,
+.stButton > button[data-testid="btn_reset_offer"]:active {
+    background: #e0e4ea !important;
+    color: #31333f !important;
+    border: 1.5px solid #b0b0b0 !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* Selectbox */
@@ -298,4 +315,26 @@ section[data-testid="stSidebar"] .css-1aumxhk /* fallback */ {
     align-items: center;
     justify-content: center;
     gap: 8px;
+}
+
+.st-id-offer-input {
+    background: linear-gradient(90deg, #f0f2f6 80%, #e0e4ea 100%) !important;
+    color: #265B88 !important;
+    border: 2px solid #b0b0b0 !important;
+    border-radius: 0.5em !important;
+    padding: 0.4em 0.2em !important;
+    font-size: 1em !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-weight: 700 !important;
+    font-family: monospace, monospace !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    outline: none !important;
+    box-shadow: 0 2px 8px rgba(38, 91, 136, 0.07) !important;
+    transition: border 0.2s;
+}
+.st-id-offer-input:focus {
+    border: 2.5px solid #265B88 !important;
+    background: #e0e4ea !important;
 }

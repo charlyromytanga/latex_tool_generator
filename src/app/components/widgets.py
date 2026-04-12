@@ -103,7 +103,12 @@ def analyze_offer_widget(service: TabService) -> None:
         st.session_state.Id_offer = default_offer_id
 
     with st.form("form_analyze_offer", clear_on_submit=True):
-        col1, col2 = st.columns([1, 1])
+        col1, col2, col3, col4 = st.columns([2, 1, 2, 1])
+
+        # Initialisation de l'état pour éviter KeyError
+        if 'offer_details_keywords' not in st.session_state:
+            st.session_state['offer_details_keywords'] = []
+
         with col1:
             offer_id = st.text_input(
                 "Offer ID",
@@ -114,40 +119,58 @@ def analyze_offer_widget(service: TabService) -> None:
             )
         with col2:
             submit_analyze = st.form_submit_button("Load Keywords", type="primary", key="btn_analyze")
+
+        # Affichage de l'expander (Offer Details) seulement si non clear
         if submit_analyze:
-            if not offer_id.strip():
-                render_error("Offer ID required.")
-                return
+            st.session_state['clear_offer_details'] = False
             try:
                 extract_result = service.fetch_offer(offer_id.strip())
                 st.session_state.Id_offer = extract_result.offer_id
                 st.toast("Extracted successfully!", icon="✅")
-                with st.expander("Offer Details", expanded=False):
-                    keywords = extract_result.keywords_json
-                    if isinstance(keywords, str):
-                        try:
-                            keywords_list = json.loads(keywords)
-                        except Exception:
-                            keywords_list = []
-                    elif isinstance(keywords, list):
-                        keywords_list = keywords
-                    else:
+                keywords = extract_result.keywords_json
+                if isinstance(keywords, str):
+                    try:
+                        keywords_list = json.loads(keywords)
+                    except Exception:
                         keywords_list = []
-                    if isinstance(keywords_list, list):
-                        col1, col2 = st.columns(2)
-                        half = (len(keywords_list) + 1) // 2
-                        with col1:
-                            for kw in keywords_list[:half]:
-                                st.markdown(f"- {kw}")
-                        with col2:
-                            for kw in keywords_list[half:]:
-                                st.markdown(f"- {kw}")
-                    else:
-                        st.write(f"type keywords: {type(keywords)}")
-
+                elif isinstance(keywords, list):
+                    keywords_list = keywords
+                else:
+                    keywords_list = []
+                st.session_state['offer_details_keywords'] = keywords_list
             except ApiClientError as exc:
                 LOGGER.exception("Analyze offer failed")
                 render_error(str(exc))
+                st.session_state['offer_details_keywords'] = []
+        with col3:
+            if st.session_state.Id_offer:
+                st.markdown(
+                    f'''
+                    <input type="text" value="🆔 {st.session_state.Id_offer}" readonly
+                        class="st-id-offer-input"
+                        onclick="this.select();"
+                    />
+                    ''',
+                    unsafe_allow_html=True,
+                )
+        keywords_list = st.session_state['offer_details_keywords']
+        with st.expander("Offer Details", expanded=False):
+            if isinstance(keywords_list, list):
+                cols = st.columns(3)
+                n = len(keywords_list)
+                chunk = (n + 2) // 3
+                for i, col in enumerate(cols):
+                    with col:
+                        for kw in keywords_list[i*chunk:(i+1)*chunk]:
+                            st.markdown(f"- {kw}")
+            else:
+                st.write(f"type keywords: {type(keywords_list)}")
+
+
+
+
+
+
 
 # --- MatchingPage ---
 def matching_widget(service: TabService) -> None:
