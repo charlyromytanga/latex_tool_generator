@@ -1,3 +1,112 @@
+/* Bouton principal du formulaire d'upload d'offre */
+div[data-testid="stForm"] button[data-testid="btn-upload"] {
+    background-color: var(--color-3) !important;
+    color: #fff !important;
+    border: 1.5px solid var(--color-1) !important;
+    font-weight: 600;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(38, 91, 136, 0.07);
+    transition: background 0.2s;
+}
+div[data-testid="stForm"] button[data-testid="btn-upload"]:hover {
+    background-color: var(--color-19) !important;
+    color: #fff !important;
+}
+/* ===========================
+   HEADER LOGO & NOM
+=========================== */
+.header-logo-right {
+    text-align: right;
+    margin-top: -24px;
+    margin-bottom: 8px;
+}
+.header-nom-center {
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2px;
+}
+/* ===========================
+   TEXTE GRADIENT POUR TITRE
+=========================== */
+.gradient-text {
+    background: linear-gradient(90deg, var(--color-1), var(--color-3), var(--color-32));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    font-weight: bold;
+}
+/* ===========================
+   VARIABLES CSS - THEME 2025
+=========================== */
+:root {
+    --color-1: #FFC600;
+    --color-2: #214B4D;
+    --color-3: #265B88;
+    --color-4: #327342;
+    --color-5: #543361;
+    --color-6: #AE2E4B;
+    --color-7: #FE9666;
+    --color-8: #A66999;
+    --color-9: #3599B8;
+    --color-10: #DFBFBF;
+    --color-11: #4AC5BB;
+    --color-12: #5F6B6D;
+    --color-13: #FB8281;
+    --color-14: #F4D25A;
+    --color-15: #7F898A;
+    --color-16: #A4DDEE;
+    --color-17: #FDAB89;
+    --color-18: #B687AC;
+    --color-19: #28738A;
+    --color-20: #A78F8F;
+    --color-21: #168980;
+    --color-22: #293537;
+    --color-23: #BB4A4A;
+    --color-24: #B59525;
+    --color-25: #475052;
+    --color-26: #6A9FB0;
+    --color-27: #BD7150;
+    --color-28: #7B4F71;
+    --color-29: #1B4D5C;
+    --color-30: #706060;
+    --color-31: #0F5C55;
+    --color-32: #1C2325;
+
+    --font-default: Calibri, Arial, Helvetica, sans-serif;
+    --font-title: Calibri, Arial, Helvetica, sans-serif;
+    --font-title-bold: Calibri, Arial, Helvetica, sans-serif;
+
+    --font-size-title: 16px;
+    --sidebar-width: 250px;
+}
+
+
+/* ===========================
+   EXPANDERS PERSONNALISÉS
+=========================== */
+div[data-testid="stExpander"] .stExpanderHeader {
+    justify-content: center !important;
+    text-align: center !important;
+    background: linear-gradient(90deg, var(--color-16) 0%, var(--color-3) 100%) !important;
+    color: var(--color-2) !important;
+    border-radius: 8px 8px 0 0 !important;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-bottom: 2px solid var(--color-3) !important;
+    box-shadow: 0 2px 8px rgba(38, 91, 136, 0.07) !important;
+}
+div[data-testid="stExpander"] .stExpanderHeader > div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+div[data-testid="stExpander"] .stExpanderContent {
+    background: var(--color-16) !important;
+    border-radius: 0 0 8px 8px !important;
+}
+
+
 input::placeholder,
 textarea::placeholder,
 .stTextInput input::placeholder,
@@ -21,6 +130,15 @@ textarea::placeholder,
     color: var(--color-2) !important;
 }
 
+/* Forcer fond blanc sur tous les selectbox */
+/* Forcer fond blanc sur tous les selectbox, y compris la valeur affichée */
+.stSelectbox select,
+.stSelectbox div[data-baseweb="select"] > div {
+    background-color: #fff !important;
+    color: var(--color-2) !important;
+}
+
+
 /* Cases à cocher */
 .stCheckbox input[type="checkbox"] {
     accent-color: var(--color-3) !important;
@@ -41,8 +159,8 @@ input, textarea, select, .stTextInput input, .stTextArea textarea {
     bottom: 0;
     left: 0;
     width: 100%;
-    background-color: #FFC600;
-    color: black;
+    background: linear-gradient(120deg, var(--color-2), var(--color-3), var(--color-5));
+    color: white;
     text-align: center;
     font-size: 12px;
     padding: 10px;
@@ -101,55 +219,12 @@ input, textarea, select, .stTextInput input, .stTextArea textarea {
         overflow-x: auto !important;
     }
 }
+
 /* En-tête Streamlit (barre noire du haut) en blanc */
 header[data-testid="stHeader"] {
     background: #fff !important;
     color: var(--color-32) !important;
     box-shadow: 0 1px 0 #ececec;
-}
-/* ===========================
-   VARIABLES CSS - THEME 2025
-=========================== */
-:root {
-    --color-1: #FFC600;
-    --color-2: #214B4D;
-    --color-3: #265B88;
-    --color-4: #327342;
-    --color-5: #543361;
-    --color-6: #AE2E4B;
-    --color-7: #FE9666;
-    --color-8: #A66999;
-    --color-9: #3599B8;
-    --color-10: #DFBFBF;
-    --color-11: #4AC5BB;
-    --color-12: #5F6B6D;
-    --color-13: #FB8281;
-    --color-14: #F4D25A;
-    --color-15: #7F898A;
-    --color-16: #A4DDEE;
-    --color-17: #FDAB89;
-    --color-18: #B687AC;
-    --color-19: #28738A;
-    --color-20: #A78F8F;
-    --color-21: #168980;
-    --color-22: #293537;
-    --color-23: #BB4A4A;
-    --color-24: #B59525;
-    --color-25: #475052;
-    --color-26: #6A9FB0;
-    --color-27: #BD7150;
-    --color-28: #7B4F71;
-    --color-29: #1B4D5C;
-    --color-30: #706060;
-    --color-31: #0F5C55;
-    --color-32: #1C2325;
-
-    --font-default: Calibri, Arial, Helvetica, sans-serif;
-    --font-title: Calibri, Arial, Helvetica, sans-serif;
-    --font-title-bold: Calibri, Arial, Helvetica, sans-serif;
-
-    --font-size-title: 16px;
-    --sidebar-width: 250px;
 }
 
 html, body, .stApp {
@@ -190,4 +265,37 @@ section[data-testid="stSidebar"] .css-1aumxhk /* fallback */ {
     padding: 18px 22px;
     margin-bottom: 14px;
     border: 1px solid rgba(255,255,255,0.15);
+}
+
+.offre-hero {
+    background: linear-gradient(190deg, var(--color-1), var(--color-3));
+    color: white;
+    border-radius: 16px;
+    padding: 2px 2px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ===========================
+   BARRE DE NOTIFICATION OFFRE
+=========================== */
+.custom-bar-offre {
+    width: 100%;
+    background: linear-gradient(120deg, var(--color-2), var(--color-3), var(--color-5));
+    color: #fff;
+    text-align: center;
+    font-size: 15px;
+    font-family: var(--font-default);
+    padding: 10px 0 10px 0;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(38, 91, 136, 0.07);
+    border: 1px solid var(--color-3);
+    letter-spacing: 0.01em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }

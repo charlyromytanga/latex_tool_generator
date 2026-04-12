@@ -28,6 +28,10 @@ src/streamlit/*
 db/*.db
 db/*.sqlite
 db/*.sqlite3
+db/*.db-shm
+db/*.db-wal
+db/*
+db/*.csv
 
 # Test and coverage files
 .pytest_cache/

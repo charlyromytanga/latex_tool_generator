@@ -8,7 +8,7 @@ sqlalchemy
 pysqlite3-binary
 psycopg[binary]
 spacy
-keybert
-sentence-transformers
+keybert==0.7.0
+sentence-transformers==2.2.2
 langdetect
 numpy

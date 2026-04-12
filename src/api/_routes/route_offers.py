@@ -16,7 +16,7 @@ from api._run.common import api_error, get_config, get_database
 router = APIRouter(prefix="/offer", tags=["offer"])
 
 
-@router.post("", response_model=OfferDetailsResponse, status_code=201)
+@router.post("", response_model=OfferDetailsResponse, status_code=200)
 def create_offer(payload: OfferCreateRequest) -> OfferDetailsResponse:
     LOGGER.info(f"Payload reçu pour création d'offre : {payload.model_dump_json()}")
     try:

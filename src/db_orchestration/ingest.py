@@ -174,7 +174,7 @@ class OfferIngestionOrchestrator:
                 return title
         return None
 
-    def run_from_payload(self, offer_input: str, company: str, location: str, title: str, offer_path: Path) -> dict[str, object]:
+    def run_from_payload(self, offer_input: str, company: str, location: str, title: str, offer_path: Path | None) -> dict[str, object]:
         """
         Pipeline principal : prend les champs du payload, extrait les mots-clés, et insère en base.
         """

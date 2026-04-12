@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Optional, Dict
 
 from pydantic import BaseModel, Field
 
@@ -17,7 +17,6 @@ class OfferCreateInput(BaseModel):
 
 class OfferCreateOutput(BaseModel):
     """Output payload from offer creation endpoint."""
-
     offer_id: str
     company_name: str
     tier: str
@@ -26,14 +25,14 @@ class OfferCreateOutput(BaseModel):
 
 class OfferDetailsOutput(BaseModel):
     """Output payload for offer details endpoint."""
-
-    offer_id: str
-    company_name: str
-    tier: str
-    country: str
-    raw_text: str | None = None
-    sections: dict[str, Any] = Field(default_factory=dict)
-    keywords_extracted: dict[str, Any] | None = None
+    offer_id: Optional[str]
+    offer_text: Optional[str]
+    metadata_json: Optional[str]
+    keywords_json: Optional[str]
+    created_at: Optional[str]
+    company: Optional[str]
+    location: Optional[str]
+    title: Optional[str]
 
 
 class MatchingOutput(BaseModel):

@@ -64,11 +64,20 @@ class OrchestrationConfig:
         load_dotenv(root / ".env", override=False)
         sqlite_path = Path(os.getenv("RECRUITMENT_DB_PATH", root / "db" / "recruitment_assistant.db"))
         database_url = normalize_database_url(os.getenv("DATABASE_URL"), root, sqlite_path)
+        # Correction : priorité à SCHEMA_PATH, puis RECRUITMENT_SCHEMA_PATH, puis chemin par défaut
+        schema_env = os.getenv("SCHEMA_PATH")
+        recruitment_schema_env = os.getenv("RECRUITMENT_SCHEMA_PATH")
+        if schema_env:
+            sqlite_schema_path = Path(schema_env)
+        elif recruitment_schema_env:
+            sqlite_schema_path = Path(recruitment_schema_env)
+        else:
+            sqlite_schema_path = root / "db" / "schema_init.sql"
         return cls(
             database_url=database_url,
             db_backend=detect_database_backend(database_url),
             db_path=sqlite_path,
-            sqlite_schema_path=Path(os.getenv("RECRUITMENT_SCHEMA_PATH", root / "db" / "schema_init.sql")),
+            sqlite_schema_path=sqlite_schema_path,
             postgres_schema_path=Path(
                 os.getenv("RECRUITMENT_POSTGRES_SCHEMA_PATH", root / "db" / "schema_postgres.sql")
             ),
@@ -131,13 +140,14 @@ class LLMConfig:
 
     def get_kw_model(self):
         if self._kw_model is None:
+            import logging
+            import keybert
+            import sentence_transformers
+            logging.info(f"[DEBUG] keybert version: {keybert.__version__}")
+            logging.info(f"[DEBUG] sentence-transformers version: {sentence_transformers.__version__}")
             from sentence_transformers import SentenceTransformer
             model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
             self._kw_model = KeyBERT(model)  # type: ignore # KeyBERT n'a pas de type officiel pour les modèles personnalisés
-        if self._kw_model is None:
-            from sentence_transformers import SentenceTransformer
-            model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            self._kw_model = KeyBERT(model)  # type: ignore
         return self._kw_model
 
     def extract_keywords(

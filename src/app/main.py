@@ -30,8 +30,7 @@ class StreamlitApplication:
 
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
-        self.api_client = RecruitmentApiClient(base_url=settings.api_base_url)
-        self.tab_service = TabService(self.api_client)
+        self.tab_service = TabService()
 
     def run(self) -> None:
         st.set_page_config(page_title="Recruitment Assistant", layout="wide")
@@ -55,7 +54,7 @@ class StreamlitApplication:
         css_path = Path(__file__).resolve().parent / "assets" / "theme.css"
         try:
             css_content = css_path.read_text(encoding="utf-8")
-            # Forcer le thème clair partout
+            # Forcer le thème clair partout (le reste du style est dans theme.css)
             css_override = """
             html, body, .stApp {
                 background: #fff !important;
@@ -79,41 +78,64 @@ class StreamlitApplication:
         pass
 
     def _render_pages(self) -> None:
-        st.markdown(
-            """
-            <div class='hero'>
-                <h1>Recruitment Assistant</h1>
+        col_header_left, col_header_right = st.columns([3, 1])
+        with col_header_left:
+            st.markdown(
+                """
+                <h1 class="gradient-text">Recruitment Assistant</h1>
                 <p>Candidate management and recruitment assistance.</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        # Appelle des widgets
-        col_updoad, col_analyze = st.columns(2)
-        with col_updoad:
+                """,
+                unsafe_allow_html=True,
+            )
+        col_body_left, col_body_right = st.columns([2, 2])
+        with col_body_left:
+            st.markdown(
+                """
+                <div class="custom-bar-offre">
+                    <span style="font-size:1.2em;vertical-align:middle;">📤</span>
+                    <span>Import offer</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             upload_offer_widget(self.tab_service)
-        with col_analyze:
+
+            st.markdown(
+                """
+                <div class="custom-bar-offre">
+                    <span style="font-size:1.2em;vertical-align:middle;">🛠️</span>
+                    <span>Data extractions</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             analyze_offer_widget(self.tab_service)
-        matching_widget(self.tab_service)
-        generation_widget(self.tab_service)
-        preview_widget(self.tab_service)
-        settings_widget()
+
+
+        with col_body_right:
+            st.markdown(
+                """
+                <div class="offre-hero">
+                    <h2>Gérez vos offres d'emploi efficacement</h2>
+                    <p>Importez, analysez, générez des profils et suivez vos recrutements en un seul endroit.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            
+
+
+
 
     def _render_footer(self) -> None:
-        try:
-            health = self.api_client.health()
-            api_status = f"API: {health.get('status', 'unknown')}"
-        except Exception:
-            LOGGER.exception("API health check failed")
-            api_status = "API indisponible"
 
         st.markdown(
             f'''
             <footer class="custom-footer">
                 <div class="footer-content">
                     <div class="footer-left"><strong>Recruitment Assistant</strong></div>
-                    <div class="footer-center">API base URL : <strong>{self.settings.api_base_url}</strong></div>
-                    <div class="footer-right">{api_status} | © {datetime.now().year}</div>
+                    <div class="footer-center"><strong>AUTOMATICAL APPLIED PROCESS</strong></div>
+                    <div class="footer-right">Charly-Romy Tanga | © {datetime.now().year}</div>
                 </div>
             </footer>
             ''',
