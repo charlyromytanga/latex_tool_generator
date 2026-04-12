@@ -181,7 +181,7 @@ class OfferIngestionOrchestrator:
         self.llm_config = LLMConfig(model_version="all-MiniLM-L6-v2")
         description = offer_input
         lang = self._detect_language(offer_input=description)
-        keywords = self.llm_config.extract_keywords(description, top_k=100)
+        keywords = self.llm_config.extract_keywords(description, top_k=100, stop_words=None if lang == "fr" else "english")
         preprocessed_keywords = [self._normalize_keyword(kw) for kw in keywords if isinstance(kw, str)]
 
         offer_id = f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"

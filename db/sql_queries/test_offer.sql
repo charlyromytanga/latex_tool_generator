@@ -1,0 +1,1 @@
+DELETE FROM offers WHERE offer_id = '';

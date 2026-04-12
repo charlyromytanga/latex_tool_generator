@@ -140,50 +140,65 @@ class LLMConfig:
             self._kw_model = KeyBERT(model)  # type: ignore
         return self._kw_model
 
-    def extract_keywords(self, text: str, top_k: Optional[int] = None) -> List[str]:
+    def extract_keywords(
+        self,
+        text: str,
+        top_k: Optional[int] = None,
+        ngram_range: tuple = (1, 3),
+        stop_words: Optional[Union[str, List[str]]] = None,
+        score_min: float = 0.0,
+        split_paragraphs: bool = True
+    ) -> List[str]:
         """
-        Extraction naïve de mots-clés à partir d'un texte.
-        (À améliorer avec un vrai algorithme d'extraction ou un modèle adapté)
+        Extraction robuste de mots-clés sur texte long :
+        - Découpe en paragraphes (ou lignes)
+        - Extraction sur chaque morceau
+        - Agrégation/déduplication par score max
+        - Personnalisation des stopwords, ngram, score_min
+        - Automatisation : stop_words=None si langue détectée 'fr', sinon 'english'
         """
+        import re
         model = self.get_kw_model()
         lang = detect(text)
         if top_k is None:
             try:
-                top_k = int(os.getenv("TOP_K_KEYWORDS", 500))
+                top_k = int(os.getenv("TOP_K_KEYWORDS", "100"))
             except Exception:
-                top_k = 500
-        # Gestion dynamique des stopwords : None pour le français, 'english' sinon
-        if lang == 'fr':
-            stop_words: Union[str, List[str]] = "french"
+                top_k = 100
+        # Détection automatique des stopwords si non fourni ou si explicitement 'auto'
+        if stop_words is None or stop_words == "auto":
+            stop_words = None if lang == "fr" else "english"
+
+        # Découpage en paragraphes ou lignes
+        if split_paragraphs:
+            chunks = [p.strip() for p in re.split(r"\n{2,}|\r{2,}", text) if p.strip()]
         else:
-            stop_words: Union[str, List[str]] = 'english'
-        keywords = model.extract_keywords(
-            text,
-            keyphrase_ngram_range=(1, 3),
-            stop_words=stop_words,
-            top_n=top_k
-        )
-        # keywords peut être List[Tuple[str, float]] ou List[List[Tuple[str, float]]]
-        # Robust handling: always return List[str]
-        if not keywords:
-            return []
-        # Cas List[List[Tuple[str, float]]]
-        if isinstance(keywords[0], list):
-            flat = []
-            for sublist in keywords:
-                if isinstance(sublist, list):
-                    for kw_tuple in sublist:
-                        if isinstance(kw_tuple, tuple) and len(kw_tuple) > 0:
-                            flat.append(str(kw_tuple[0]))
-            return flat
-        # Cas List[Tuple[str, float]] ou List[str]
-        result = []
-        for kw in keywords:
-            if isinstance(kw, tuple) and len(kw) > 0:
-                result.append(str(kw[0]))
-            elif isinstance(kw, str):
-                result.append(kw)
-        return result
+            chunks = [text]
+
+        all_keywords = []
+        for chunk in chunks:
+            kws = model.extract_keywords(
+                chunk,
+                keyphrase_ngram_range=ngram_range,
+                stop_words="english",
+                top_n=top_k
+            )
+            # kws: List[Tuple[str, float]]
+            all_keywords.extend(kws)
+
+        # Agrégation/déduplication par mot-clé (score max)
+        kw_scores = {}
+        for kw, score in all_keywords:
+            if score >= score_min:
+                norm_kw = kw.strip().lower()
+                if norm_kw in kw_scores:
+                    kw_scores[norm_kw] = max(kw_scores[norm_kw], score)
+                else:
+                    kw_scores[norm_kw] = score
+
+        # Tri par score décroissant et top_k global
+        sorted_kws = sorted(kw_scores.items(), key=lambda x: x[1], reverse=True)
+        return [kw for kw, score in sorted_kws[:top_k]]
 
     # TODO : Remplacer par une vraie extraction basée sur transformers ou keyBERT
 
