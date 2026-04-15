@@ -110,8 +110,11 @@ class Database:
             if self.backend == "sqlite":
                 raw_connection.executescript(script)
             else:
-                with raw_connection.cursor() as cursor:
+                cursor = raw_connection.cursor()
+                try:
                     cursor.execute(script)
+                finally:
+                    cursor.close()
             raw_connection.commit()
         finally:
             raw_connection.close()

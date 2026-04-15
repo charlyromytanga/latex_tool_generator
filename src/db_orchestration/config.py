@@ -3,39 +3,22 @@
 from __future__ import annotations
 
 import os
-import spacy
+import json
+import uuid
+import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Union, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import spacy
 from transformers import pipeline
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer, util
 from langdetect import detect
 from dotenv import load_dotenv
-from dataclasses import dataclass
-from pathlib import Path
-from dotenv import load_dotenv
-
-from typing import List, Tuple, Dict, Any
-import json
-import uuid
-import datetime
-import numpy as np
-import os
-from dotenv import load_dotenv
-
-
-import spacy
-from typing import Dict, Any, List, Optional
-from transformers import pipeline
-from keybert import KeyBERT
-from langdetect import detect
-from typing import List, Tuple, Union, Optional
-import os
-
 
 load_dotenv()  # Charger les variables d'environnement depuis le fichier .env à la racine du projet
-
-from dotenv import load_dotenv
 
 from .database import detect_database_backend, normalize_database_url
 
@@ -246,6 +229,18 @@ class LLMConfig:
         pairs.sort(key=lambda x: x[1], reverse=True)
         return pairs[:top_k]
 
+    def global_score(self, scores, key="max"):
+        # Robustesse : log et extraction explicite
+        if not scores or not isinstance(scores, list):
+            return None
+        vals = []
+        for s in scores:
+            v = s.get(key, None)
+            if isinstance(v, (int, float)):
+                vals.append(float(v))
+        if not vals:
+            return None
+        return sum(vals) / len(vals)
 
     def compute_matching_for_offer(self, database, offer_id: str, top_k: int = 5, persist: bool = False, score_threshold: float = 0.0) -> Dict[str, Any]:
         """
@@ -285,98 +280,6 @@ class LLMConfig:
         # Récupérer tous les projets
         projects = database.fetch_all("SELECT project_id, repo_name, description FROM my_projects")
 
-        now = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        now = datetime.datetime.now().isoformat(timespec="seconds") + "Z"
         model_version = "spacy-hf-v1"
-
-        def summarize_matches(matches):
-            scores = [score for _, score in matches]
-            if not scores:
-                return {
-                    "max": 0.0,
-                    "mean": 0.0,
-                    "median": 0.0,
-                    "top_keywords": []
-                }
-            arr = np.array(scores)
-            return {
-                "max": float(np.max(arr)),
-                "mean": float(np.mean(arr)),
-                "median": float(np.median(arr)),
-                "top_keywords": [kw for kw, score in matches if score >= score_threshold][:top_k]
-            }
-
-        # Matching formations
-        formation_scores = []
-        for f in formations:
-            text = f["program"] + " " + (f["description"] or "")
-            matches = self.match_keywords_to_text(keywords, text, top_k=top_k)
-            summary = summarize_matches(matches)
-            if summary["max"] >= score_threshold:
-                formation_scores.append({"formation_id": f["formation_id"], **summary})
-            if persist:
-                sql = """
-                INSERT INTO formation_matching_scores (offer_id, formation_id, match_score, reasoning, model_version, computed_at)
-                VALUES (:offer_id, :formation_id, :match_score, :reasoning, :model_version, :computed_at)
-                """
-                database.execute(sql, {
-                    "offer_id": offer_id,
-                    "formation_id": f["formation_id"],
-                    "match_score": summary["max"],
-                    "reasoning": json.dumps(matches, ensure_ascii=True),
-                    "model_version": model_version,
-                    "computed_at": now
-                })
-
-        # Matching expériences
-        experience_scores = []
-        for e in experiences:
-            text = e["role"] + " " + (e["description"] or "")
-            matches = self.match_keywords_to_text(keywords, text, top_k=top_k)
-            summary = summarize_matches(matches)
-            if summary["max"] >= score_threshold:
-                experience_scores.append({"exp_id": e["exp_id"], **summary})
-            if persist:
-                sql = """
-                INSERT INTO matching_scores (offer_id, exp_id, match_type, match_score, reasoning, model_version, computed_at)
-                VALUES (:offer_id, :exp_id, :match_type, :match_score, :reasoning, :model_version, :computed_at)
-                """
-                database.execute(sql, {
-                    "offer_id": offer_id,
-                    "exp_id": e["exp_id"],
-                    "match_type": "experience",
-                    "match_score": summary["max"],
-                    "reasoning": json.dumps(matches, ensure_ascii=True),
-                    "model_version": model_version,
-                    "computed_at": now
-                })
-
-        # Matching projets
-        project_scores = []
-        for p in projects:
-            text = p["repo_name"] + " " + (p["description"] or "")
-            matches = self.match_keywords_to_text(keywords, text, top_k=top_k)
-            summary = summarize_matches(matches)
-            if summary["max"] >= score_threshold:
-                project_scores.append({"project_id": p["project_id"], **summary})
-            if persist:
-                sql = """
-                INSERT INTO matching_scores (offer_id, project_id, match_type, match_score, reasoning, model_version, computed_at)
-                VALUES (:offer_id, :project_id, :match_type, :match_score, :reasoning, :model_version, :computed_at)
-                """
-                database.execute(sql, {
-                    "offer_id": offer_id,
-                    "project_id": p["project_id"],
-                    "match_type": "project",
-                    "match_score": summary["max"],
-                    "reasoning": json.dumps(matches, ensure_ascii=True),
-                    "model_version": model_version,
-                    "computed_at": now
-                })
-
-        return {
-            "offer_id": offer_id,
-            "formation_scores": formation_scores,
-            "experience_scores": experience_scores,
-            "project_scores": project_scores
-        }
-
+        return {}

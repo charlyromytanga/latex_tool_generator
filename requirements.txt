@@ -59,9 +59,41 @@ passlib[bcrypt]==1.7.4
 uvicorn[standard]==0.27.0
 
 # NLP
-spacy
-transformers
-sentence-transformers
-torch
+spacy                # extraction d'entités (NLP)
+keybert              # extraction de mots-clés
+sentence-transformers # embeddings et similarité
+langdetect           # détection de langue
+numpy                # statistiques (mean, median, max)
+
+# --- Dépendances Orchestrateur (Runner)
+python-dotenv
+pydantic
+pydantic-settings
+sqlalchemy
+psycopg[binary]
+pysqlite3-binary
+requests
+httpx
+aiohttp
+tenacity
+python-dateutil
+pytz
+python-json-logger
+prometheus-client
+ollama
+bleach
+markdownify
+Jinja2
+PyPDF2
+latexcodec
+pylatexenc
+python-docx
+markdown
+chevron
+anthropic
+
+# --- UI/streamlit ---
+streamlit
+streamlit-antd-components
 keybert
 langdetect
