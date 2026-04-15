@@ -1,64 +1,52 @@
-.venv/
+# Python
 __pycache__/
+*.py[cod]
 *.egg-info/
-*.pyc
-*.pyo
-*.aux
-*.log
-*.out
-*.fls
-*.fdb_latexmk
-*.synctex.gz
-*.toc
-runs/render/*.pdf
-runs/render/*.aux
-runs/render/*.log
-runs/render/*.out
-runs/render/*.fls
-runs/render/*.fdb_latexmk
-runs/render/*.synctex.gz
-runs/render/*.toc
-runs/tmp/
+.venv/
+.env
 
-# Private documentation
-README.private.md
-src/streamlit/*
-
-# Generated local databases
-db/*.db
-db/*.sqlite
-db/*.sqlite3
-db/*.db-shm
-db/*.db-wal
-db/*
-db/*.csv
-
-# Test and coverage files
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.mypy_cache/
-.tox/
-*.coverage
-coverage.xml
-
-# IDE and development
+# VSCode
 .vscode/
-.idea/
-*.swp
-*.swo
-*~
+
+# OS
 .DS_Store
+Thumbs.db
 
-# Generated during build
-dist/
-build/
-*.egg.env
+# Streamlit
+.streamlit/
 
-# .env file containing sensitive information
+# DB
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# Tests
+.coverage
+htmlcov/
+
+# Docker
+*.pid
+
+
+# Scripts shell (ne pas ignorer le dossier scripts lui-même)
+scripts/*.bak
+scripts/*.tmp
+
+# Fichier de lock uv
+uv.lock
+
+# YAML de déploiement (optionnel, à versionner selon usage)
+#deployment.*.yaml
+#hpa.*.yaml
+
+# Images Docker locales
+api-service:latest
+streamlit-frontend:latest
+worker-service:latest
+test-runner
+
+# Secrets
 .env.*
-
-
-# Notebooks
-src/db_orchestration/manip.ipynb
+secrets.*

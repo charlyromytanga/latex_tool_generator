@@ -1,0 +1,15 @@
+# Dockerfile pour les workers asynchrones (Celery, etc.)
+# Utilise l'environnement Python du projet
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+RUN pip install uv && uv sync -G api
+
+COPY src/ ./src/
+COPY db/ ./db/
+
+# À adapter selon le worker (ex: Celery, custom script...)
+# CMD ["celery", "-A", "src.workers.main", "worker", "--loglevel=info"]

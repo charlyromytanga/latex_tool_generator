@@ -1,9 +1,0 @@
-# Dépendances App (Streamlit, UI, etc.)
-streamlit
-streamlit-antd-components
-pydantic
-pydantic-settings
-requests
-httpx
-aiohttp
-python-dotenv

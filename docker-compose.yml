@@ -1,163 +1,28 @@
+
 services:
-  # Database Service (SQLite via volume)
-
-  db:
-    image: keinos/sqlite3:latest
-    container_name: latex-tool-db
-    volumes:
-      - ./db:/data
-      - ./db/schema_init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      SQLITE_DB: recruitment_assistant.db
-    networks:
-      - latex-network
-    restart: unless-stopped
-
-
-  postgres:
-    image: postgres:15
-    container_name: latex-tool-postgres
-    profiles: [postgres]
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-recruitment_assistant}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - latex-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-recruitment_assistant}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # FastAPI Service
-
   api:
     build:
       context: .
-      dockerfile: src/api/Dockerfile
-    container_name: latex-tool-api
+      dockerfile: Dockerfile.api
+    image: api-service:latest
     ports:
       - "8000:8000"
-    volumes:
-      - ./db:/app/db
-      - ./runs:/app/runs
-      - ./data:/app/data
-      - ./templates:/app/templates
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/db/recruitment_assistant.db}
-      PYTHONUNBUFFERED: "1"
-      LOG_LEVEL: info
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      RECRUITMENT_SCHEMA_PATH: /app/db/schema_init.sql
     depends_on:
-      - db
-    networks:
-      - latex-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Streamlit App Service
-
-  app:
+      - worker
+  streamlit:
     build:
       context: .
-      dockerfile: src/app/Dockerfile
-    container_name: latex-tool-app
+      dockerfile: Dockerfile.streamlit
+    image: streamlit-frontend:latest
     ports:
       - "8501:8501"
-    volumes:
-      - ./src:/app/src
-      - ./templates:/app/templates
-      - ./data:/app/data
-    environment:
-      PYTHONUNBUFFERED: "1"
-      STREAMLIT_SERVER_HEADLESS: "true"
-      API_URL: http://api:8000
-      RECRUITMENT_SCHEMA_PATH: /app/db/schema_init.sql
     depends_on:
       - api
-    networks:
-      - latex-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Runner Service (Orchestration - periodic tasks)
-
-  runner:
+  worker:
     build:
       context: .
-      dockerfile: src/orchestration/Dockerfile
-    container_name: latex-tool-runner
-    volumes:
-      - ./db:/app/db
-      - ./runs:/app/runs
-      - ./data:/app/data
-      - ./templates:/app/templates
-      - ./src:/app/src
-      - ./scripts:/app/scripts
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/db/recruitment_assistant.db}
-      PYTHONUNBUFFERED: "1"
-      LOG_LEVEL: info
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      dockerfile: Dockerfile.worker
+    image: worker-service:latest
+    # Pas de port exposé, worker asynchrone
     depends_on:
-      - db
-    networks:
-      - latex-network
-    restart: unless-stopped
-    command: sleep infinity
-
-  # Monitoring Service (optional)
-
-  monitoring:
-    image: alpine:latest
-    container_name: latex-tool-monitoring
-    profiles: [monitoring]
-    volumes:
-      - ./db:/db:ro
-      - ./data:/data:ro
-      - ./scripts:/scripts:ro
-    environment:
-      TZ: UTC
-    networks:
-      - latex-network
-    restart: unless-stopped
-    command: >
-      sh -c "
-      while true; do
-        echo '=== Database Monitor ===' &&
-        sh /scripts/monitor_db.sh &&
-        echo '' &&
-        echo '=== Data Directory Monitor ===' &&
-        sh /scripts/monitor_data.sh &&
-        echo '' &&
-        sleep 3600;
-      done
-      "
-
-
-networks:
-  latex-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-    driver: local
+      - api

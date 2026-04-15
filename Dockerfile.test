@@ -1,0 +1,13 @@
+# Dockerfile pour exécuter les tests unitaires (pytest)
+FROM python:3.10-slim
+
+WORKDIR /app
+
+
+COPY pyproject.toml ./
+RUN pip install uv && uv sync -G test
+
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+CMD ["pytest", "tests/"]

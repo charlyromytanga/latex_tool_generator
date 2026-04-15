@@ -1,108 +1,34 @@
- [project]
-name = "latex-tool-generator"
-version = "0.2.0"
-description = "Plateforme de génération intelligente de documents de candidature (CV, lettres, etc.) orchestrée par IA."
-authors = [
-    { name = "Charly-Romy Tanga", email = "charlyromytanga.cytecg@gmail.com" }
-]
+[project]
+name = "latex_tool_generator"
+version = "0.1.0"
+description = "Gestion de recherche d'emploi génération de CV"
+authors = ["Charly-Romy Tanga charlyromytanga@gmail.com"]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
-license = { text = "MIT" }
-keywords = ["cv", "streamlit", "fastapi", "orchestration", "llm", "latex"]
+requires-python = ">=3.10"
 
+
+
+# Dépendances minimales communes (core)
 dependencies = [
-    "python-dotenv>=1.0.0",
-    "pydantic>=2.5.3",
-    "pydantic-settings>=2.1.0",
-    "sqlalchemy>=2.0.23",
-    "psycopg[binary]>=3.2.9",
-    "requests>=2.31.0",
-    "httpx>=0.25.2",
-    "aiohttp>=3.9.1",
-    "tenacity>=8.2.3",
-    "python-dateutil>=2.8.2",
-    "pytz>=2023.3",
-    "python-json-logger>=2.0.7",
-    "prometheus-client>=0.19.0",
-    "streamlit>=1.32.0",
-    "uvicorn[standard]>=0.27.0",
-    "streamlit-antd-components",
-    "pylatexenc==2.10",
-    "latexcodec==2.0",
-    "PyPDF2==3.0.1",
-    "Jinja2==3.1.2",
-    "python-docx==0.8.11",
-    "markdown==3.5.1",
-    "chevron==0.14.0",
-    "anthropic==0.89.0",
-    "ollama==0.1.0",
-    "bleach==6.1.0",
-    "markdownify==0.11.5",
-    "pdfplumber==0.10.3",
-    "pypdf==4.0.1",
-    "omegaconf==2.3.0",
-    "confuse==2.0.1",
-    "asyncio==3.4.3",
-    "aiofiles==23.2.1",
-    "APScheduler==3.10.4",
-    "alembic==1.13.0",
-    "anyio==4.1.0",
-    "python-multipart==0.0.6",
-    "python-jose[cryptography]==3.3.0",
-    "passlib[bcrypt]==1.7.4",
-    "spacy",
-    "transformers",
-    "sentence-transformers",
-    "torch",
-    "keybert",
-    "langdetect"
+	"pydantic",
+	"scikit-learn",
+	"pandas",
+	"python-dotenv",
+	"requests"
 ]
 
-[project.optional-dependencies]
-api = [
-    "fastapi",
-    "uvicorn[standard]",
-    "spacy",
-    "keybert",
-    "sentence-transformers",
-    "langdetect",
-    "sqlalchemy",
-    "psycopg[binary]",
-    "pysqlite3-binary",
-    "pydantic",
-    "pydantic-settings",
-    "python-dotenv",
-    "requests",
-    "httpx",
-    "aiohttp",
-    "tenacity",
-    "python-dateutil",
-    "pytz",
-    "python-json-logger",
-    "prometheus-client",
-    "ollama",
-    "bleach",
-    "markdownify",
-    "Jinja2",
-    "PyPDF2",
-    "latexcodec",
-    "pylatexenc",
-    "python-docx",
-    "markdown",
-    "chevron",
-    "anthropic"
+
+
+# Dépendances optionnelles (format uv)
+optional-dependencies.api = [
+	"fastapi",
+	"uvicorn"
 ]
-app = [
-    "streamlit",
-    "streamlit-antd-components",
-    "pydantic",
-    "pydantic-settings",
-    "requests",
-    "httpx",
-    "aiohttp",
-    "python-dotenv"
+optional-dependencies.streamlit = [
+	"streamlit"
+]
+optional-dependencies.test = [
+	"pytest",
+	"flake8"
 ]
 
-[build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
