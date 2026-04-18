@@ -14,7 +14,9 @@ dependencies = [
 	"scikit-learn",
 	"pandas",
 	"python-dotenv",
-	"requests"
+	"requests",
+	"spacy>=3.8.14",
+	"sentence-transformers>=5.4.1",
 ]
 
 

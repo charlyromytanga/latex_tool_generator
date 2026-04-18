@@ -50,3 +50,6 @@ test-runner
 # Secrets
 .env.*
 secrets.*
+
+# modèles ML
+src/core/utils/models/
