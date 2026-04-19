@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "steam_reco_system",
   "repo_name": "steam_reco_system",
   "title": "Steam Reco System (Low Latency + Search)",
   "description": "Système de recommandation et recherche temps réel inspiré de Steam. Recommandations < 100ms, recherche + ranking intégrés, simulation d’architecture production (API, search, observabilité).",
+  "ats_bullet_fr": "- Conception d'un système de recommandation et recherche temps réel (<100ms) inspiré de Steam, avec API FastAPI, search, observabilité (Prometheus, Grafana).",
+  "ats_bullet_en": "- Designed a real-time recommendation and search system (<100ms) inspired by Steam, with FastAPI, search, and observability (Prometheus, Grafana).",
   "stack": [
     "Python 3.11+",
     "FastAPI",

@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "projet_traitement_signal_s3",
   "repo_name": "projet_traitement_signal_s3",
   "title": "Projet Traitement Signal S3",
   "description": "Projet collaboratif de classification de musiques par genre, utilisant Python, SQL, GitHub et Trello pour la gestion de projet et la collaboration. Réunions régulières, feuille de route commune, partage des tâches et rédaction collective du rapport.",
+  "ats_bullet_fr": "- Classification automatique de musiques par genre (Python, SQL, gestion collaborative GitHub/Trello, rapport collectif).",
+  "ats_bullet_en": "- Automatic music genre classification (Python, SQL, collaborative management GitHub/Trello, collective report).",
   "stack": [
     "Python",
     "SQL (PostgreSQL)",

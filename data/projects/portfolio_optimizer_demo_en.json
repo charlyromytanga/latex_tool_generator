@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "project_id": "portfolio_optimizer_demo",
+  "ats_bullet_en": "- Web portfolio optimization demo (Streamlit), Grafana/Prometheus monitoring, Docker Compose orchestration."
+}

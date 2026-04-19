@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "proj_latex_tool_generator",
   "repo_name": "latex_tool_generator",
   "repo_url": "https://github.com/charlyromytanga/latex_tool_generator",
   "description": "Plateforme Python pour automatiser la génération de documents de candidature (CV, lettres et artefacts associés) à partir d'offres d'emploi structurées. Ingestion, validation, génération LaTeX, API, App, CI/CD, Docker.",
+  "ats_bullet_fr": "- Développement d'une plateforme Python pour la génération automatisée de CV et lettres à partir d'offres structurées (LaTeX, FastAPI, Streamlit, Docker).",
+  "ats_bullet_en": "- Developed a Python platform for automated CV and cover letter generation from structured job offers (LaTeX, FastAPI, Streamlit, Docker).",
   "languages": ["Python", "LaTeX", "Shell"],
   "stack": ["FastAPI", "Streamlit", "Docker", "GitHub Actions", "uv"],
   "readme_full_text": "Voir README.md",

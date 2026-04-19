@@ -6,15 +6,17 @@
   },
   "formations": [
     {
+      "language": "fr",
       "formation_id": "edu_cytech_engineering",
       "institution": "CY Tech (ex EISTI)",
       "program": "Ingenieur Mathematiques Appliquees Finance et Technologie",
       "degree": "Diplome d'ingenieur",
       "location": "Cergy, France",
-      "start_date": "2023-09-01",
-      "end_date": null,
+      "start_date": "2023",
+      "end_date": "2026",
       "is_current": true,
       "description": "Parcours d'ingenieur axe sur les mathematiques appliquees, la data, l'informatique et la finance, avec une specialisation progressive vers la finance computationnelle et les systemes d'information financiers.",
+      "ats_bullet_fr": "- Diplôme d'ingénieur (Ingénieur Mathématiques Appliquées Finance et Technologie) - CY Tech (ex EISTI) (Cergy, France), 2023 - 2026. Parcours d'ingénieur axé sur les mathématiques appliquées, la data, l'informatique et la finance, avec une spécialisation progressive vers la finance computationnelle et les systèmes d'information financiers.",
       "courses": [
         "Analyse numerique",
         "Architecture et Programmation Parallele",
@@ -104,29 +106,34 @@
       ]
     },
     {
-      "formation_id": "edu_lycee_val_de_durance",
-      "institution": "Lycee Polyvalent Val de Durance",
-      "program": "Terminale Scientifique",
-      "degree": "Baccalaureat scientifique",
-      "location": "Pertuis, France",
-      "start_date": "2019-09-01",
-      "end_date": "2020-06-30",
+      "language": "fr",
+      "formation_id": "edu_cpge_claude_bernard",
+      "institution": "Lycee Claude Bernard",
+      "program": "CPGE",
+      "degree": "Classe preparatoire",
+      "location": "France",
+      "start_date": "2022-09-01",
+      "end_date": "2023-06-30",
       "is_current": false,
-      "description": "Formation scientifique generale avec base solide en mathematiques et sciences physiques.",
+      "description": "TIPE sur la localisation des fuites d'eau potable a l'aide d'un capteur acoustique (SePem300).",
+      "ats_bullet_fr": "- Classe préparatoire (CPGE) - Lycée Claude Bernard (France), 2022 - 2023. TIPE sur la localisation des fuites d'eau potable à l'aide d'un capteur acoustique (SePem300).",
       "courses": [
-        "Mathematiques",
-        "Physique",
-        "Sciences"
+        "Physique ondulatoire",
+        "Informatique Python",
+        "Physique interdisciplinaire"
       ],
       "achievements": [
-        "Preparation reussie pour classe preparatoire"
+        "Approche experimentale et modelisation de detection acoustique"
       ],
       "tags": [
-        "lycee",
-        "science"
+        "cpge",
+        "tipe",
+        "python",
+        "acoustique"
       ]
     },
     {
+      "language": "fr",
       "formation_id": "edu_cpge_fenelon",
       "institution": "Lycee Fenelon (Paris)",
       "program": "CPGE",
@@ -136,6 +143,7 @@
       "end_date": "2021-06-30",
       "is_current": false,
       "description": "Travaux d'initiative personnelle encadree (TIPE) sur l'utilisation des ondes ultrasonores pour fragmenter un calcul renal.",
+      "ats_bullet_fr": "- Classe préparatoire (CPGE) - Lycée Fénelon (Paris) (Paris, France), 2020 - 2021. TIPE sur l'utilisation des ondes ultrasonores pour fragmenter un calcul rénal.",
       "courses": [
         "Physique ondulatoire",
         "Mecanique",
@@ -151,28 +159,206 @@
       ]
     },
     {
+      "language": "fr",
+      "formation_id": "edu_lycee_val_de_durance",
+      "institution": "Lycee Polyvalent Val de Durance",
+      "program": "Terminale Scientifique",
+      "degree": "Baccalaureat scientifique",
+      "location": "Pertuis, France",
+      "start_date": "2019-09-01",
+      "end_date": "2020-06-30",
+      "is_current": false,
+      "description": "Formation scientifique generale avec base solide en mathematiques et sciences physiques.",
+      "ats_bullet_fr": "- Baccalauréat scientifique (Terminale Scientifique) - Lycée Polyvalent Val de Durance (Pertuis, France), 2019 - 2020. Formation scientifique générale avec base solide en mathématiques et sciences physiques.",
+      "courses": [
+        "Mathematiques",
+        "Physique",
+        "Sciences"
+      ],
+      "achievements": [
+        "Preparation reussie pour classe preparatoire"
+      ],
+      "tags": [
+        "lycee",
+        "science"
+      ]
+    },
+    {
+      "language": "en",
+      "formation_id": "edu_cytech_engineering",
+      "institution": "CY Tech (ex EISTI)",
+      "program": "Engineering Applied Mathematics, Finance and Technology",
+      "degree": "Master of Engineering",
+      "location": "Cergy, France",
+      "start_date": "2023",
+      "end_date": "2026",
+      "is_current": true,
+      "description": "Engineering program focused on applied mathematics, data, computer science and finance, with progressive specialization in computational finance and financial information systems.",
+      "ats_bullet_en": "- Master of Engineering (Applied Mathematics, Finance and Technology) - CY Tech (ex EISTI) (Cergy, France), 2023 - 2026. Engineering program focused on applied mathematics, data, computer science and finance, with progressive specialization in computational finance and financial information systems.",
+      "courses": [
+        "Numerical analysis",
+        "Parallel Architecture and Programming",
+        "Databases",
+        "Big Data",
+        "Blockchain & Cryptocurrencies",
+        "Business Intelligence",
+        "Compressive sensing",
+        "Corporate Finance",
+        "Data Exploration",
+        "Data Science",
+        "Datamining",
+        "Web Development",
+        "Computational Finance",
+        "Financial Risk Management",
+        "Artificial Intelligence: Applications",
+        "Introduction to Finance",
+        "Introduction to Time Series",
+        "Mathematics for Finance",
+        "Forecasting Models",
+        "Optimization and AI for Finance",
+        "Linear Optimization",
+        "Probability",
+        "Probability & Simulation",
+        "Programming for Finance",
+        "Data Security",
+        "Monte Carlo Simulation",
+        "Inferential Statistics",
+        "Operating System",
+        "Banking Information System",
+        "Graph Theory"
+      ],
+      "course_categories": {
+        "Mathematics": [
+          "Numerical analysis",
+          "Compressive sensing",
+          "Data Exploration",
+          "Computational Finance",
+          "Introduction to Time Series",
+          "Mathematics for Finance",
+          "Forecasting Models",
+          "Linear Optimization",
+          "Probability",
+          "Probability & Simulation",
+          "Monte Carlo Simulation",
+          "Inferential Statistics"
+        ],
+        "Computer Science": [
+          "Parallel Architecture and Programming",
+          "Databases",
+          "Business Intelligence",
+          "Web Development",
+          "Artificial Intelligence: Applications",
+          "Programming for Finance",
+          "Data Security",
+          "Operating System",
+          "Banking Information System"
+        ],
+        "Math and Computer Science": [
+          "Big Data",
+          "Data Science",
+          "Datamining",
+          "Optimization and AI for Finance",
+          "Graph Theory"
+        ],
+        "Finance": [
+          "Corporate Finance",
+          "Financial Risk Management",
+          "Introduction to Finance"
+        ],
+        "Innovation and Entrepreneurship": [
+          "Blockchain & Cryptocurrencies"
+        ]
+      },
+      "achievements": [
+        "Progressive specialization in quantitative finance, data and financial information systems",
+        "Technical foundation covering applied mathematics, algorithms, data engineering and programming for finance",
+        "Exposure to courses in computational finance, financial risk management and predictive modeling"
+      ],
+      "tags": [
+        "engineering",
+        "math",
+        "finance",
+        "data",
+        "quant",
+        "computer-science"
+      ]
+    },
+    {
+      "language": "en",
       "formation_id": "edu_cpge_claude_bernard",
-      "institution": "Lycee Claude Bernard",
-      "program": "CPGE",
-      "degree": "Classe preparatoire",
+      "institution": "Lycée Claude Bernard",
+      "program": "Preparatory Class",
+      "degree": "Preparatory Class",
       "location": "France",
       "start_date": "2022-09-01",
       "end_date": "2023-06-30",
       "is_current": false,
-      "description": "TIPE sur la localisation des fuites d'eau potable a l'aide d'un capteur acoustique (SePem300).",
+      "description": "TIPE on the detection of drinking water leaks using an acoustic sensor (SePem300).",
+      "ats_bullet_en": "- Preparatory Class (CPGE) - Lycée Claude Bernard (France), 2022 - 2023. TIPE on the detection of drinking water leaks using an acoustic sensor (SePem300).",
       "courses": [
-        "Physique ondulatoire",
-        "Informatique Python",
-        "Physique interdisciplinaire"
+        "Wave physics",
+        "Python programming",
+        "Interdisciplinary physics"
       ],
       "achievements": [
-        "Approche experimentale et modelisation de detection acoustique"
+        "Experimental approach and modeling of acoustic detection"
       ],
       "tags": [
         "cpge",
         "tipe",
         "python",
-        "acoustique"
+        "acoustics"
+      ]
+    },
+    {
+      "language": "en",
+      "formation_id": "edu_cpge_fenelon",
+      "institution": "Lycée Fénelon (Paris)",
+      "program": "Preparatory Class",
+      "degree": "Preparatory Class",
+      "location": "Paris, France",
+      "start_date": "2020-09-01",
+      "end_date": "2021-06-30",
+      "is_current": false,
+      "description": "TIPE on the use of ultrasonic waves to fragment a kidney stone.",
+      "ats_bullet_en": "- Preparatory Class (CPGE) - Lycée Fénelon (Paris) (Paris, France), 2020 - 2021. TIPE on the use of ultrasonic waves to fragment a kidney stone.",
+      "courses": [
+        "Wave physics",
+        "Mechanics",
+        "Applied mathematics"
+      ],
+      "achievements": [
+        "Dynamic modeling bubble/wave/stone"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "ultrasound"
+      ]
+    },
+    {
+      "language": "en",
+      "formation_id": "edu_lycee_val_de_durance",
+      "institution": "Lycée Polyvalent Val de Durance",
+      "program": "Science Track",
+      "degree": "Scientific Baccalaureate",
+      "location": "Pertuis, France",
+      "start_date": "2019-09-01",
+      "end_date": "2020-06-30",
+      "is_current": false,
+      "description": "General scientific education with a strong foundation in mathematics and physical sciences.",
+      "ats_bullet_en": "- Scientific Baccalaureate (Science Track) - Lycée Polyvalent Val de Durance (Pertuis, France), 2019 - 2020. General scientific education with a strong foundation in mathematics and physical sciences.",
+      "courses": [
+        "Mathematics",
+        "Physics",
+        "Science"
+      ],
+      "achievements": [
+        "Successful preparation for preparatory class"
+      ],
+      "tags": [
+        "lycee",
+        "science"
       ]
     }
   ]

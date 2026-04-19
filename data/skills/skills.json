@@ -1,0 +1,34 @@
+{
+  "soft_skills": [
+    {
+      "fr": "Animer le travail d'équipe, collaborer en interdisciplinarité, exercer le leadership, assurer la médiation scientifique",
+      "en": "Demonstrated teamwork, interdisciplinary collaboration, leadership, and science mediation"
+    },
+    {
+      "fr": "Communiquer efficacement, assurer le service client, gérer des projets, organiser des tâches, optimiser la gestion du temps",
+      "en": "Communicated effectively, provided customer service orientation, managed projects, organized tasks, and managed time efficiently"
+    },
+    {
+      "fr": "Analyser, résoudre des situations complexes, faire preuve de créativité, manifester une curiosité scientifique, s'adapter, travailler en autonomie, maintenir la rigueur, prendre des initiatives",
+      "en": "Applied analytical thinking, solved problems, demonstrated creativity, showed scientific curiosity, adapted to new situations, worked autonomously, maintained rigor, and took initiative"
+    }
+  ],
+  "hard_skills": [
+    {
+      "fr": "Python, C++, Scala, SQL, LaTeX, Shell scripting, Git/GitHub",
+      "en": "Developed in Python, C++, Scala, SQL, LaTeX; automated with shell scripting; versioned with Git/GitHub"
+    },
+    {
+      "fr": "FastAPI, Streamlit, Node.js/Express, React, Web development, Docker, Docker Compose",
+      "en": "Built APIs and apps with FastAPI, Streamlit, Node.js/Express, React; developed web solutions; containerized with Docker and Docker Compose"
+    },
+    {
+      "fr": "Machine Learning, Data science, Statistiques, Modélisation, Simulation, Optimisation, Power BI",
+      "en": "Applied machine learning, performed data analysis, used statistics, built mathematical models, ran simulations, optimized portfolios, visualized data, and leveraged Power BI"
+    },
+    {
+      "fr": "API REST, Pybind11, Elasticsearch, MongoDB, Prometheus/Grafana, CI/CD (GitHub Actions), PostgreSQL, SBT/Scala, Solidity (Ethereum), Web3.js",
+      "en": "Designed REST APIs, integrated Pybind11, implemented Elasticsearch and MongoDB, monitored with Prometheus/Grafana, automated CI/CD (GitHub Actions), managed PostgreSQL, used SBT/Scala, developed smart contracts (Solidity, Web3.js)"
+    }
+  ]
+}

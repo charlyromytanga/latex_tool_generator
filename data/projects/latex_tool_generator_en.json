@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "project_id": "proj_latex_tool_generator",
+  "ats_bullet_en": "- Developed a Python platform for automated CV and cover letter generation from structured job offers (LaTeX, FastAPI, Streamlit, Docker)."
+}

@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "project_id": "energy_derivatives_pricing",
+  "ats_bullet_en": "- Developed C++ pricing engines for energy derivatives (Spark/Crack/Forwards), Python bindings, benchmarks."
+}

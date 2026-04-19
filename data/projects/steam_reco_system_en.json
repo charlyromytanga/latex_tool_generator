@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "project_id": "steam_reco_system",
+  "ats_bullet_en": "- Designed a real-time recommendation and search system (<100ms) inspired by Steam, with FastAPI, search, and observability (Prometheus, Grafana)."
+}

@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "proj_sbt_scala_cmd",
   "repo_name": "proj_sbt_scala_cmd",
   "title": "Projet Scala S3 - proj_sbt_scala_cmd",
   "description": "Projet Scala utilisant SBT pour la gestion des dépendances, configuration Spark, logging, et environnement de développement sous IntelliJ IDEA.",
+  "ats_bullet_fr": "- Projet Scala SBT : analyse de données distribuées avec Spark, gestion des dépendances, logging avancé, dev sous IntelliJ.",
+  "ats_bullet_en": "- Scala SBT project: distributed data analysis with Spark, dependency management, advanced logging, development in IntelliJ.",
   "stack": [
     "Scala 2.13.15",
     "SBT",

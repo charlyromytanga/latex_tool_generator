@@ -1,0 +1,548 @@
+{
+  "profile": {
+    "full_name": "Charly-Romy TANGA",
+    "headline": "Ingenieur Mathematiques Appliquees Finance et Technologie CY TECH (ex EISTI) | Data Analyst Internship Natran (ex GRTgaz)",
+    "linkedin_url": "https://www.linkedin.com/in/charly-romy-tanga",
+    "summary": "As an individual deeply committed to applied mathematics and computer science, I aim to further enhance my expertise by collaborating with interdisciplinary teams to address complex, real-world problems that are mathematically modeled and implemented through advanced computational solutions.",
+    "core_skills": [
+      "Recherche",
+      "Modelisation mathematique",
+      "Communication",
+      "Gestion de projet",
+      "Medecine preventive"
+    ],
+    "source": {
+      "provider": "linkedin_manual",
+      "collected_at": "2026-04-05",
+      "privacy_level": "private_user_input"
+    }
+  },
+  "experiences": [
+    {
+      "language": "en",
+      "experience_id": "exp_natran_data_analyst_2023_2025",
+      "category": "professional",
+      "company": "NaTran",
+      "role": "Data Analyst",
+      "employment_type": "apprenticeship",
+      "location": "Bois-Colombes, Ile-de-France, France",
+      "work_mode": "on_site",
+      "start_date": "2023-09",
+      "end_date": "2026-09",
+      "is_current": false,
+      "duration_months": 25,
+      "description": "OPENDATA ODRE data analysis for transparency and operational value creation.",
+      "ats_bullet_en": "- Data Analyst - NaTran (Bois-Colombes), 09/2023-09/2025. OPENDATA ODRE data analysis for transparency and operational value creation.",
+      "skills": [
+        "Data analysis",
+        "Open data",
+        "Communication",
+        "Project management"
+      ],
+      "achievements": [
+        "Contribution to OPENDATA ODRE topics",
+        "Production of data analyses for business needs"
+      ],
+      "tags": [
+        "natran",
+        "data_analyst",
+        "opendata"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_natran_de_mobility_2025_present",
+      "category": "professional",
+      "company": "NaTran Deutschland",
+      "role": "Data Analyst - International Mobility",
+      "employment_type": "internship",
+      "location": "Berlin, Germany",
+      "work_mode": "on_site",
+      "start_date": "2025-05",
+      "end_date": "2025-08",
+      "is_current": true,
+      "duration_months": 11,
+      "description": "Analysis of European gas flows (ENTSOG), Power BI reports, collaborative tools.",
+      "ats_bullet_en": "- Data Analyst - International Mobility - NaTran Deutschland (Berlin), 05/2025-present. Analysis of European gas flows (ENTSOG), Power BI reports, collaborative tools.",
+      "skills": [
+        "Microsoft Power BI",
+        "Agile project management",
+        "Microsoft Power Automate",
+        "Microsoft PowerApps",
+        "SharePoint",
+        "Data analysis"
+      ],
+      "achievements": [
+        "Analysis of European gas flows (ENTSOG)",
+        "Design of high value-added Power BI reports",
+        "Implementation of collaborative tools (SharePoint, ticket system)"
+      ],
+      "tags": [
+        "natran_deutschland",
+        "international_mobility",
+        "power_bi",
+        "entsog"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_hsbc_conseiller_2023_07_08",
+      "category": "professional",
+      "company": "HSBC",
+      "role": "Banking Advisor",
+      "employment_type": "temporary",
+      "location": "Paris, Louvre Branch, France",
+      "work_mode": "on_site",
+      "start_date": "2023-07-01",
+      "end_date": "2023-08-31",
+      "is_current": false,
+      "duration_months": 2,
+      "description": "Customer service, daily operations management and business development.",
+      "ats_bullet_en": "- Banking Advisor - HSBC Louvre Branch (Paris), 07-08/2023. Customer service, daily operations management and business development.",
+      "skills": [
+        "Banking regulations",
+        "Internal procedures",
+        "Operations management",
+        "Communication"
+      ],
+      "achievements": [
+        "Management of daily banking operations in branch",
+        "Application of internal control and compliance requirements"
+      ],
+      "tags": [
+        "bank",
+        "compliance",
+        "operations"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_cpge_claude_bernard_2022_2023",
+      "category": "education",
+      "company": "Lycée Claude Bernard",
+      "role": "Preparatory Class Student",
+      "employment_type": "academic",
+      "location": "France",
+      "work_mode": "on_site",
+      "start_date": "2022-09-01",
+      "end_date": "2023-06-30",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "TIPE on the detection of drinking water leaks using an acoustic sensor (SePem300).",
+      "ats_bullet_en": "- Preparatory Class Student - Lycée Claude Bernard (France), 2022-2023. TIPE on the detection of drinking water leaks using an acoustic sensor (SePem300).",
+      "skills": [
+        "Research",
+        "Modeling",
+        "Communication",
+        "Design",
+        "Data modeling",
+        "Data visualization",
+        "Data analysis"
+      ],
+      "achievements": [
+        "Study of the operation of the SePem300 acoustic sensor",
+        "Leak detection approach by acoustic signal",
+        "Interdisciplinary positioning: wave physics + Python computing"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "acoustic_sensor",
+        "python"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_hsbc_attache_commercial_2022_08",
+      "category": "professional",
+      "company": "HSBC",
+      "role": "Sales Assistant",
+      "employment_type": "temporary",
+      "location": "Paris 75002, Louvre Branch, France",
+      "work_mode": "on_site",
+      "start_date": "2022-08-01",
+      "end_date": "2022-08-31",
+      "is_current": false,
+      "duration_months": 1,
+      "description": "Temporary assignment focused on customer relations in a bank branch.",
+      "ats_bullet_en": "- Sales Assistant - HSBC Louvre Branch (Paris), 08/2022. Temporary assignment focused on customer relations in a bank branch.",
+      "skills": [
+        "Teamwork",
+        "Customer relations",
+        "Communication"
+      ],
+      "achievements": [
+        "Operational support in a banking environment",
+        "Strengthening customer relations skills"
+      ],
+      "tags": [
+        "bank",
+        "customer_relations",
+        "temp"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_cpge_fenelon_2020_2021",
+      "category": "education",
+      "company": "Lycée Fénelon (Paris)",
+      "role": "Preparatory Class Student",
+      "employment_type": "academic",
+      "location": "Paris 06, France",
+      "work_mode": "on_site",
+      "start_date": "2020-09-01",
+      "end_date": "2021-06-30",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "TIPE on the use of ultrasonic waves to fragment a kidney stone, with dynamic modeling of bubble/wave/stone interactions.",
+      "ats_bullet_en": "- Preparatory Class Student - Lycée Fénelon (Paris), 2020-2021. TIPE on the use of ultrasonic waves to fragment a kidney stone.",
+      "skills": [
+        "Research",
+        "Mathematical modeling",
+        "Communication",
+        "Project management",
+        "Preventive medicine"
+      ],
+      "achievements": [
+        "Dynamic characterization of ultrasonic wave and vapor bubble interaction",
+        "Modeling of kidney stone fragmentation under assumptions",
+        "Interdisciplinary positioning: mechanics, wave physics, applied mathematics"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "ultrasound",
+        "modeling"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_irem_hyppocampe_2019_12",
+      "category": "academic_project",
+      "company": "Institute for Research in Mathematics Education (IREM) - Aix Marseille University",
+      "role": "HYPPOCAMPE Intern / Science Facilitator",
+      "employment_type": "internship",
+      "location": "Luminy, Marseille, France",
+      "work_mode": "on_site",
+      "start_date": "2019-12-01",
+      "end_date": "2019-12-31",
+      "is_current": false,
+      "duration_months": 1,
+      "description": "Research on programmable automaton and facilitation of a mathematics booth.",
+      "ats_bullet_en": "- HYPPOCAMPE Intern / Science Facilitator - IREM Aix Marseille University (Marseille), 12/2019. Research on programmable automaton and facilitation of a mathematics booth.",
+      "skills": [
+        "Research",
+        "Science communication",
+        "Communication",
+        "Mathematics skills"
+      ],
+      "achievements": [
+        "Research on programmable automaton",
+        "Facilitation of a mathematics booth (Towers of Hanoi)",
+        "Contribution to a scientific event with 2400 visitors"
+      ],
+      "tags": [
+        "irem",
+        "outreach",
+        "maths_for_all",
+        "research"
+      ]
+    },
+    {
+      "language": "en",
+      "experience_id": "exp_lycee_val_de_durance_2019_2020",
+      "category": "education",
+      "company": "Lycee Polyvalent Val de Durance",
+      "role": "Senior Year Science Student",
+      "employment_type": "academic",
+      "location": "Pertuis, Provence-Alpes-Cote d'Azur, France",
+      "work_mode": "on_site",
+      "start_date": "2019-09-01",
+      "end_date": "2020-06-30",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "Science track with strong focus on mathematics and physical sciences.",
+      "ats_bullet_en": "- Senior Year Science Student - Lycée Polyvalent Val de Durance (Pertuis), 2019-2020. Science track with strong focus on mathematics and physical sciences.",
+      "skills": [
+        "Mathematics skills",
+        "Fundamental research",
+        "Science communication",
+        "Communication"
+      ],
+      "achievements": [
+        "Strengthened scientific foundations for preparatory class orientation and applied mathematics"
+      ],
+      "tags": [
+        "education",
+        "lycee",
+        "mathematics"
+      ]
+    },
+    {
+      "language": "fr",
+      "experience_id": "exp_natran_data_analyst_2023_2025",
+      "category": "professional",
+      "company": "NaTran",
+      "role": "Analyste de donnees",
+      "employment_type": "apprenticeship",
+      "location": "Bois-Colombes, Ile-de-France, France",
+      "work_mode": "on_site",
+      "start_date": "2023-09",
+      "end_date": "2026-09",
+      "is_current": false,
+      "duration_months": 25,
+      "description": "Analyste de donnees sur perimetre OPENDATA ODRE, traitement et analyse de donnees pour la transparence et la valorisation operationnelle.",
+      "ats_bullet_fr": "- Analyste de données - NaTran (Bois-Colombes), 09/2023-09/2025. Analyse de données OPENDATA ODRE pour la transparence et la valorisation opérationnelle.",
+      "ats_bullet_en": "- Data Analyst - NaTran (Bois-Colombes), 09/2023-09/2025. OPENDATA ODRE data analysis for transparency and operational value creation.",
+      "skills": [
+        "Analyse des donnees",
+        "Open data",
+        "Communication",
+        "Gestion de projet"
+      ],
+      "achievements": [
+        "Contribution aux sujets OPENDATA ODRE",
+        "Production d'analyses data pour besoins metier"
+      ],
+      "tags": [
+        "natran",
+        "data_analyst",
+        "opendata"
+      ]
+    },
+    {
+      "language": "fr",
+      "experience_id": "exp_natran_de_mobility_2025_present",
+      "category": "professional",
+      "company": "NaTran Deutschland",
+      "role": "Analyste de donnees - Mobilite internationale",
+      "employment_type": "internship",
+      "location": "Berlin, Allemagne",
+      "work_mode": "on_site",
+      "start_date": "2025-05",  
+      "end_date": "2025-08",
+      "is_current": true,
+      "duration_months": 11,
+      "description": "Mobilite internationale a Berlin: analyse des flux de gaz europeens (ENTSOG), conception de rapports Power BI, et developpement d'outils collaboratifs (SharePoint, ticketing) pour la Data & Transparency Team.",
+      "ats_bullet_fr": "- Analyste de données - Mobilité internationale - NaTran Deutschland (Berlin), 05/2025-présent. Analyse des flux de gaz européens (ENTSOG), rapports Power BI, outils collaboratifs.",
+      "ats_bullet_en": "- Data Analyst - International Mobility - NaTran Deutschland (Berlin), 05/2025-present. Analysis of European gas flows (ENTSOG), Power BI reports, collaborative tools.",
+      "skills": [
+        "Microsoft Power BI",
+        "Gestion de projet agile",
+        "Microsoft Power Automate",
+        "Microsoft PowerApps",
+        "SharePoint",
+        "Analyse des donnees"
+      ],
+      "achievements": [
+        "Analyse des flux de gaz europeens (ENTSOG)",
+        "Conception de rapports Power BI a forte valeur ajoutee",
+        "Mise en place d'outils collaboratifs (SharePoint, ticket system)"
+      ],
+      "tags": [
+        "natran_deutschland",
+        "international_mobility",
+        "power_bi",
+        "entsog"
+      ]
+    },
+      {
+      "language": "fr",
+      "experience_id": "exp_hsbc_conseiller_2023_07_08",
+      "category": "professional",
+      "company": "HSBC",
+      "role": "Conseiller bancaire",
+      "employment_type": "temporary",
+      "location": "Paris, Agence du Louvre, France",
+      "work_mode": "on_site",
+      "start_date": "2023-07",
+      "end_date": "2023-08",
+      "is_current": false,
+      "duration_months": 2,
+      "description": "Accueil clientele, controle des operations courantes, developpement commercial de la relation client et application des normes de controle interne HSBC.",
+      "ats_bullet_fr": "- Conseiller bancaire - HSBC Agence du Louvre (Paris), 07-08/2023. Accueil clientèle, gestion des opérations courantes et développement commercial.",
+      "ats_bullet_en": "- Banking Advisor - HSBC Louvre Branch (Paris), 07-08/2023. Customer service, daily operations management and business development.",
+      "skills": [
+        "Reglementation bancaire",
+        "Procedures internes",
+        "Gestion des operations",
+        "Communication"
+      ],
+      "achievements": [
+        "Gestion des operations bancaires courantes en agence",
+        "Application des exigences de controle interne et de conformite"
+      ],
+      "tags": [
+        "banque",
+        "conformite",
+        "operations"
+      ]
+    },
+      {
+      "language": "fr",
+      "experience_id": "exp_cpge_claude_bernard_2022_2023",
+      "category": "education",
+      "company": "Lycee Claude Bernard",
+      "role": "Etudiant CPGE",
+      "employment_type": "academic",
+      "location": "France",
+      "work_mode": "on_site",
+      "start_date": "2022-09",
+      "end_date": "2023-06",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "TIPE sur la localisation des fuites d'eau potable avec capteur acoustique SePem300 (ecoute du bruit d'ecoulement et detection).",
+      "ats_bullet_fr": "- Étudiant CPGE - Lycée Claude Bernard (France), 2022-2023. TIPE sur la localisation des fuites d'eau potable avec capteur acoustique SePem300.",
+      "ats_bullet_en": "- Preparatory Class Student - Lycée Claude Bernard (France), 2022-2023. TIPE on the detection of drinking water leaks using an acoustic sensor (SePem300).",
+      "skills": [
+        "Recherche",
+        "Modelisation",
+        "Communication",
+        "Conception",
+        "Modelisation des donnees",
+        "Visualisation de donnees",
+        "Analyse des donnees"
+      ],
+      "achievements": [
+        "Etude du fonctionnement du capteur acoustique SePem300",
+        "Approche de detection de fuite par signal acoustique",
+        "Positionnement interdisciplinaire: physique ondulatoire + informatique Python"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "capteur_acoustique",
+        "python"
+      ]
+    },
+      {
+      "language": "fr",
+      "experience_id": "exp_hsbc_attache_commercial_2022_08",
+      "category": "professional",
+      "company": "HSBC",
+      "role": "Attache commercial",
+      "employment_type": "temporary",
+      "location": "Paris 75002, Agence du Louvre, France",
+      "work_mode": "on_site",
+      "start_date": "2022-08-01",
+      "end_date": "2022-08-31",
+      "is_current": false,
+      "duration_months": 1,
+      "description": "Mission interimaire orientee relation client en agence bancaire.",
+      "ats_bullet_fr": "- Attaché commercial - HSBC Agence du Louvre (Paris), 08/2022. Mission intérimaire orientée relation client en agence bancaire.",
+      "ats_bullet_en": "- Sales Assistant - HSBC Louvre Branch (Paris), 08/2022. Temporary assignment focused on customer relations in a bank branch.",
+      "skills": [
+        "Travail d'equipe",
+        "Relation client",
+        "Communication"
+      ],
+      "achievements": [
+        "Support operationnel en environnement bancaire",
+        "Renforcement des competences en relation client"
+      ],
+      "tags": [
+        "banque",
+        "relation_client",
+        "interim"
+      ]
+    },
+      {
+      "language": "fr",
+      "experience_id": "exp_cpge_fenelon_2020_2021",
+      "category": "education",
+      "company": "Lycee Fenelon (Paris)",
+      "role": "Etudiant CPGE",
+      "employment_type": "academic",
+      "location": "Paris 06, France",
+      "work_mode": "on_site",
+      "start_date": "2020-09-01",
+      "end_date": "2021-06-30",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "TIPE sur l'utilisation des ondes ultrasonores pour fragmenter un calcul renal, avec modelisation dynamique des interactions bulles/onde/calcul.",
+      "ats_bullet_fr": "- Étudiant CPGE - Lycée Fénelon (Paris), 2020-2021. TIPE sur l'utilisation des ondes ultrasonores pour fragmenter un calcul rénal.",
+      "ats_bullet_en": "- Preparatory Class Student - Lycée Fénelon (Paris), 2020-2021. TIPE on the use of ultrasonic waves to fragment a kidney stone.",
+      "skills": [
+        "Recherche",
+        "Modelisation mathematique",
+        "Communication",
+        "Gestion de projet",
+        "Medecine preventive"
+      ],
+      "achievements": [
+        "Caracterisation dynamique de l'interaction onde ultrasonore et bulles de vapeur",
+        "Modelisation sous hypotheses de la fragmentation du calcul renal",
+        "Positionnement interdisciplinaire: mecanique, ondulatoire, mathematiques appliquees"
+      ],
+      "tags": [
+        "cpge",
+        "tipe",
+        "ultrasons",
+        "modelisation"
+      ]
+    },
+    {
+      "language": "fr",
+      "experience_id": "exp_irem_hyppocampe_2019_12",
+      "category": "academic_project",
+      "company": "Institut de Recherche pour l'Enseignement des Mathematiques (IREM) - Aix Marseille Universite",
+      "role": "Stagiaire HYPPOCAMPE / Animateur scientifique",
+      "employment_type": "internship",
+      "location": "Luminy, Marseille, France",
+      "work_mode": "on_site",
+      "start_date": "2019-12-01",
+      "end_date": "2019-12-31",
+      "is_current": false,
+      "duration_months": 1,
+      "description": "Stage HYPPOCAMPE (theme OXFORD et plus loin) avec travaux de recherche sur automate programmable et animation d'un stand mathematique.",
+      "ats_bullet_fr": "- Stagiaire HYPPOCAMPE / Animateur scientifique - IREM Aix Marseille Université (Marseille), 12/2019. Recherche sur automate programmable et animation d'un stand mathématique.",
+      "skills": [
+        "Recherche",
+        "Mediation scientifique",
+        "Communication",
+        "Competences mathematiques"
+      ],
+      "achievements": [
+        "Travaux de recherche sur automate programmable",
+        "Animation d'un stand mathematique (Tours d'Hanoi)",
+        "Contribution a un evenement scientifique avec 2400 visiteurs"
+      ],
+      "tags": [
+        "irem",
+        "vulgarisation",
+        "maths_pour_tous",
+        "recherche"
+      ]
+    },
+    {
+      "language": "fr",
+      "experience_id": "exp_lycee_val_de_durance_2019_2020",
+      "category": "education",
+      "company": "Lycee Polyvalent Val de Durance",
+      "role": "Eleve Terminale Scientifique",
+      "employment_type": "academic",
+      "location": "Pertuis, Provence-Alpes-Cote d'Azur, France",
+      "work_mode": "on_site",
+      "start_date": "2019-09-01",
+      "end_date": "2020-06-30",
+      "is_current": false,
+      "duration_months": 10,
+      "description": "Parcours terminale scientifique avec forte orientation mathematiques et sciences physiques.",
+      "ats_bullet_fr": "- Élève Terminale Scientifique - Lycée Polyvalent Val de Durance (Pertuis), 2019-2020. Parcours scientifique avec forte orientation mathématiques et sciences physiques.",
+      "skills": [
+        "Competences mathematiques",
+        "Recherche fondamentale",
+        "Mediation scientifique",
+        "Communication"
+      ],
+      "achievements": [
+        "Consolidation des bases scientifiques pour orientation vers CPGE et mathematiques appliquees"
+      ],
+      "tags": [
+        "education",
+        "lycee",
+        "mathematiques"
+      ]
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "poly_bet",
   "repo_name": "poly_bet",
   "title": "POLY BET",
   "description": "La plateforme où l’info devient un jeu. Plateforme de paris décentralisée avec frontend React, backend Node.js, smart contracts Ethereum, et orchestration Docker.",
+  "ats_bullet_fr": "- Développement d'une plateforme de paris décentralisée (React, Node.js, Solidity, Docker, nginx).",
+  "ats_bullet_en": "- Developed a decentralized betting platform (React, Node.js, Solidity, Docker, nginx).",
   "stack": [
     "React (Vite)",
     "Node.js",

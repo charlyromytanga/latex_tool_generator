@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "portfolio_optimizer_demo",
   "repo_name": "portfolio_optimizer_demo",
   "title": "Portfolio Optimizer - Démo Web",
   "description": "Démonstrateur d’optimisation de portefeuille basé sur Streamlit, landing page QR code, monitoring Grafana/Prometheus/Loki, orchestration Docker Compose.",
+  "ats_bullet_fr": "- Démonstrateur d'optimisation de portefeuille web (Streamlit), monitoring Grafana/Prometheus, orchestration Docker Compose.",
+  "ats_bullet_en": "- Web portfolio optimization demo (Streamlit), Grafana/Prometheus monitoring, Docker Compose orchestration.",
   "stack": [
     "Python",
     "Streamlit",

@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "energy_derivatives_pricing",
   "repo_name": "energy_derivatives_pricing",
   "title": "Energy Derivatives Pricing",
   "description": "C++ pricing engines pour power, gas et spreads (Spark, Crack, Forwards), avec bindings Python et framework de benchmark.",
+  "ats_bullet_fr": "- Développement de moteurs de pricing C++ pour produits dérivés énergie (Spark/Crack/Forwards), bindings Python, benchmarks.",
+  "ats_bullet_en": "- Developed C++ pricing engines for energy derivatives (Spark/Crack/Forwards), Python bindings, benchmarks.",
   "stack": [
     "C++20",
     "Eigen",

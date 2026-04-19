@@ -1,8 +1,11 @@
 {
+  "language": "fr",
   "project_id": "quant_engine",
   "repo_name": "quant_engine",
   "title": "Quant Engine",
   "description": "C++20 quantitative finance engine : Black-Scholes, Monte Carlo, Greeks, Portfolio VaR, framework de benchmark.",
+  "ats_bullet_fr": "- Développement d'un moteur quantitatif en C++20 pour la finance (Black-Scholes, Monte Carlo, VaR, benchmarks, pybind11).",
+  "ats_bullet_en": "- Developed a C++20 quantitative finance engine (Black-Scholes, Monte Carlo, VaR, benchmarks, pybind11).",
   "stack": [
     "C++20",
     "CMake",

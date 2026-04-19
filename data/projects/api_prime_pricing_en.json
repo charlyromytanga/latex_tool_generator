@@ -1,10 +1,10 @@
 {
-  "language": "fr",
+  "language": "en",
   "project_id": "api_prime_pricing",
   "repo_name": "api_prime_pricing",
   "title": "API Prime Pricing",
-  "description": "Projet de prédiction de prime auto basé sur deux modèles ML (fréquence et sévérité), exposés via une API FastAPI et une application Streamlit.",
-  "ats_bullet_fr": "- Développement d'une API FastAPI et application Streamlit pour la prédiction de primes auto via modèles ML (fréquence, sévérité).",
+  "description": "Auto insurance premium prediction project based on two ML models (frequency and severity), exposed via a FastAPI API and a Streamlit app.",
+  "ats_bullet_en": "- Developed a FastAPI API and Streamlit app for auto insurance premium prediction using ML models (frequency, severity).",
   "stack": [
     "Python 3.11+",
     "FastAPI",
@@ -17,18 +17,18 @@
     "GitHub Actions"
   ],
   "main_features": [
-    "API FastAPI pour l'inférence ML (fréquence, sévérité, prime)",
-    "Application Streamlit pour la simulation utilisateur",
-    "Modèles ML exportés et utilisés en inference",
-    "Base de données SQLite locale",
-    "CI/CD automatisé avec GitHub Actions et Render"
+    "FastAPI API for ML inference (frequency, severity, premium)",
+    "Streamlit app for user simulation",
+    "ML models exported and used in inference",
+    "Local SQLite database",
+    "Automated CI/CD with GitHub Actions and Render"
   ],
   "folders": {
-    "src/app/": "Application Streamlit principale",
-    "src/api/backend/": "API FastAPI",
-    "src/models/": "Pipeline et scripts ML",
-    "output_models/modeles/": "Artefacts JSON des modèles",
-    "db/": "Base SQLite locale"
+    "src/app/": "Main Streamlit app",
+    "src/api/backend/": "FastAPI API",
+    "src/models/": "ML pipeline and scripts",
+    "output_models/modeles/": "Model JSON artifacts",
+    "db/": "Local SQLite database"
   },
   "prod_urls": {
     "api": "https://api-prime-pricing.onrender.com",
@@ -67,11 +67,11 @@
     "ci": [
       "Format/lint: black, ruff, flake8, pylint",
       "Tests: pytest",
-      "Validation Docker: build + smoke test des endpoints"
+      "Docker validation: build + endpoint smoke test"
     ],
     "cd": [
-      "Déclenchement automatique si la CI est success sur main",
-      "Appel des deux deploy hooks Render: api_prime_pricing, api_prime_pricing_app"
+      "Automatic trigger if CI is success on main",
+      "Call both Render deploy hooks: api_prime_pricing, api_prime_pricing_app"
     ]
   },
   "contributors": [

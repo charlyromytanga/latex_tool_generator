@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "project_id": "quant_engine",
+  "ats_bullet_en": "- Developed a C++20 quantitative finance engine (Black-Scholes, Monte Carlo, VaR, benchmarks, pybind11)."
+}
