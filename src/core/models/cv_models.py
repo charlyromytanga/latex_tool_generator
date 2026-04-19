@@ -36,7 +36,7 @@ cv = CV(data_dir=DATA_DIR)
 # ========PIPELINE OFFER - CV PROCESS======
 formations, experiences, projects = cv.load_alls()
 
-cv_base_in_alls_fr, cv_base_in_alls_en = cv.cv_base_in_alls()
+cv_base_in_all_fr, cv_base_in_all_en = cv.cv_base_in_all()
 
 logger.info(f'--- Formations chargées ({len(formations)}) ---')
 for f in formations:
@@ -55,6 +55,6 @@ for p in projects:
 
 
 logger.info(f'--- CV Base In Alls FR ---')
-logger.info(cv_base_in_alls_fr)
+logger.info(cv_base_in_all_fr)
 logger.info(f'--- CV Base In Alls EN ---')
-logger.info(cv_base_in_alls_en)
+logger.info(cv_base_in_all_en)

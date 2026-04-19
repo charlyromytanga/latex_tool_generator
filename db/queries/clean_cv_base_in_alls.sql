@@ -1,0 +1,1 @@
+DELETE FROM cv_base_in_all WHERE id = 'cv_base_in_all';

@@ -4,105 +4,58 @@ PRAGMA synchronous = NORMAL;
 
 BEGIN TRANSACTION;
 
--- Table principale des offres
-CREATE TABLE IF NOT EXISTS offers (
-    offer_id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    company TEXT,
-    location TEXT,
-    country TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    raw_text TEXT NOT NULL,
-    meta_json TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+-- Table 1 : Base CV (sections principales)
+CREATE TABLE IF NOT EXISTS cv_base_in_all (
+    id TEXT PRIMARY KEY,
+    language TEXT NOT NULL CHECK (language IN ('fr', 'en')),
+    header TEXT,
+    summary TEXT,
+    skills TEXT,
+    experience TEXT,
+    education TEXT,
+    certifications TEXT,
+    projects TEXT,
+    languages TEXT,
+    interests TEXT
 );
 
--- Table des CV générés ou stockés
-CREATE TABLE IF NOT EXISTS cv (
-    cv_id TEXT PRIMARY KEY,
-    offer_id TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    content TEXT NOT NULL,
-    meta_json TEXT,
-    generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (offer_id) REFERENCES offers(offer_id) ON DELETE SET NULL
+-- Table 2 : Offres d'emploi enrichies (une ligne par offre)
+CREATE TABLE IF NOT EXISTS job_offer (
+    id TEXT PRIMARY KEY,
+    cv_base_id TEXT NOT NULL DEFAULT 'cv_base_in_all',
+    language TEXT NOT NULL CHECK (language IN ('fr', 'en')),
+    country TEXT NOT NULL CHECK (country IN ('fr', 'uk', 'lu', 'de', 'ch')),
+    city TEXT,
+    compagny_name TEXT,
+    compagny_type TEXT CHECK (compagny_type IN ('grand groupe', 'tpe', 'pme', 'esn', 'banque', 'assurance', 'industrie', 'cabinet conseil')),
+    offer_title TEXT,
+    offer_description TEXT,
+    compagny_presentation TEXT,
+    llm_header TEXT,
+    llm_summary TEXT,
+    llm_skills TEXT,
+    llm_experience TEXT,
+    llm_education TEXT,
+    llm_certifications TEXT,
+    llm_projects TEXT,
+    llm_languages TEXT,
+    llm_interests TEXT,
+    date_offer DATE DEFAULT (DATE('now')),
+    FOREIGN KEY (cv_base_id) REFERENCES cv_base_in_all(id) ON DELETE CASCADE
 );
 
--- Table des lettres de motivation générées ou stockées
-CREATE TABLE IF NOT EXISTS letters (
-    letter_id TEXT PRIMARY KEY,
-    offer_id TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    content TEXT NOT NULL,
-    meta_json TEXT,
-    generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (offer_id) REFERENCES offers(offer_id) ON DELETE SET NULL
-);
-
--- Table des artefacts générés (CV, lettre, etc.)
-CREATE TABLE IF NOT EXISTS generations (
-    generation_id TEXT PRIMARY KEY,
-    offer_id TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('cv', 'letter')),
-    artifact_path TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed')),
-    error_message TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (offer_id) REFERENCES offers(offer_id) ON DELETE CASCADE
-);
-
--- Table des scores de matching (offre vs artefact)
-CREATE TABLE IF NOT EXISTS matchings (
-    matching_id TEXT PRIMARY KEY,
-    offer_id TEXT NOT NULL,
-    target_type TEXT NOT NULL CHECK (target_type IN ('cv', 'letter')),
-    target_id TEXT NOT NULL,
-    score REAL NOT NULL CHECK (score >= 0.0 AND score <= 1.0),
-    details_json TEXT,
-    matched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (offer_id) REFERENCES offers(offer_id) ON DELETE CASCADE
+-- Table 3 : Suivi des candidatures et génération CV/LM
+CREATE TABLE IF NOT EXISTS candidature_tracking (
+    id TEXT PRIMARY KEY,
+    job_offer_id TEXT NOT NULL,
+    cv TEXT,
+    lm TEXT,
+    matching_score REAL CHECK (matching_score >= 0.0 AND matching_score <= 1.0),
+    generation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    mail_content TEXT,
+    days_to_wait INTEGER,
+    response_email TEXT,
+    FOREIGN KEY (job_offer_id) REFERENCES job_offer(id) ON DELETE CASCADE
 );
 
 COMMIT;
-
-
--- Table des expériences personnelles
-CREATE TABLE IF NOT EXISTS experiences (
-    exp_id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    company TEXT,
-    location TEXT,
-    start_date DATE,
-    end_date DATE,
-    description TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    meta_json TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Table des projets personnels
-CREATE TABLE IF NOT EXISTS projects (
-    project_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    url TEXT,
-    technologies_json TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    meta_json TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Table des formations
-CREATE TABLE IF NOT EXISTS formations (
-    formation_id TEXT PRIMARY KEY,
-    institution TEXT NOT NULL,
-    program TEXT NOT NULL,
-    degree TEXT,
-    location TEXT,
-    start_date DATE,
-    end_date DATE,
-    description TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('tier-1', 'tier-2', 'tier-3')),
-    meta_json TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
