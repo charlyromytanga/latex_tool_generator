@@ -1,0 +1,63 @@
+IT Quant - Finance de Marché 
+
+À propos de l’offre d’emploi
+
+Descriptif du poste
+
+En tant qu’IT Quant en CDI, vos missions :
+
+    Développement et maintenance d’outils quantitatifs pour le Pricing, les Risques ou les stratégies de Trading.
+    Implémentation de modèles mathématiques développés par les équipes de recherche Quant.
+    Optimisation des librairies de Pricing (latence, robustesse, parallélisation).
+    Collaboration avec les Traders et les Structureurs pour comprendre les besoins métiers et ajuster les outils en conséquence.
+    Tests et validation des modèles et algorithmes (backtesting, analyse des sensibilités, stress tests).
+    Support technique des outils en production utilisés par le Front Office.
+
+Profil recherché
+
+🎓 Vous êtes titulaire d’un diplôme de niveau bac+5.
+
+💻 Vous maitrisez les langages de programmation : C++, C# et Python.
+
+🤝 Votre avez une réelle capacité à collaborer et à communiquer.
+
+🌐 La maîtrise de l’anglais est obligatoire.
+
+👔 Vous justifiez d’une première expérience en Finance de Marché.
+
+Déroulement des entretiens
+
+☎️ Un premier échange téléphonique d’une dizaine de minutes pour prendre connaissance de vos attentes | 5-10 min
+
+👤 Un premier entretien avec un Digital Sales Manager pour en savoir plus sur vous et vous présenter eXalt | 45 min
+
+👥 Un second échange avec un Business Manager Senior pour vous parler de nos clients et nos missions | 45 min / 1h
+
+Chaque étape vise à vous offrir une vision complète de notre environnement et à identifier si nous partageons les mêmes ambitions !
+
+Qui sont-ils ?
+
+eXalt-Fi est un cabinet de conseil spécialisé en Finance de Marché conjugué à la fois l’aspect Métier, Technologique et Gestion de Projet.
+
+Au service de nos clients BFI, Assets Managers, Dépositaires et Fintechs, nous les assistons dans leurs activités au quotidien depuis la réflexion méthodologique jusqu’à l’assistance aux activités opérationnelles.
+
+En tant qu’IT Quant en Finance de Marché chez eXalt-Fi, vous intervenez sur des projets clés pour nos clients.
+
+
+eXalt
+70 619 abonnés
+Services et conseil en informatique 501-1 000 employés 1 123 sur LinkedIn
+
+eXalt est une formidable aventure humaine, une communauté de plus de 950 consultants, polyglottes du digital, dédiés à la transformation et spécialistes du Product, Project and Design Management (eXalt Flow).
+
+Fondée par 7 eXaltés, en juillet 2018, autour des valeurs d'intrapreneuriat, de co-apprentissage et de co-construction, eXalt inscrit son développement dans un engagement fort auprès de ses clients et de ses équipes: rester pour longtemps encore, une start up du consulting, agile et réinventée.
+
+La force d'eXalt consiste à s'organiser en interne comme une organisation produit et à cultiver les méthodes du Product Management au sein des équipes pour faciliter la diffusion des bonnes pratiques auprès de ses clients. Des objectifs partagés, des rituels de co-apprentissage (communauté en ligne, cercles d’apprentissage/holacratie) et la Co-construction, mécanismes d’initiatives internes pilotés par des OKRs partagés.
+
+Do-ocrate dans sa croissance, eXalt est aussi un groupe qui décline son modèle dans le secteur de la finance de marché (eXalt Fi), dans l'IT, dans le dev, le cloud et la data engineering (eXalt IT), dans la cybersécurité (eXalt Shield) et la data (eXalt Value).
+
+Si cela fait "écho"​ et que vous appréciez la prise d'initiative et désirez participer à des communautés solidaires et apprenantes ​: prenons un moment pour nous rencontrer à Paris, Lyon, Bordeaux, Lille, Nantes, Provence, Azur, Bogotà, New York, Madrid, Bruxelles (Belgique), Londres, Lisbonne et Montréal.
+
+#avosmarquespretsdiffusez
+
+Retrouvez nous sur Welcome To The Jungle : https://www.welcometothejungle.com/fr/companies/exalt

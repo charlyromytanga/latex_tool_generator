@@ -303,18 +303,341 @@ class CandidatureTracker:
         pass
 
 # --- Classe d'intégration pour LLM Claude et n8n ---
+import anthropic
+import requests as http_requests
+import uuid as uuid_lib
+
 class IntegrationService:
     """
-    Gère l'intégration avec Claude (LLM) pour la génération des sections LLM et avec n8n pour l'automatisation email.
+    Gère l'intégration avec Claude (LLM) pour la génération des sections LLM et avec n8n.
+    Pipeline en 3 méthodes : extraction → enrichissement → scoring + génération documents.
     """
-    def __init__(self, claude_api_key: str, n8n_api_key: str ):
-        self.claude_api_key = claude_api_key
-        self.n8n_api_key = n8n_api_key
+    def __init__(
+        self,
+        cv_base_fr: dict,
+        cv_base_en: dict,
+        n8n_webhook_url: str = "",
+        model: str = "claude-sonnet-4-6",
+        model_scoring: str = "claude-sonnet-4-6",
+        max_tokens: int = 4096,
+    ):
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.client = anthropic.Anthropic(api_key=self.api_key)
+        self.model = model
+        self.model_scoring = model_scoring
+        self.max_tokens = max_tokens
+        self.cv_base_fr = cv_base_fr
+        self.cv_base_en = cv_base_en
+        self.n8n_webhook_url = n8n_webhook_url
+        self.db_dir = os.getenv("DB_DIR", "./db")
 
-    def generate_llm_sections(self, offer_description: str, cv_base_sections: dict) :
-        """Appelle Claude pour générer les sections LLM à partir de l'offre et du CV base."""
-        pass
+        # Prompts construits à l'instanciation — stables, mis en cache côté Anthropic
+        self.prompt_extract = self._build_prompt_extract()
+        self.prompt_enrich: Dict[str, str] = {
+            "fr": self._build_prompt_enrich("fr"),
+            "en": self._build_prompt_enrich("en"),
+        }
+        self.prompt_score = self._build_prompt_score()
 
-    def send_n8n_email(self, to_email: str, subject: str, content: str):
+    # ─── Builders de prompts ──────────────────────────────────────────────────
+
+    def _build_prompt_extract(self) -> str:
+        return """Tu es un expert en analyse d'offres d'emploi. Extrais les informations structurées d'une offre et retourne un JSON strict.
+
+Règles d'extraction :
+- language : langue de l'offre → "fr" ou "en" uniquement
+- country : pays du poste → valeurs autorisées uniquement : "fr", "uk", "lu", "de", "ch"
+- city : ville (string ou null)
+- compagny_name : nom de l'entreprise (string ou null)
+- compagny_type : type → valeurs autorisées : "grand groupe", "tpe", "pme", "esn", "banque", "assurance", "industrie", "cabinet conseil", ou null
+- offer_title : intitulé exact du poste
+- offer_description : description complète du poste (texte brut intégral, ne pas tronquer)
+- compagny_presentation : présentation de l'entreprise (string ou null)
+- llm_header : reformulation ATS du titre → verbe d'action + domaine + niveau (ex: "Analyste Données Senior | Power BI & Python | Finance")
+
+Retourne UNIQUEMENT le JSON valide, sans markdown ni commentaires."""
+
+    def _build_prompt_enrich(self, language: str) -> str:
+        cv_base = self.cv_base_fr if language == "fr" else self.cv_base_en
+        cv_json = json.dumps(cv_base, ensure_ascii=False, indent=2)
+        lang_label = "français" if language == "fr" else "anglais"
+        return f"""
+                Tu es un expert ATS (Applicant Tracking System). Tu personnalises un CV pour dépasser 70 % sur les ATS stricts ET souples.
+                Langue de travail : {lang_label}.
+
+                CV de base du candidat — source de vérité, ne pas inventer de données :
+                <cv_base>
+                {cv_json}
+                </cv_base>
+
+                Règles impératives :
+                - Utilise UNIQUEMENT les informations du CV de base et de l'offre fournie
+                - Intègre les mots-clés exacts de l'offre (technologies, méthodes, certifications)
+                - Quantifie avec les chiffres déjà présents dans le CV base
+                - Bullet points avec "•" pour chaque section de liste
+                - Sois factuel, pas d'invention ni d'extrapolation
+
+                Génère un JSON strict avec ces clés :
+                - llm_summary : résumé professionnel 4-5 lignes ciblant l'offre
+                - llm_skills : 10-12 compétences ordonnées par pertinence pour l'offre
+                - llm_experience : 5-8 bullet points d'expérience avec mots-clés de l'offre
+                - llm_education : formations reformulées en soulignant les aspects liés à l'offre
+                - llm_certifications : certifications pertinentes pour l'offre
+                - llm_projects : 3-4 projets les plus pertinents reformulés pour l'offre
+                - llm_languages : niveaux de langues
+                - llm_interests : centres d'intérêt (conserver sauf pertinence pour l'offre)
+
+                Retourne UNIQUEMENT le JSON valide.
+            """
+
+    def _build_prompt_score(self) -> str:
+        return """
+                    Tu es un moteur ATS expert. Évalue la correspondance entre un CV personnalisé et une offre d'emploi.
+
+                    Critères pondérés (total = 1.0) :
+                    - Mots-clés techniques (0.30) : présence des technologies, outils, frameworks demandés
+                    - Titre et niveau (0.20) : adéquation titre ciblé / profil / séniorité
+                    - Expérience et domaine (0.25) : années, secteur, type de missions
+                    - Formation et certifications (0.15) : diplômes et certifications requis
+                    - Soft skills et langues (0.10) : compétences comportementales, langues requises
+
+                    Retourne UNIQUEMENT ce JSON strict :
+                    {
+                    "score": <float 0.0-1.0>,
+                    "details": {
+                        "keywords": <float>,
+                        "title_level": <float>,
+                        "experience": <float>,
+                        "education": <float>,
+                        "soft_skills": <float>
+                    },
+                    "justification": "<2-3 phrases expliquant le score>",
+                    "generate_documents": <true si score >= 0.70, sinon false>
+                    }"""
+
+    # ─── Méthode 1 : Extraction et structuration de l'offre ──────────────────
+
+    def extract_and_structure_offer(self, offer_text: str) -> Dict[str, Any]:
+        """
+        Extrait les métadonnées structurées d'une offre texte brut (première moitié de job_offer).
+        Retourne {"structured_offer": dict, "offer_text": str}.
+        """
+        logger.info("[M1] extract_and_structure_offer — appel Claude (%s) | offre %d chars",
+                    self.model, len(offer_text))
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=1024,
+                system=[{"type": "text", "text": self.prompt_extract, "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": f"Offre d'emploi :\n\n{offer_text}"}],
+            )
+            logger.info("[M1] tokens utilisés — input: %d | output: %d | cache_read: %d",
+                        response.usage.input_tokens,
+                        response.usage.output_tokens,
+                        getattr(response.usage, "cache_read_input_tokens", 0))
+            raw = next(b.text for b in response.content if b.type == "text")
+            logger.debug("[M1] réponse brute Claude : %s", raw[:300])
+            structured: Dict[str, Any] = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+            structured["id"] = str(uuid_lib.uuid4())
+            structured["cv_base_id"] = "cv_base_in_all_fr" if structured.get("language") == "fr" else "cv_base_in_all_en"
+            logger.info("[M1] extraction OK — id=%s | langue=%s | pays=%s | titre=%s",
+                        structured.get("id"), structured.get("language"),
+                        structured.get("country"), structured.get("offer_title"))
+            return {"structured_offer": structured, "offer_text": offer_text}
+        except json.JSONDecodeError as e:
+            logger.error("[M1] Échec parsing JSON Claude : %s | réponse brute : %s", e, raw[:500] if 'raw' in dir() else "N/A")
+            return {}
+        except Exception as e:
+            logger.exception("[M1] Exception extract_and_structure_offer : %s", e)
+            return {}
+
+    # ─── Méthode 2 : Enrichissement LLM croisé avec cv_base ─────────────────
+
+    def enrich_offer_with_cv(self, structured_offer: Dict[str, Any], offer_text: str) -> Dict[str, Any]:
+        """
+        Enrichit l'offre structurée avec les sections LLM croisées avec cv_base_in_all.
+        Sauvegarde l'offre complète dans job_offer. Retourne l'offre complète.
+        """
+        language = structured_offer.get("language", "fr")
+        system_prompt = self.prompt_enrich.get(language, self.prompt_enrich["fr"])
+        logger.info("[M2] enrich_offer_with_cv — langue=%s | modèle=%s | max_tokens=%d",
+                    language, self.model, self.max_tokens)
+        try:
+            with self.client.messages.stream(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": (
+                    f"Offre texte complète :\n{offer_text}\n\n"
+                    f"Offre structurée (première partie) :\n{json.dumps(structured_offer, ensure_ascii=False)}"
+                )}],
+            ) as stream:
+                response = stream.get_final_message()
+
+            logger.info("[M2] tokens utilisés — input: %d | output: %d | cache_read: %d",
+                        response.usage.input_tokens,
+                        response.usage.output_tokens,
+                        getattr(response.usage, "cache_read_input_tokens", 0))
+
+            raw = next(b.text for b in response.content if b.type == "text")
+            logger.debug("[M2] réponse brute Claude : %s", raw[:300])
+
+            try:
+                llm_sections: Dict[str, Any] = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+            except json.JSONDecodeError as e:
+                logger.error("[M2] Échec parsing JSON sections LLM : %s | extrait: %s", e, raw[:500])
+                return {}
+
+            full_offer = {**structured_offer, **llm_sections}
+            sections_generees = [k for k in llm_sections if k.startswith("llm_")]
+            logger.info("[M2] sections LLM générées : %s", sections_generees)
+
+            cols = [
+                "id", "cv_base_id", "language", "country", "city",
+                "compagny_name", "compagny_type", "offer_title", "offer_description",
+                "compagny_presentation", "llm_header", "llm_summary", "llm_skills",
+                "llm_experience", "llm_education", "llm_certifications",
+                "llm_projects", "llm_languages", "llm_interests",
+            ]
+            sql = f"INSERT OR REPLACE INTO job_offer ({', '.join(cols)}) VALUES ({', '.join(['?'] * len(cols))});"
+            try:
+                with sqlite3.connect(os.path.join(self.db_dir, "recruitment.db")) as conn:
+                    conn.execute(sql, tuple(full_offer.get(c) for c in cols))
+                    conn.commit()
+                logger.info("[M2] job_offer sauvegardée en base → id=%s", full_offer.get("id"))
+            except Exception as db_err:
+                logger.error("[M2] Échec sauvegarde DB : %s", db_err)
+
+            return full_offer
+        except Exception as e:
+            logger.exception("[M2] Exception enrich_offer_with_cv : %s", e)
+            return {}
+
+    # ─── Méthode 3 : Scoring ATS + génération CV/LM ──────────────────────────
+
+    def score_and_generate(self, full_offer: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calcule le score ATS de l'offre enrichie vs cv_base.
+        Si score >= 0.70 : génère CV et LM en texte et sauvegarde dans candidature_tracking.
+        """
+        language = full_offer.get("language", "fr")
+        cv_base = self.cv_base_fr if language == "fr" else self.cv_base_en
+
+        scoring_input = json.dumps({
+            "cv_personnalise": {k: full_offer.get(k) for k in [
+                "llm_header", "llm_summary", "llm_skills", "llm_experience",
+                "llm_education", "llm_certifications", "llm_projects",
+                "llm_languages", "llm_interests",
+            ]},
+            "offre": {k: full_offer.get(k) for k in [
+                "offer_title", "offer_description", "compagny_type", "compagny_presentation",
+            ]},
+        }, ensure_ascii=False)
+
+        logger.info("[M3] score_and_generate — langue=%s | modèle scoring=%s",
+                    language, self.model_scoring)
+        logger.info("[M3] taille input scoring : %d chars", len(scoring_input))
+        try:
+            score_resp = self.client.messages.create(
+                model=self.model_scoring,
+                max_tokens=512,
+                system=[{"type": "text", "text": self.prompt_score, "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": scoring_input}],
+            )
+            logger.info("[M3] tokens scoring — input: %d | output: %d",
+                        score_resp.usage.input_tokens, score_resp.usage.output_tokens)
+
+            raw_score = next(b.text for b in score_resp.content if b.type == "text")
+            logger.debug("[M3] réponse scoring brute : %s", raw_score)
+
+            try:
+                score_data: Dict[str, Any] = json.loads(raw_score[raw_score.find("{"):raw_score.rfind("}") + 1])
+            except json.JSONDecodeError as e:
+                logger.error("[M3] Échec parsing JSON score : %s | extrait: %s", e, raw_score[:500])
+                return {}
+
+            score = float(score_data.get("score", 0.0))
+            logger.info("[M3] score ATS = %.2f (%.0f %%) | generate_documents=%s",
+                        score, score * 100, score_data.get("generate_documents"))
+            logger.info("[M3] justification : %s", score_data.get("justification", ""))
+
+            cv_text: Optional[str] = None
+            lm_text: Optional[str] = None
+
+            if score >= 0.70:
+                lang_label = "français" if language == "fr" else "anglais"
+                logger.info("[M3] score >= 70 %% — génération CV + LM en %s (modèle=%s)",
+                            lang_label, self.model)
+                doc_prompt = (
+                    f"Génère en {lang_label} un CV complet et une lettre de motivation ATS-optimisés.\n\n"
+                    f"CV de base : {json.dumps(cv_base, ensure_ascii=False)}\n"
+                    f"Offre personnalisée : {json.dumps(full_offer, ensure_ascii=False)}\n\n"
+                    "Retourne UNIQUEMENT ce JSON strict :\n"
+                    '{"cv": "<CV complet structuré en texte>", '
+                    '"lm": "<Lettre de motivation 3 paragraphes, ton professionnel>"}'
+                )
+                with self.client.messages.stream(
+                    model=self.model,
+                    max_tokens=4096,
+                    messages=[{"role": "user", "content": doc_prompt}],
+                ) as stream:
+                    doc_resp = stream.get_final_message()
+
+                logger.info("[M3] tokens génération docs — input: %d | output: %d",
+                            doc_resp.usage.input_tokens, doc_resp.usage.output_tokens)
+                raw_docs = next(b.text for b in doc_resp.content if b.type == "text")
+
+                try:
+                    docs: Dict[str, str] = json.loads(raw_docs[raw_docs.find("{"):raw_docs.rfind("}") + 1])
+                    cv_text = docs.get("cv")
+                    lm_text = docs.get("lm")
+                    logger.info("[M3] CV généré : %d chars | LM générée : %d chars",
+                                len(cv_text or ""), len(lm_text or ""))
+                except json.JSONDecodeError as e:
+                    logger.error("[M3] Échec parsing JSON CV/LM : %s | extrait: %s", e, raw_docs[:500])
+            else:
+                logger.info("[M3] score < 70 %% — aucun document généré")
+
+            candidature_id = str(uuid_lib.uuid4())
+            try:
+                with sqlite3.connect(os.path.join(self.db_dir, "recruitment.db")) as conn:
+                    conn.execute(
+                        "INSERT INTO candidature_tracking (id, job_offer_id, cv, lm, matching_score) VALUES (?, ?, ?, ?, ?);",
+                        (candidature_id, full_offer.get("id"), cv_text, lm_text, score),
+                    )
+                    conn.commit()
+                logger.info("[M3] candidature_tracking sauvegardée → id=%s | score=%.2f",
+                            candidature_id, score)
+            except Exception as db_err:
+                logger.error("[M3] Échec sauvegarde candidature_tracking : %s", db_err)
+
+            return {
+                "candidature_id": candidature_id,
+                "job_offer_id": full_offer.get("id"),
+                "score": score,
+                "score_details": score_data.get("details"),
+                "justification": score_data.get("justification"),
+                "documents_generated": score >= 0.70,
+                "cv": cv_text,
+                "lm": lm_text,
+            }
+        except Exception as e:
+            logger.exception("[M3] Exception score_and_generate : %s", e)
+            return {}
+
+    # ─── Envoi email via n8n ──────────────────────────────────────────────────
+
+    def send_n8n_email(self, to_email: str, subject: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Déclenche un workflow n8n pour envoyer un email ou surveiller une réponse."""
-        pass
+        if not self.n8n_webhook_url:
+            logger.warning("n8n_webhook_url non configuré")
+            return False
+        try:
+            payload = {"to": to_email, "subject": subject, "content": content, **(metadata or {})}
+            resp = http_requests.post(self.n8n_webhook_url, json=payload, timeout=10)
+            resp.raise_for_status()
+            logger.info(f"Email déclenché via n8n → {to_email}")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur send_n8n_email : {e}")
+            return False
