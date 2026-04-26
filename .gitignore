@@ -62,3 +62,13 @@ build/
 
 # Notebooks
 src/db_orchestration/manip.ipynb
+
+# Claude
+.claude
+
+# UV
+uv.lock
+
+# Python test output
+pytest.init
+
