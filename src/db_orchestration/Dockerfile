@@ -1,10 +1,11 @@
-# Dockerfile pour Runner (Orchestration Service)
-
+# Dockerfile — service Runner (orchestration)
 FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -15,24 +16,24 @@ RUN apt-get update && apt-get install -y \
     latexmk \
     && rm -rf /var/lib/apt/lists/*
 
+# Installer uv depuis l'image officielle
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+ENV UV_SYSTEM_PYTHON=1
 
-# Copier les dépendances Python
-COPY src/orchestration/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Installer les dépendances via pyproject.toml (groupe runner)
+COPY pyproject.toml uv.lock ./
+RUN uv pip install --system ".[runner]"
 
-# Copier le code source (build context = racine du projet)
+# Copier le code source
 COPY src ./src
 COPY db ./db
 COPY templates ./templates
 COPY data ./data
 COPY scripts ./scripts
 
-# Ensure scripts are executable
 RUN chmod +x scripts/*.sh
 
-# Create output directories
 RUN mkdir -p runs/run_cv runs/run_letter runs/run_thank_you \
     runs/run_recruiter_email runs/run_project_report runs/run_thesis
 
-# Default command: run orchestrator
-CMD ["python", "-m", "src.orchestration.orchestrator"]
+CMD ["python", "-m", "src.db_orchestration.orchestrator"]

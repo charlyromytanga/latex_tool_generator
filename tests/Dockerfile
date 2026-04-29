@@ -1,32 +1,31 @@
-# Dockerfile for running unit tests
+# Dockerfile — tests unitaires et d'intégration
 FROM python:3.12-slim
 
-# Install system dependencies
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /app
+# Installer uv depuis l'image officielle
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+ENV UV_SYSTEM_PYTHON=1
 
-# Copy requirements
-COPY requirements-test.txt .
-COPY pyproject.toml .
+# Installer les dépendances via pyproject.toml (groupe test)
+COPY pyproject.toml uv.lock ./
 COPY src/ src/
 COPY tests/ tests/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements-test.txt && \
-    pip install --no-cache-dir -e .
+RUN uv pip install --system -e ".[test]"
 
-# Set PYTHONPATH
 ENV PYTHONPATH=/app/src:$PYTHONPATH
 
-# Create directory for artifacts
 RUN mkdir -p /app/test-results /app/coverage-report
 
-# Default command: run tests with coverage
 CMD ["pytest", "tests/src_test", \
      "--cov=src", \
      "--cov-report=html:/app/coverage-report", \

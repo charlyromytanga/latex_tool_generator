@@ -1,19 +1,4 @@
 services:
-  # Database Service (SQLite via volume)
-
-  db:
-    image: keinos/sqlite3:latest
-    container_name: latex-tool-db
-    volumes:
-      - ./db:/data
-      - ./db/schema_init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      SQLITE_DB: recruitment_assistant.db
-    networks:
-      - latex-network
-    restart: unless-stopped
-
-
   postgres:
     image: postgres:15
     container_name: latex-tool-postgres
@@ -42,6 +27,7 @@ services:
     build:
       context: .
       dockerfile: src/api/Dockerfile
+    image: latex-tool-api:latest
     container_name: latex-tool-api
     ports:
       - "8000:8000"
@@ -56,8 +42,6 @@ services:
       LOG_LEVEL: info
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       RECRUITMENT_SCHEMA_PATH: /app/db/schema_init.sql
-    depends_on:
-      - db
     networks:
       - latex-network
     restart: unless-stopped
@@ -74,6 +58,7 @@ services:
     build:
       context: .
       dockerfile: src/app/Dockerfile
+    image: latex-tool-app:latest
     container_name: latex-tool-app
     ports:
       - "8501:8501"
@@ -103,7 +88,8 @@ services:
   runner:
     build:
       context: .
-      dockerfile: src/orchestration/Dockerfile
+      dockerfile: src/db_orchestration/Dockerfile
+    image: latex-tool-runner:latest
     container_name: latex-tool-runner
     volumes:
       - ./db:/app/db
@@ -118,8 +104,6 @@ services:
       LOG_LEVEL: info
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
-    depends_on:
-      - db
     networks:
       - latex-network
     restart: unless-stopped

@@ -1,22 +1,16 @@
-#!/bin/bash
-# Script de lancement Streamlit local pour le développement
+#!/usr/bin/env bash
+# Lancement Streamlit en local pour le développement (utilise uv)
+set -euo pipefail
 
-set -e
-
-# Aller à la racine du projet (si lancé ailleurs)
 cd "$(dirname "$0")/.."
 
-# Activer l'environnement virtuel
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-else
-    echo "[ERREUR] .venv introuvable. Créez-le avec 'python -m venv .venv' puis relancez ce script."
-    exit 1
+if ! command -v uv >/dev/null 2>&1; then
+  echo "[ERREUR] uv est introuvable. Installez-le via : curl -Lsf https://astral.sh/uv/install.sh | sh"
+  exit 1
 fi
 
-# Installer les dépendances si besoin
-pip install --upgrade pip
-pip install -r src/app/requirements.txt
+# Synchroniser les dépendances du groupe app
+uv sync --extra app
 
 # Lancer Streamlit
-streamlit run src/app/entry.py --server.port=8501 --server.address=0.0.0.0
+uv run streamlit run src/app/entry.py --server.port=8501 --server.address=0.0.0.0

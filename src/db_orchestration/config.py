@@ -10,12 +10,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import spacy
-from transformers import pipeline
-from keybert import KeyBERT
-from sentence_transformers import SentenceTransformer, util
-from langdetect import detect
 from dotenv import load_dotenv
 
 load_dotenv()  # Charger les variables d'environnement depuis le fichier .env à la racine du projet
@@ -82,6 +76,7 @@ class LLMConfig:
 
     def get_nlp(self, lang: str = "fr"):
         """Charge et retourne le modèle spaCy pour la langue demandée."""
+        import spacy
         if lang not in self._NLP_MODELS:
             if lang == "fr":
                 self._NLP_MODELS["fr"] = spacy.load("fr_core_news_md")
@@ -115,7 +110,7 @@ class LLMConfig:
 
     def get_keyword_pipeline(self):
         if self._keyword_pipe is None:
-            # Utilise un modèle multilingue adapté à l'extraction de mots-clés
+            from transformers import pipeline
             self._keyword_pipe = pipeline("feature-extraction", model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
         return self._keyword_pipe
 
@@ -151,6 +146,7 @@ class LLMConfig:
         - Automatisation : stop_words=None si langue détectée 'fr', sinon 'english'
         """
         import re
+        from langdetect import detect
         model = self.get_kw_model()
         lang = detect(text)
         if top_k is None:
@@ -202,6 +198,7 @@ class LLMConfig:
 
     def get_model(self):
         if self._model is None:
+            from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
         return self._model
 
@@ -210,6 +207,7 @@ class LLMConfig:
         """
         Calcule la similarité sémantique entre deux textes (cosinus).
         """
+        from sentence_transformers import util
         model = self.get_model()
         emb1 = model.encode(text1, convert_to_tensor=True)
         emb2 = model.encode(text2, convert_to_tensor=True)
@@ -221,6 +219,7 @@ class LLMConfig:
         """
         Retourne les mots-clés les plus proches du texte cible.
         """
+        from sentence_transformers import util
         model = self.get_model()
         text_emb = model.encode(text, convert_to_tensor=True)
         kw_embs = model.encode(keywords, convert_to_tensor=True)
