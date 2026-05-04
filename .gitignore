@@ -57,8 +57,8 @@ build/
 *.egg.env
 
 # .env file containing sensitive information
+.env
 .env.*
-
 
 # Notebooks
 src/db_orchestration/manip.ipynb
