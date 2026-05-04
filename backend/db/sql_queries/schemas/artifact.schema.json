@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Generated Artifact Record",
+  "type": "object",
+  "required": ["generation_id", "type", "language", "filename", "path"],
+  "properties": {
+    "generation_id": { "type": "string" },
+    "type": { "type": "string", "enum": ["cv", "cover_letter"] },
+    "language": { "type": "string" },
+    "filename": { "type": "string" },
+    "path": { "type": "string" },
+    "hash_sha256": { "type": "string" },
+    "size_bytes": { "type": "integer" },
+    "timestamp": { "type": "integer" }
+  }
+}
