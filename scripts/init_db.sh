@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DB_FILE="${ROOT_DIR}/db/recruitment_assistant.db"
+DB_FILE="${ROOT_DIR}/db/jobcv.db"
 SCHEMA_FILE="${ROOT_DIR}/db/schema_init.sql"
 
 if [[ ! -f "${SCHEMA_FILE}" ]]; then
@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 
 root = Path(os.environ["ROOT_DIR_ENV"])
-db_file = root / "db" / "recruitment_assistant.db"
+db_file = root / "db" / "jobcv.db"
 schema_file = root / "db" / "schema_init.sql"
 
 conn = sqlite3.connect(db_file)
