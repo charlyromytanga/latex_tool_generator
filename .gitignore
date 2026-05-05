@@ -1,73 +1,86 @@
 .venv/
 __pycache__/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
 *.egg-info/
-*.pyc
-*.pyo
-*.aux
-*.log
-*.out
-*.fls
-*.fdb_latexmk
-*.synctex.gz
-*.toc
-runs/render/*.pdf
-runs/render/*.aux
-runs/render/*.log
-runs/render/*.out
-runs/render/*.fls
-runs/render/*.fdb_latexmk
-runs/render/*.synctex.gz
-runs/render/*.toc
-runs/tmp/
-
-# Private documentation
-README.private.md
-src/streamlit/*
-
-# Generated local databases
-db/*.db
-db/*.sqlite
-db/*.sqlite3
-db/*.db-shm
-db/*.db-wal
-db/*
-db/*.csv
-
-# Test and coverage files
+dist/
+build/
 .pytest_cache/
+.tox/
 .coverage
 .coverage.*
-htmlcov/
-.mypy_cache/
-.tox/
-*.coverage
+.cache
+nosetests.xml
 coverage.xml
+*.cover
+.hypothesis/
 
-# IDE and development
+# IDE/OS
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
-# Generated during build
-dist/
-build/
-*.egg.env
-
-# .env file containing sensitive information
+# Environnements et secrets
 .env
 .env.*
+.env.local
 
-# Notebooks
-src/db_orchestration/manip.ipynb
+# Git & CI
+.git
+.gitignore
+.gitattributes
+.github/
 
-# Claude
-.claude
+# Tests
+tests/
+*_test.py
 
-# UV
-uv.lock
+# Documentation
+docs/
+README.md
+LICENSE
+
+# Fichiers/dossiers volumineux ou générés
+*.pdf
+*.tar.gz
+*.zip
+*.db
+*.sqlite
+*.log
+
+# Données et archives
+data/archive/
+data/offers/**/archive/
+shared/output/archive/
+runs/archive/
+runs/**/archive/
+
+# Fichiers/dossiers spécifiques à ton projet
+backend/db/backup/
+backend/db/jobcv.db
+backend/db/migrations/
+backend/db/sql_queries/
+backend/db/recruitment.db
+backend/db/recruitment_assistant.db
+backend/db/recruitment_assistant.db-shm
+backend/db/recruitment_assistant.db-wal
+backend/latex_tool_generator_.egg-info/
+
+# Caches Python dans les sous-dossiers
+**/__pycache__/
+**/*.pyc
 
 # Python test output
 pytest.init

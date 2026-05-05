@@ -1,19 +1,23 @@
-# Git
+
+# Git & CI
 .git
 .gitignore
 .gitattributes
+.github/
 
 # Python
-__pycache__
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 env/
 venv/
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
 .tox/
 .coverage
 .coverage.*
@@ -22,47 +26,55 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
-*.egg-info/
-dist/
-build/
 
-# IDE
-.vscode
-.idea
+# IDE/OS
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
 .DS_Store
-.env.local
-.env.*.local
+Thumbs.db
+
+# Environnements et secrets
 .env
+.env.*
+.env.local
 
 # Documentation
 docs/
 README.md
 LICENSE
-!README.md
 
-# Test files
+# Tests
 tests/
 *_test.py
 
-# Development
-Makefile
-.github/
-### scripts/ n'est plus ignoré pour le build Docker
-runs/archive/
-runs/**/archive/
-
-# Large files
+# Fichiers/dossiers volumineux ou générés
 *.pdf
 *.tar.gz
 *.zip
 *.db
+*.sqlite
+*.log
+
+# Données et archives
 data/archive/
 data/offers/**/archive/
+shared/output/archive/
+runs/archive/
+runs/**/archive/
 
-# OS
-.DS_Store
-Thumbs.db
+# Fichiers/dossiers spécifiques à ton projet
+backend/db/backup/
+backend/db/jobcv.db
+backend/db/migrations/
+backend/db/sql_queries/
+backend/db/recruitment.db
+backend/db/recruitment_assistant.db
+backend/db/recruitment_assistant.db-shm
+backend/db/recruitment_assistant.db-wal
+
+# Caches Python dans les sous-dossiers
+**/__pycache__/
+**/*.pyc

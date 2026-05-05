@@ -1,6 +1,7 @@
 import os
 from flask import Flask
-from flask_appbuilder import AppBuilder, SQLA
+from flask_appbuilder import AppBuilder
+from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -19,10 +20,9 @@ secret_key = os.environ.get('SECRET_KEY')
 if not secret_key:
     raise RuntimeError('SECRET_KEY non défini dans les variables d\'environnement !')
 app.config['SECRET_KEY'] = secret_key
-db = SQLA(app)
 
 
-admin = Admin(app, name='JobCV Admin', theme='bootstrap3')
+admin = Admin(app, name='JobCV Admin')
 admin.add_view(ModelView(CVBase, db.session))
 admin.add_view(ModelView(Jobs, db.session))
 admin.add_view(ModelView(CVApplications, db.session))
