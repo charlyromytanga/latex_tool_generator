@@ -5,10 +5,11 @@ RUN pip install --upgrade pip && pip install uv
 
 COPY pyproject.toml ./
 COPY backend/ ./backend/
+COPY shared/ ./shared/
 
 RUN uv pip install --system .[cv] .[emails] .[lm] .[reports]
 
 ENV FLASK_APP=backend.main_backend
-ENV FLASK_RUN_HOST = 0.0.0.0
+ENV FLASK_RUN_HOST=0.0.0.0
 ENV PYTHONPATH=/app
 CMD ["flask", "run"]

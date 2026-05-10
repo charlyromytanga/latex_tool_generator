@@ -41,16 +41,16 @@ class CVApplications(db.Model):
     projects = db.Column(db.String)
     languages = db.Column(db.String)
     interests = db.Column(db.String)
-    job_id = db.Column(db.String, db.ForeignKey('jobs.id'), nullable=False)
-    cv_id = db.Column(db.String, db.ForeignKey('cv_base.id'), nullable=False)
+    job_id = db.Column('job_offer_id', db.String, db.ForeignKey('jobs.id'), nullable=False)
+    cv_id = db.Column('cv_base_id', db.String, db.ForeignKey('cv_base.id'), nullable=False)
     matching_score = db.Column(db.Float)
     generation_date = db.Column(db.DateTime)
 
 class Applications(db.Model):
     __tablename__ = 'applications'
     id = db.Column(db.String, primary_key=True)
-    job_id = db.Column(db.String, db.ForeignKey('jobs.id'), nullable=False)
-    cv_id = db.Column(db.String, db.ForeignKey('cv_base.id'), nullable=False)
+    job_id = db.Column('job_offer_id', db.String, db.ForeignKey('jobs.id'), nullable=False)
+    cv_id = db.Column('cv_base_id', db.String, db.ForeignKey('cv_base.id'), nullable=False)
     lm = db.Column(db.String)
     matching_score = db.Column(db.Float)
     generation_date = db.Column(db.DateTime)

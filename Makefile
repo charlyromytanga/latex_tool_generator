@@ -18,9 +18,9 @@ LATEX_FLAGS = -interaction=nonstopmode -synctex=1 -file-line-error
 DOCKER_RUN_MAIN = docker run --rm -v "$(PRINCIPAL_DIR):$(CONTAINER_SRC)" -v "$(BUILD_OUTPUT_DIR):$(CONTAINER_OUT)" -w "$(CONTAINER_SRC)" $(DOCKER_IMAGE)
 
 # Docker Compose
-COMPOSE = docker-compose
+COMPOSE = docker compose
 
-.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init db-init-postgres db-mirror-postgres
+.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init db-init-postgres db-mirror-postgres db-seed-backend
 
 uv-sync:
 	$(UV) sync
@@ -77,6 +77,7 @@ help:
 	@echo "Monitoring:"
 	@echo "  make monitor-db           - Monitor SQLite database"
 	@echo "  make monitor-data         - Monitor data/ directory"
+	@echo "  make db-seed-backend      - Copy local DB into running backend container"
 	@echo "  make db-init              - Initialize SQLite schema"
 	@echo "  make db-init-postgres     - Initialize PostgreSQL mirror schema"
 	@echo "  make db-mirror-postgres   - Mirror SQLite into PostgreSQL"
@@ -145,6 +146,9 @@ monitor-all:
 	@bash scripts/monitor_db.sh
 	@echo ""
 	@bash scripts/monitor_data.sh
+
+db-seed-backend:
+	@bash scripts/copy_local_db_into_dev_container.sh
 
 db-init:
 	@bash scripts/init_db.sh
