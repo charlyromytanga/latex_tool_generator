@@ -101,7 +101,7 @@ function showPdf(filename, lang, cached) {
   downloadBtn.href = url;
   downloadBtn.download = filename;
   openBtn.href = url;
-  pdfFallback.href = url;
+  if (pdfFallback) pdfFallback.href = url;
   cachedBadge.style.display = cached ? '' : 'none';
   setState('result');
 }
@@ -132,7 +132,14 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cv_id, job_id, target_title_index, force }),
     });
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      msgError.textContent = `Réponse invalide du serveur (HTTP ${res.status}).`;
+      setState('error');
+      return;
+    }
     if (data.ok && data.filename) {
       showPdf(data.filename, data.lang || 'FR', data.cached);
     } else {
@@ -140,7 +147,7 @@ form.addEventListener('submit', async (e) => {
       setState('error');
     }
   } catch (err) {
-    msgError.textContent = 'Impossible de contacter le serveur.';
+    msgError.textContent = `Impossible de contacter le serveur : ${err.message}`;
     setState('error');
   }
 });
