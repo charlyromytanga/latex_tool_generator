@@ -34,10 +34,10 @@ def _truncate(max_len: int = 120):
 
 class CVBaseAdmin(ModelView):
     column_list              = [
-        "id", "language", "target_titles",
+        "id", "language",
         "header", "summary", "skills",
         "experience", "education", "certifications",
-        "projects", "languages", "interests",
+        "projects", "languages", "interests", "target_titles",
     ]
     column_searchable_list   = ["id", "language", "target_titles"]
     column_filters           = ["language"]
