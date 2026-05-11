@@ -10,22 +10,31 @@ services:
       - "5050:5000"  # 5050 (host) → 5000 (container)
     env_file:
       - .env
+    environment:
+      - DATABASE_PATH=/app/db/jobcv.db
+      - CV_TEMPLATE_DIR=/app/shared/service_cv_latex/templates/_col_gauche
+      - CV_OUTPUT_DIR=/app/shared/output/FR
+      - CV_OUTPUT_BASE=/app/shared/output
     volumes:
-      - sqlite_data:/app/db  # Persistance de la base SQLite
+      - sqlite_data:/app/db
+      - ./shared/output:/app/shared/output
     networks:
       - latex-network
     restart: unless-stopped
 
   frontend:
     build:
-      context: ./frontend/react-app  # ou ./frontend/vue-app selon ton choix
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/flask_app/Dockerfile.frontend
     image: latex-tool-frontend:latest
     container_name: latex-tool-frontend
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://backend:5000
+      - BACKEND_URL=http://backend:5000
+      - SECRET_KEY=change-me-in-production
+    depends_on:
+      - backend
     networks:
       - latex-network
     restart: unless-stopped

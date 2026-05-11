@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Génération CV{% endblock %}
+{% block content %}
+<h1>Générer un CV</h1>
+
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+<div class="card">
+  <form id="generate-form">
+    <label>Profil CV Base</label>
+    <select name="cv_id" id="cv_id" required>
+      <option value="">— Sélectionner un profil —</option>
+      {% for r in cv_records %}
+      <option value="{{ r.id }}">{{ r.id }} ({{ r.language }})</option>
+      {% endfor %}
+    </select>
+
+    <label>Offre d'emploi</label>
+    <select name="job_id" id="job_id" required>
+      <option value="">— Sélectionner une offre —</option>
+      {% for r in job_records %}
+      <option value="{{ r.id }}">
+        {{ r.id }}{% if r.get('company_name') %} · {{ r.company_name }}{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+
+    <label>Index du titre cible
+      <span style="font-weight:400;color:var(--text-muted);">(0 = premier, laisser 0 par défaut)</span>
+    </label>
+    <input type="number" name="target_title_index" id="target_title_index" value="0" min="0" style="width:100px;"/>
+
+    <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;">
+      <button type="submit" class="btn btn-primary" id="generate-btn">⚡ Générer le CV</button>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:var(--font-size-sm);color:var(--text-muted);cursor:pointer;">
+        <input type="checkbox" id="force-regen" style="width:auto;margin:0;"/>
+        Forcer la regénération
+      </label>
+    </div>
+  </form>
+</div>
+
+<!-- État : chargement -->
+<div id="loading-card" class="card" style="display:none;text-align:center;padding:2rem;">
+  <div style="font-size:2rem;margin-bottom:0.5rem;">⏳</div>
+  <p style="color:var(--text-secondary);margin:0;">Génération en cours…</p>
+  <p style="color:var(--text-muted);font-size:var(--font-size-sm);margin:0.25rem 0 0;">Compilation LaTeX, veuillez patienter.</p>
+</div>
+
+<!-- État : erreur -->
+<div id="error-card" class="card" style="display:none;">
+  <div style="display:flex;align-items:center;gap:0.5rem;color:#cc3333;">
+    <span style="font-size:1.25rem;">✗</span>
+    <span id="error-msg" style="font-weight:500;"></span>
+  </div>
+</div>
+
+<!-- État : résultat PDF -->
+<div id="result-card" class="card" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <h2 style="margin:0;">📄 CV généré</h2>
+      <span id="cached-badge" style="display:none;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:2px 8px;border-radius:20px;">cache</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <a id="download-btn" href="#" class="btn btn-primary" download>⬇ Télécharger</a>
+      <a id="open-btn" href="#" class="btn btn-secondary" target="_blank">🔍 Ouvrir</a>
+      <button class="btn btn-secondary" onclick="resetForm()">↩ Nouveau</button>
+    </div>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-secondary);">
+    <iframe id="pdf-frame" src="" style="width:100%;height:800px;border:none;display:block;" title="CV PDF">
+      <p>Votre navigateur ne supporte pas l'affichage inline. <a id="pdf-fallback" href="#">Télécharger le PDF</a></p>
+    </iframe>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById('generate-form');
+const btnGenerate = document.getElementById('generate-btn');
+const cardLoading = document.getElementById('loading-card');
+const cardError = document.getElementById('error-card');
+const cardResult = document.getElementById('result-card');
+const msgError = document.getElementById('error-msg');
+const pdfFrame = document.getElementById('pdf-frame');
+const downloadBtn = document.getElementById('download-btn');
+const openBtn = document.getElementById('open-btn');
+const cachedBadge = document.getElementById('cached-badge');
+const pdfFallback = document.getElementById('pdf-fallback');
+
+function setState(state) {
+  cardLoading.style.display = state === 'loading' ? '' : 'none';
+  cardError.style.display   = state === 'error'   ? '' : 'none';
+  cardResult.style.display  = state === 'result'  ? '' : 'none';
+  btnGenerate.disabled = state === 'loading';
+}
+
+function showPdf(filename, lang, cached) {
+  const url = `/generate/pdf/${lang}/${filename}`;
+  pdfFrame.src = url;
+  downloadBtn.href = url;
+  downloadBtn.download = filename;
+  openBtn.href = url;
+  pdfFallback.href = url;
+  cachedBadge.style.display = cached ? '' : 'none';
+  setState('result');
+}
+
+function resetForm() {
+  setState(null);
+  pdfFrame.src = '';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cv_id = document.getElementById('cv_id').value.trim();
+  const job_id = document.getElementById('job_id').value.trim();
+  const target_title_index = parseInt(document.getElementById('target_title_index').value) || 0;
+  const force = document.getElementById('force-regen').checked;
+
+  if (!cv_id || !job_id) {
+    msgError.textContent = 'Veuillez sélectionner un profil CV et une offre.';
+    setState('error');
+    return;
+  }
+
+  setState('loading');
+
+  try {
+    const res = await fetch('/generate/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_id, job_id, target_title_index, force }),
+    });
+    const data = await res.json();
+    if (data.ok && data.filename) {
+      showPdf(data.filename, data.lang || 'FR', data.cached);
+    } else {
+      msgError.textContent = data.message || 'Erreur inconnue.';
+      setState('error');
+    }
+  } catch (err) {
+    msgError.textContent = 'Impossible de contacter le serveur.';
+    setState('error');
+  }
+});
+</script>
+{% endblock %}

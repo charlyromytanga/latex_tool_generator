@@ -7,7 +7,7 @@ COPY pyproject.toml ./
 COPY backend/ ./backend/
 COPY shared/ ./shared/
 
-RUN uv pip install --system .[cv] .[emails] .[lm] .[reports]
+RUN uv pip install --system .
 
 ENV FLASK_APP=backend.main_backend
 ENV FLASK_RUN_HOST=0.0.0.0

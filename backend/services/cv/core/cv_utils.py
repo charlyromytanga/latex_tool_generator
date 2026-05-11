@@ -9,219 +9,288 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Set, Tuple
+try:
+    from shared.bd_models.models import db, CVBase, Jobs, CVApplications, Applications  # noqa: F401
+except ImportError:
+    db = CVBase = Jobs = CVApplications = Applications = None  # type: ignore
 
 import logging
 from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-class CV:
+
+# ---------------------------------------------------------------------------
+# --- Classe pour la gestion des tables dans la base de données ---
+# ---------------------------------------------------------------------------
+
+class DatabaseManager:
     """
-    Classe principale pour la gestion et la génération de CV à partir de ressources JSON structurées.
-    Permet de charger, organiser et restituer les différentes sections du CV (formations, expériences, projets, etc.)
-    en plusieurs langues, avec une compatibilité ATS et une logique modulaire.
+    Gère les interactions avec la base de données SQLite : création, lecture,
+    mise à jour, suppression des enregistrements dans les tables :
+        cv_base, jobs, cv_applications, applications.
+
+    Utilisation standalone (sans Flask) :
+        db = DatabaseManager("/path/to/jobcv.db")
+        db.add_job({"id": "offer-xyz", "language": "FR", "country": "France", ...})
+        job = db.get_job("offer-xyz")
+        db.update_job("offer-xyz", city="Lyon", job_title="Data Analyst")
+        db.delete_job("offer-xyz")
+        jobs = db.list_jobs()
     """
-    def __init__(self, data_dir: str):
-        self.data_dir: str = data_dir
-        self.formations_dir: str = os.path.join(data_dir, 'formations')
-        self.experiences_dir: str = os.path.join(data_dir, 'experiences')
-        self.projects_dir: str = os.path.join(data_dir, 'projects')
-        self.cv_base_in_alls_dir: str = os.path.join(data_dir, "cv_base_in_alls")
 
-        self.db_dir = os.getenv('DB_DIR', './db')
-        self.queries_dir = os.getenv('QUERIES_DIR', './db/requeries')
-        self.insert_query_path = os.getenv('INSERT_CV_BASE_IN_ALLS_QUERY', './db/requeries/insert_cv_base_in_alls.sql')
+    # Colonnes attendues par table (ordre d'INSERT)
+    _COLUMNS: Dict[str, List[str]] = {
+        "cv_base": [
+            "id", "language", "header", "summary", "skills",
+            "experience", "education", "certifications", "projects",
+            "languages", "interests", "target_titles",
+        ],
+        "jobs": [
+            "id", "language", "country", "city", "company_name",
+            "company_type", "offer_description", "company_presentation", "job_title",
+        ],
+        "cv_applications": [
+            "id", "language", "header", "summary", "skills",
+            "experience", "education", "certifications", "projects",
+            "languages", "interests", "job_offer_id", "cv_base_id",
+            "matching_score", "generation_date",
+        ],
+        "applications": [
+            "id", "job_offer_id", "cv_base_id", "lm", "matching_score",
+            "generation_date", "mail_content", "days_to_wait", "response_email",
+        ],
+    }
+
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+
+    # ------------------------------------------------------------------
+    # Helpers internes
+    # ------------------------------------------------------------------
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        return conn
+
+    def _row_to_dict(self, row: Optional[sqlite3.Row]) -> Optional[Dict[str, Any]]:
+        return dict(row) if row else None
+
+    def _upsert(self, table: str, data: Dict[str, Any]) -> None:
+        """INSERT OR REPLACE into table with the given data dict."""
+        cols = [c for c in self._COLUMNS[table] if c in data]
+        if not cols:
+            raise ValueError(f"Aucune colonne valide fournie pour la table '{table}'")
+        placeholders = ", ".join("?" for _ in cols)
+        col_list = ", ".join(cols)
+        values = [data[c] for c in cols]
+        sql = f"INSERT OR REPLACE INTO {table} ({col_list}) VALUES ({placeholders})"
+        with self._connect() as conn:
+            conn.execute(sql, values)
+
+    def _update(self, table: str, record_id: str, **fields: Any) -> int:
+        """UPDATE table SET field=value, ... WHERE id=record_id. Returns rowcount."""
+        valid = {k: v for k, v in fields.items() if k in self._COLUMNS[table] and k != "id"}
+        if not valid:
+            raise ValueError(f"Aucun champ valide à mettre à jour dans '{table}'")
+        set_clause = ", ".join(f"{k} = ?" for k in valid)
+        values = list(valid.values()) + [record_id]
+        sql = f"UPDATE {table} SET {set_clause} WHERE id = ?"
+        with self._connect() as conn:
+            cur = conn.execute(sql, values)
+            return cur.rowcount
+
+    def _get(self, table: str, record_id: str) -> Optional[Dict[str, Any]]:
+        with self._connect() as conn:
+            cur = conn.execute(f"SELECT * FROM {table} WHERE id = ?", (record_id,))
+            return self._row_to_dict(cur.fetchone())
+
+    def _delete(self, table: str, record_id: str) -> int:
+        with self._connect() as conn:
+            cur = conn.execute(f"DELETE FROM {table} WHERE id = ?", (record_id,))
+            return cur.rowcount
+
+    def _list(self, table: str, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        sql = f"SELECT * FROM {table}"
+        values: List[Any] = []
+        if filters:
+            where = " AND ".join(f"{k} = ?" for k in filters)
+            sql += f" WHERE {where}"
+            values = list(filters.values())
+        with self._connect() as conn:
+            cur = conn.execute(sql, values)
+            return [dict(r) for r in cur.fetchall()]
+
+    # ------------------------------------------------------------------
+    # Table : cv_base
+    # ------------------------------------------------------------------
+
+    def add_cv_base(self, data: Dict[str, Any]) -> None:
+        """Insère ou remplace un enregistrement dans cv_base.
+        data doit contenir au minimum 'id' et 'language'."""
+        if not data.get("id") or not data.get("language"):
+            raise ValueError("cv_base requiert 'id' et 'language'")
+        self._upsert("cv_base", data)
+        logger.info("[DB] cv_base upsert → %s", data["id"])
+
+    def get_cv_base(self, cv_base_id: str) -> Optional[Dict[str, Any]]:
+        """Retourne le dict d'un enregistrement cv_base ou None."""
+        return self._get("cv_base", cv_base_id)
+
+    def update_cv_base(self, cv_base_id: str, **fields: Any) -> int:
+        """Met à jour les champs donnés dans cv_base. Retourne le nombre de lignes modifiées."""
+        n = self._update("cv_base", cv_base_id, **fields)
+        logger.info("[DB] cv_base update → %s (%d ligne(s))", cv_base_id, n)
+        return n
+
+    def delete_cv_base(self, cv_base_id: str) -> int:
+        """Supprime un enregistrement cv_base. Retourne le nombre de lignes supprimées."""
+        n = self._delete("cv_base", cv_base_id)
+        logger.info("[DB] cv_base delete → %s (%d ligne(s))", cv_base_id, n)
+        return n
+
+    def list_cv_bases(self, language: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Liste tous les enregistrements cv_base, avec filtre optionnel par langue."""
+        filters = {"language": language} if language else None
+        return self._list("cv_base", filters)
+
+    # ------------------------------------------------------------------
+    # Table : jobs
+    # ------------------------------------------------------------------
+
+    def add_job(self, data: Dict[str, Any]) -> None:
+        """Insère ou remplace une offre d'emploi dans jobs.
+        data doit contenir au minimum 'id', 'language' et 'country'."""
+        for req in ("id", "language", "country"):
+            if not data.get(req):
+                raise ValueError(f"jobs requiert le champ '{req}'")
+        self._upsert("jobs", data)
+        logger.info("[DB] jobs upsert → %s (%s)", data["id"], data.get("company_name", ""))
+
+    def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """Retourne le dict d'une offre ou None."""
+        return self._get("jobs", job_id)
+
+    def update_job(self, job_id: str, **fields: Any) -> int:
+        """Met à jour les champs donnés dans jobs. Retourne le nombre de lignes modifiées."""
+        n = self._update("jobs", job_id, **fields)
+        logger.info("[DB] jobs update → %s (%d ligne(s))", job_id, n)
+        return n
+
+    def delete_job(self, job_id: str) -> int:
+        """Supprime une offre. Retourne le nombre de lignes supprimées."""
+        n = self._delete("jobs", job_id)
+        logger.info("[DB] jobs delete → %s (%d ligne(s))", job_id, n)
+        return n
+
+    def list_jobs(self, language: Optional[str] = None, company_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Liste toutes les offres, avec filtres optionnels."""
+        filters: Dict[str, Any] = {}
+        if language:
+            filters["language"] = language
+        if company_name:
+            filters["company_name"] = company_name
+        return self._list("jobs", filters or None)
+
+    # ------------------------------------------------------------------
+    # Table : cv_applications
+    # ------------------------------------------------------------------
+
+    def add_cv_application(self, data: Dict[str, Any]) -> None:
+        """Insère ou remplace un CV adapté à une offre dans cv_applications.
+        data doit contenir 'id', 'language', 'job_offer_id', 'cv_base_id'."""
+        for req in ("id", "language", "job_offer_id", "cv_base_id"):
+            if not data.get(req):
+                raise ValueError(f"cv_applications requiert le champ '{req}'")
+        self._upsert("cv_applications", data)
+        logger.info("[DB] cv_applications upsert → %s", data["id"])
+
+    def get_cv_application(self, cv_app_id: str) -> Optional[Dict[str, Any]]:
+        return self._get("cv_applications", cv_app_id)
+
+    def update_cv_application(self, cv_app_id: str, **fields: Any) -> int:
+        n = self._update("cv_applications", cv_app_id, **fields)
+        logger.info("[DB] cv_applications update → %s (%d ligne(s))", cv_app_id, n)
+        return n
+
+    def delete_cv_application(self, cv_app_id: str) -> int:
+        n = self._delete("cv_applications", cv_app_id)
+        logger.info("[DB] cv_applications delete → %s (%d ligne(s))", cv_app_id, n)
+        return n
+
+    def list_cv_applications(
+        self,
+        cv_base_id: Optional[str] = None,
+        job_offer_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Liste les CV applications, filtrables par cv_base_id et/ou job_offer_id."""
+        filters: Dict[str, Any] = {}
+        if cv_base_id:
+            filters["cv_base_id"] = cv_base_id
+        if job_offer_id:
+            filters["job_offer_id"] = job_offer_id
+        return self._list("cv_applications", filters or None)
+
+    # ------------------------------------------------------------------
+    # Table : applications
+    # ------------------------------------------------------------------
+
+    def add_application(self, data: Dict[str, Any]) -> None:
+        """Insère ou remplace une candidature dans applications.
+        data doit contenir 'id', 'job_offer_id', 'cv_base_id'."""
+        for req in ("id", "job_offer_id", "cv_base_id"):
+            if not data.get(req):
+                raise ValueError(f"applications requiert le champ '{req}'")
+        self._upsert("applications", data)
+        logger.info("[DB] applications upsert → %s", data["id"])
+
+    def get_application(self, app_id: str) -> Optional[Dict[str, Any]]:
+        return self._get("applications", app_id)
+
+    def update_application(self, app_id: str, **fields: Any) -> int:
+        n = self._update("applications", app_id, **fields)
+        logger.info("[DB] applications update → %s (%d ligne(s))", app_id, n)
+        return n
+
+    def delete_application(self, app_id: str) -> int:
+        n = self._delete("applications", app_id)
+        logger.info("[DB] applications delete → %s (%d ligne(s))", app_id, n)
+        return n
+
+    def list_applications(
+        self,
+        cv_base_id: Optional[str] = None,
+        job_offer_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Liste les candidatures, filtrables par cv_base_id et/ou job_offer_id."""
+        filters: Dict[str, Any] = {}
+        if cv_base_id:
+            filters["cv_base_id"] = cv_base_id
+        if job_offer_id:
+            filters["job_offer_id"] = job_offer_id
+        return self._list("applications", filters or None)
+
+    # ------------------------------------------------------------------
+    # Utilitaires
+    # ------------------------------------------------------------------
+
+    def summary(self) -> Dict[str, int]:
+        """Retourne le nombre d'enregistrements par table."""
+        result: Dict[str, int] = {}
+        with self._connect() as conn:
+            for table in self._COLUMNS:
+                cur = conn.execute(f"SELECT COUNT(*) FROM {table}")
+                result[table] = cur.fetchone()[0]
+        return result
 
 
-    def load_alls(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-        """
-        Charge toutes les formations, expériences et projets à partir des fichiers JSON présents dans les dossiers dédiés.
-        Retourne :
-            tuple (formations, experiences, projects)
-            - formations : list[dict[str, Any]]
-            - experiences : list[dict[str, Any]]
-            - projects : list[dict[str, Any]]
-        Les éléments sont fusionnés à partir de tous les fichiers .json trouvés dans chaque dossier.
-        """
 
-        formations_files: list[str] = [f for f in os.listdir(self.formations_dir) if f.endswith('.json')]
-        experiences_files: list[str] = [f for f in os.listdir(self.experiences_dir) if f.endswith('.json')]
-        projects_files: list[str] = [f for f in os.listdir(self.projects_dir) if f.endswith('.json')]
-
-        formations: list[dict[str, Any]] = []
-        experiences: list[dict[str, Any]] = []
-        projects: list[dict[str, Any]] = []
-
-        # Chargement formations
-        for file in formations_files:
-            try:
-                with open(os.path.join(self.formations_dir, file), 'r', encoding='utf-8') as f:
-                    data_formations = json.load(f)
-                    if isinstance(data_formations, dict) and 'formations' in data_formations:
-                        formations.extend([x for x in data_formations['formations'] if isinstance(x, dict)])
-                    elif isinstance(data_formations, dict):
-                        formations.append(data_formations)
-            except Exception as e:
-                logger.error(f"Erreur chargement formation {file}: {e}")
-
-        # Chargement expériences
-        for file in experiences_files:
-            try:
-                with open(os.path.join(self.experiences_dir, file), 'r', encoding='utf-8') as f:
-                    data_experiences = json.load(f)
-                    if isinstance(data_experiences, dict) and 'experiences' in data_experiences:
-                        experiences.extend([x for x in data_experiences['experiences'] if isinstance(x, dict)])
-                    elif isinstance(data_experiences, dict):
-                        experiences.append(data_experiences)
-            except Exception as e:
-                logger.error(f"Erreur chargement experience {file}: {e}")
-
-        # Chargement projets
-        for file in projects_files:
-            try:
-                with open(os.path.join(self.projects_dir, file), 'r', encoding='utf-8') as f:
-                    data_projects = json.load(f)
-                    if isinstance(data_projects, dict) and 'projects' in data_projects:
-                        projects.extend([x for x in data_projects['projects'] if isinstance(x, dict)])
-                    elif isinstance(data_projects, dict):
-                        projects.append(data_projects)
-            except Exception as e:
-                logger.error(f"Erreur chargement projet {file}: {e}")
-
-        return formations, experiences, projects
-
-
-    def cv_base_in_all(self) -> tuple[dict[str, Any], dict[str, Any]]:
-        """
-        Construit la base structurée du CV pour chaque langue (français et anglais).
-        Charge les différentes sections (formations, expériences, projets, skills, summary, header, etc.)
-        à partir des ressources JSON, et assemble un dictionnaire par langue prêt à l'emploi pour l'export ou le matching ATS.
-        Retourne :
-            tuple (cv_base_in_alls_fr, cv_base_in_alls_en)
-            - cv_base_in_alls_fr : dict[str, Any] (sections du CV en français)
-            - cv_base_in_alls_en : dict[str, Any] (sections du CV en anglais)
-        En cas d'erreur, retourne deux dictionnaires vides.
-        """
-
-        try:
-            formations, experiences, projects = self.load_alls()
-            formations_fr = [f for f in formations if f.get('language') == 'fr']
-            formations_en = [f for f in formations if f.get('language') == 'en']
-            experiences_fr = [e for e in experiences if e.get('language') == 'fr']
-            experiences_en = [e for e in experiences if e.get('language') == 'en']
-            projects_fr = [p for p in projects if p.get('language') == 'fr']
-            projects_en = [p for p in projects if p.get('language') == 'en']
-
-            self.languages : List[str] = ['fr', 'en']
-            self.cv_base_in_all_fr = {}
-            self.cv_base_in_all_en = {}
-
-            # chargement formations depuis linkedin_charly_romy_tanga_formations.json
-            formations_path = os.path.join(self.data_dir, 'formations', 'linkedin_charly_romy_tanga_formations.json')
-            with open(formations_path, 'r', encoding='utf-8') as f:
-                formations_data = json.load(f)
-            formations_fr = [f['ats_bullet_fr'] for f in formations_data['formations'] if f.get('language') == 'fr']
-            formations_en = [f['ats_bullet_en'] for f in formations_data['formations'] if f.get('language') == 'en']
-
-            # Chargement skills
-            with open(os.path.join(self.data_dir, 'skills', 'skills.json'), 'r', encoding='utf-8') as f:
-                skills_data = json.load(f)
-            soft_fr = [s['fr'] for s in skills_data['soft_skills']]
-            soft_en = [s['en'] for s in skills_data['soft_skills']]
-            hard_fr = [s['fr'] for s in skills_data['hard_skills']]
-            hard_en = [s['en'] for s in skills_data['hard_skills']]
-
-            # Chargement summary
-            with open(os.path.join(self.data_dir, 'summary', 'summary.json'), 'r', encoding='utf-8') as f:
-                summary_data = json.load(f)
-            summary_fr = summary_data.get('summary_fr', [])
-            summary_en = summary_data.get('summary_en', [])
-
-            # Chargement header
-            with open(os.path.join(self.data_dir, 'header', 'header.json'), 'r', encoding='utf-8') as f:
-                header_data = json.load(f)
-            header_fr = header_data.get('header_fr', [])
-            header_en = header_data.get('header_en', [])
-
-            self.cv_base_in_all_fr = {
-                "header": "\n".join(header_fr),
-                "summary": "\n".join([f"• {b}" for b in summary_fr]),
-                "skills": "\n".join([f"• {b}" for b in soft_fr + hard_fr]),
-                "experience": "\n".join([f"• {e.get('ats_bullet_fr', '')}" for e in experiences_fr]),
-                "education": "\n".join([f"• {b}" for b in formations_fr]),
-                "certifications": "Microsoft Data Analyst (en cours), BMC (en cours), AMF (en cours)",
-                "projects": "\n".join([f"• {p.get('ats_bullet_fr', '')}" for p in projects_fr]),
-                "languages": "Français : bilingue ; Anglais : C1 ; Allemand : B1",
-                "interests": "Randonnée, musique classique, cyclisme loisir, football loisir",
-            }
-            self.cv_base_in_all_en = {
-                "header": "\n".join(header_en),
-                "summary": "\n".join([f"• {b}" for b in summary_en]),
-                "skills": "\n".join([f"• {b}" for b in soft_en + hard_en]),
-                "experience": "\n".join([f"• {e.get('ats_bullet_en', '')}" for e in experiences_en]),
-                "education": "\n".join([f"• {b}" for b in formations_en]),
-                "certifications": "Microsoft Data Analyst (in progress), BMC (in progress), AMF (in progress)",
-                "projects": "\n".join([f"• {p.get('ats_bullet_en', '')}" for p in projects_en]),
-                "languages": "French: bilingual; English: C1; German: B1",
-                "interests": "Hiking, classical music, leisure cycling, leisure football",
-            }
-
-            # Dump JSON des deux CV dans le dossier dédié
-            os.makedirs(self.cv_base_in_alls_dir, exist_ok=True)
-            with open(os.path.join(self.cv_base_in_alls_dir, "cv_base_in_all_fr.json"), "w", encoding="utf-8") as f_fr:
-                json.dump(self.cv_base_in_all_fr, f_fr, ensure_ascii=False, indent=2)
-            with open(os.path.join(self.cv_base_in_alls_dir, "cv_base_in_all_en.json"), "w", encoding="utf-8") as f_en:
-                json.dump(self.cv_base_in_all_en, f_en, ensure_ascii=False, indent=2)
-
-
-            # Insertion FR
-            values_fr = (
-                'cv_base_in_all_fr',
-                'fr',
-                self.cv_base_in_all_fr['header'],
-                self.cv_base_in_all_fr['summary'],
-                self.cv_base_in_all_fr['skills'],
-                self.cv_base_in_all_fr['experience'],
-                self.cv_base_in_all_fr['education'],
-                self.cv_base_in_all_fr['certifications'],
-                self.cv_base_in_all_fr['projects'],
-                self.cv_base_in_all_fr['languages'],
-                self.cv_base_in_all_fr['interests'],
-            )
-            # Insertion EN
-            values_en = (
-                'cv_base_in_all_en',
-                'en',
-                self.cv_base_in_all_en['header'],
-                self.cv_base_in_all_en['summary'],
-                self.cv_base_in_all_en['skills'],
-                self.cv_base_in_all_en['experience'],
-                self.cv_base_in_all_en['education'],
-                self.cv_base_in_all_en['certifications'],
-                self.cv_base_in_all_en['projects'],
-                self.cv_base_in_all_en['languages'],
-                self.cv_base_in_all_en['interests'],
-            )
-            sql = '''INSERT OR REPLACE INTO cv_base_in_all (
-                id, language, header, summary, skills, experience, education, certifications, projects, languages, interests
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'''
-            try:
-                with sqlite3.connect(os.path.join(self.db_dir, "recruitment.db")) as conn:
-                    cur = conn.cursor()
-                    cur.execute(sql, values_fr)
-                    cur.execute(sql, values_en)
-                    conn.commit()
-            except Exception as sql_e:
-                logger.error(f"Erreur lors de l'insertion dans cv_base_in_all : {sql_e}")
-
-            return self.cv_base_in_all_fr, self.cv_base_in_all_en
-        except Exception as e:
-            logger.error(f"Erreur dans cv_base_in_all : {e}")
-            return {}, {}
-
-
-
+# ---------------------------------------------------------------------------
 # --- Classe pour la gestion des offres enrichies ---
+# ---------------------------------------------------------------------------
+
 class JobOfferManager:
     """
     Gère la table job_offer : création, lecture, mise à jour, suppression d'offres enrichies.
@@ -278,7 +347,12 @@ class JobOfferManager:
         """Supprime une offre."""
         pass
 
+
+
+# ---------------------------------------------------------------------------
 # --- Classe pour le suivi des candidatures et génération CV/LM ---
+# ---------------------------------------------------------------------------
+
 class CandidatureTracker:
     """
     Gère la table candidature_tracking : suivi, ajout, récupération des candidatures, stockage CV/LM générés.
@@ -307,13 +381,19 @@ class CandidatureTracker:
 # CV LaTeX Generator — modèle _col_gauche / FR
 # ---------------------------------------------------------------------------
 
-_TEMPLATE_DIR = (
-    Path(__file__).resolve().parents[4]
-    / "shared" / "service_cv_latex" / "templates" / "_col_gauche"
+import os as _os
+
+_TEMPLATE_DIR = Path(
+    _os.environ.get(
+        "CV_TEMPLATE_DIR",
+        str(Path(__file__).resolve().parents[4] / "shared" / "service_cv_latex" / "templates" / "_col_gauche"),
+    )
 )
-_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[4]
-    / "shared" / "output" / "FR"
+_OUTPUT_DIR = Path(
+    _os.environ.get(
+        "CV_OUTPUT_DIR",
+        str(Path(__file__).resolve().parents[4] / "shared" / "output" / "FR"),
+    )
 )
 
 
@@ -539,7 +619,7 @@ class CVLatexGeneratorFR:
             2 = Data Analyst
             …
         """
-        raw_targets = self.cv.get("target_titles", "")
+        raw_targets = self.cv.get("target_titles") or ""
         targets = [t.strip() for t in raw_targets.split(";") if t.strip()]
 
         idx = self._target_title_index
@@ -800,3 +880,5 @@ class CVLatexGeneratorFR:
 
         logger.info("CV generated: %s | %s", tex_dest.name, pdf_dest.name)
         return tex_dest, pdf_dest
+
+

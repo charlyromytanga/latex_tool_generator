@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+{% block content %}
+<h1>Jobs</h1>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+<div style="margin-bottom:1rem;">
+  <a href="{{ url_for('job_add') }}" class="btn btn-primary">+ Ajouter un job</a>
+</div>
+
+{% if records %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Titre</th>
+        <th>Entreprise</th>
+        <th>Lieu</th>
+        <th>Langue</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td><a href="{{ url_for('job_detail', record_id=r.id) }}">{{ r.id }}</a></td>
+        <td>{{ r.title or '' }}</td>
+        <td>{{ r.company or '' }}</td>
+        <td>{{ r.location or '' }}</td>
+        <td>{{ r.language or '' }}</td>
+        <td>
+          <form action="{{ url_for('job_delete', record_id=r.id) }}" method="post"
+                onsubmit="return confirm('Supprimer {{ r.id }} ?')">
+            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="color:#888;">Aucun job.</p>
+{% endif %}
+{% endblock %}

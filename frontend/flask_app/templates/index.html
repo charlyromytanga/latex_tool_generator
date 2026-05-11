@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+{% if error %}
+<div class="flash error">{{ error }}</div>
+{% endif %}
+
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+  {% for table, count in summary.items() %}
+  <div class="card" style="text-align:center;">
+    <div style="font-size:2rem; font-weight:700; color:var(--color-3);">{{ count }}</div>
+    <div style="font-size:0.85rem; color:#666; margin-top:0.3rem;">{{ table }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>État du backend</h2>
+  {% if health %}
+  <p><span class="badge badge-ok">✓ OK</span>
+     <span style="margin-left:0.5rem; font-size:0.85rem; color:#555;">{{ health.get('message', '') }}</span>
+  </p>
+  {% else %}
+  <p><span class="badge badge-err">✗ Indisponible</span></p>
+  {% endif %}
+</div>
+
+<div style="display:flex; gap:1rem; flex-wrap:wrap;">
+  <a href="{{ url_for('cv_base_list') }}" class="btn btn-primary">Gérer CV Base</a>
+  <a href="{{ url_for('jobs_list') }}" class="btn btn-primary">Gérer Jobs</a>
+  <a href="{{ url_for('generate') }}" class="btn btn-primary">Générer un CV</a>
+</div>
+{% endblock %}

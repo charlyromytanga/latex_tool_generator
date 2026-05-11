@@ -16,6 +16,7 @@ class CVBase(db.Model):
     projects = db.Column(db.String)
     languages = db.Column(db.String)
     interests = db.Column(db.String)
+    target_titles = db.Column(db.String)
 
 class Jobs(db.Model):
     __tablename__ = 'jobs'
@@ -27,6 +28,7 @@ class Jobs(db.Model):
     company_type = db.Column(db.String)
     offer_description = db.Column(db.String)
     company_presentation = db.Column(db.String)
+    job_title = db.Column(db.String)
 
 class CVApplications(db.Model):
     __tablename__ = 'cv_applications'

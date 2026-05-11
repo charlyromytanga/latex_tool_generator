@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block content %}
+<h1>Paramètres</h1>
+
+<div class="card">
+  <h2>Santé du backend</h2>
+  {% if error %}
+  <p><span class="badge badge-err">✗ Indisponible</span> — {{ error }}</p>
+  {% elif health %}
+  <p><span class="badge badge-ok">✓ OK</span>
+     <span style="margin-left:0.5rem; font-size:0.85rem; color:#555;">{{ health.get('message', '') }}</span>
+  </p>
+  <pre>{{ health | tojson(indent=2) }}</pre>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Configuration</h2>
+  <table>
+    <tr><th style="width:200px;">Variable</th><th>Valeur</th></tr>
+    <tr><td>BACKEND_URL</td><td>{{ config.BACKEND_URL }}</td></tr>
+  </table>
+</div>
+{% endblock %}

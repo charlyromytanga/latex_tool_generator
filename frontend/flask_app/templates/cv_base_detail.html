@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}CV Base · {{ record.get('id','') }}{% endblock %}
+{% block content %}
+<h1>CV Base · {{ record.get('id','—') }}</h1>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+{% if record %}
+<div class="card">
+  <table>
+    {% for key, val in record.items() %}
+    <tr>
+      <th style="width:180px; background:#f0f6ff; color:#333;">{{ key }}</th>
+      <td><pre style="background:none; padding:0; font-size:0.85rem;">{{ val }}</pre></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<a href="{{ url_for('cv_base_list') }}" class="btn btn-primary">← Retour</a>
+{% endblock %}

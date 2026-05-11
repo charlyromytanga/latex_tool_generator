@@ -1,0 +1,33 @@
+# Résumé
+python -m backend.services.cv.core.cv_business --mode db --action summary
+
+# Lister les offres
+python -m backend.services.cv.core.cv_business --mode db --table jobs --action list
+
+# Récupérer une offre
+python -m backend.services.cv.core.cv_business --mode db --table jobs --action get --id offer-711607447
+
+# Ajouter une offre
+python -m backend.services.cv.core.cv_business --mode db --table jobs --action add \
+  --data '{"id":"offer-xyz","language":"FR","country":"France","company_name":"Test"}'
+
+# Mettre à jour
+python -m backend.services.cv.core.cv_business --mode db --table jobs --action update \
+  --id offer-711607447 --data '{"job_title":"Data Analyst"}'
+
+
+
+# Fichier unique — juste le nom
+--mode db --table cv_base --action add --source cv_base_fr.json
+
+# Tous les fichiers de docs/cv_base/
+--mode db --table cv_base --action add
+
+# Ingest explicite (identique à add)
+--mode db --table cv_base --action ingest --source cv_base_en.json
+
+# Ingérer tous les fichiers de docs/cv_base/
+python shared/db_orchestration/cv_base_ingestor.py
+
+# Ingérer un seul fichier
+python shared/db_orchestration/cv_base_ingestor.py docs/cv_base/cv_base_fr.json

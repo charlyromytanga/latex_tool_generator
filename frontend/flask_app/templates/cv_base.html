@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}CV Base{% endblock %}
+{% block content %}
+<h1>CV Base</h1>
+
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+<!-- Filter by language -->
+<div class="card" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+  <form method="get" style="display:flex; gap:0.75rem; align-items:center; margin:0;">
+    <label style="margin:0;">Langue :</label>
+    <select name="language" style="width:auto; margin:0;">
+      <option value="" {% if not language %}selected{% endif %}>Toutes</option>
+      <option value="fr" {% if language=='fr' %}selected{% endif %}>Français</option>
+      <option value="en" {% if language=='en' %}selected{% endif %}>English</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+  </form>
+
+  <!-- Ingest form -->
+  <form action="{{ url_for('cv_base_ingest') }}" method="post" style="display:flex; gap:0.75rem; align-items:center; margin:0;">
+    <input type="text" name="source" placeholder="cv_base_fr.json"
+           style="width:200px; margin:0;" required/>
+    <button type="submit" class="btn btn-primary btn-sm">Ingérer</button>
+  </form>
+</div>
+
+{% if records %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Langue</th>
+        <th>Résumé (extrait)</th>
+        <th>Titres cibles</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td><a href="{{ url_for('cv_base_detail', record_id=r.id) }}">{{ r.id }}</a></td>
+        <td>{{ r.language }}</td>
+        <td>{{ (r.summary or '')[:80] }}{% if (r.summary or '')|length > 80 %}…{% endif %}</td>
+        <td>{{ r.target_titles or '' }}</td>
+        <td>
+          <form action="{{ url_for('cv_base_delete', record_id=r.id) }}" method="post"
+                onsubmit="return confirm('Supprimer {{ r.id }} ?')">
+            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="color:#888;">Aucun enregistrement.</p>
+{% endif %}
+{% endblock %}
