@@ -5,29 +5,38 @@
 
 <div class="card">
   <form method="post">
-    <label>ID (optionnel)</label>
-    <input type="text" name="id" placeholder="Ex: job_bnp_risk_analyst_fr"/>
+    <label>ID (optionnel — généré automatiquement si vide)</label>
+    <input type="text" name="id" placeholder="Ex: offer-bnp-risk-analyst-fr"/>
 
-    <label>Titre du poste *</label>
-    <input type="text" name="title" placeholder="Ex: Market Risk Analyst" required/>
+    <label>Intitulé du poste</label>
+    <input type="text" name="job_title" placeholder="Ex: Market Risk Analyst"/>
 
     <label>Entreprise</label>
-    <input type="text" name="company" placeholder="Ex: BNP Paribas"/>
+    <input type="text" name="company_name" placeholder="Ex: BNP Paribas"/>
 
-    <label>Lieu</label>
-    <input type="text" name="location" placeholder="Ex: Paris, France"/>
+    <label>Type d'entreprise</label>
+    <input type="text" name="company_type" placeholder="Ex: Banque, Start-up, CAC40…"/>
 
-    <label>Langue</label>
+    <label>Ville</label>
+    <input type="text" name="city" placeholder="Ex: Paris"/>
+
+    <label>Pays *</label>
+    <input type="text" name="country" placeholder="Ex: France" required/>
+
+    <label>Langue *</label>
     <select name="language" style="width:auto;">
       <option value="fr">Français</option>
       <option value="en">English</option>
     </select>
 
-    <label>Description du poste</label>
-    <textarea name="offer_text" placeholder="Coller le texte de l'offre ici..."></textarea>
+    <label>Description de l'offre</label>
+    <textarea name="offer_description" placeholder="Coller le texte de l'offre ici..."></textarea>
+
+    <label>Présentation de l'entreprise</label>
+    <textarea name="company_presentation" placeholder="Présentation de l'entreprise…"></textarea>
 
     <button type="submit" class="btn btn-primary">Ajouter</button>
-    <a href="{{ url_for('jobs_list') }}" class="btn" style="background:#eee; color:#333; margin-left:0.5rem;">Annuler</a>
+    <a href="{{ url_for('jobs_list') }}" class="btn btn-secondary" style="margin-left:0.5rem;">Annuler</a>
   </form>
 </div>
 {% endblock %}

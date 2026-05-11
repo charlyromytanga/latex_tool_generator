@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from flask import Flask, render_template, request, redirect, url_for, flash, Response
 import api_client as _api
 from api_client import (
@@ -125,9 +126,13 @@ def job_detail(record_id):
 def job_add():
     if request.method == "POST":
         payload = {k: v for k, v in request.form.items() if v.strip()}
+        # Auto-générer l'ID si non fourni
+        if not payload.get("id"):
+            company = payload.get("company_name", "job").lower().replace(" ", "-")
+            payload["id"] = f"offer-{company}-{uuid.uuid4().hex[:8]}"
         try:
             add_job(payload)
-            flash("Job added", "success")
+            flash(f"Job ajouté : {payload['id']}", "success")
             return redirect(url_for("jobs_list"))
         except BackendApiError as e:
             flash(str(e), "error")
