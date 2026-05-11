@@ -1,12 +1,27 @@
 FROM python:3.12-slim
 WORKDIR /app
 
+# texlive retiré volontairement : la compilation LaTeX se fait sur le host.
+# Réactiver si on veut compiler dans le container (sans texlive-fonts-extra
+# qui ajoute ~300s pour des centaines de polices inutiles) :
+#
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     texlive-latex-base \
+#     texlive-latex-extra \
+#     texlive-fonts-recommended \
+#     texlive-lang-french \
+#     && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip && pip install uv
 
 COPY pyproject.toml ./
 COPY backend/ ./backend/
 COPY shared/ ./shared/
 
+# Les extras .[cv] .[lm] .[emails] .[reports] sont intentionnellement exclus :
+# - .[cv] / .[lm] : sentence-transformers + spacy + keybert (~600s, modèles ML non utilisés)
+# - .[emails] / .[reports] : services non encore actifs dans main_backend.py
+# Réactiver au cas par cas quand le service correspondant est enregistré.
 RUN uv pip install --system .
 
 ENV FLASK_APP=backend.main_backend
