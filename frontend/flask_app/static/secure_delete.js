@@ -95,7 +95,7 @@
     // Intercept all delete form submissions (capture phase = runs before onsubmit)
     document.addEventListener('submit', function (e) {
       var form = e.target;
-      if (form.dataset.deleteForm && !form.dataset.sdDone) {
+      if ('deleteForm' in form.dataset && !form.dataset.sdDone) {
         e.preventDefault();
         e.stopImmediatePropagation();
         showModal(form);
