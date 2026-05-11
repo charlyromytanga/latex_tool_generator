@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, jsonify
-from flask_admin import Admin
+from flask import Flask, jsonify, request, flash, redirect
+from flask_admin import Admin, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_babel import Babel
 from markupsafe import Markup
@@ -32,7 +32,24 @@ def _truncate(max_len: int = 120):
     return _fmt
 
 
-class CVBaseAdmin(ModelView):
+class SecureModelView(ModelView):
+    """ModelView avec protection par mot de passe sur toutes les suppressions."""
+
+    extra_js = ['/static/admin/secure_delete.js']
+
+    @expose('/delete/', methods=('POST',))
+    def delete_view(self):
+        pwd = request.form.get('delete_password', '').strip()
+        num_pwd  = os.environ.get('DELETE_NUMERIC_PASSWORD', '')
+        word_pwd = os.environ.get('DELETE_WORD_PASSWORD', '')
+        if not pwd or pwd not in (num_pwd, word_pwd):
+            flash('❌ Mot de passe de suppression incorrect.', 'error')
+            return_url = request.args.get('url') or self.get_url('.index_view')
+            return redirect(return_url)
+        return super().delete_view()
+
+
+class CVBaseAdmin(SecureModelView):
     column_list              = [
         "id", "language",
         "header", "summary", "skills",
@@ -81,7 +98,7 @@ class CVBaseAdmin(ModelView):
     page_size    = 20
 
 
-class JobsAdmin(ModelView):
+class JobsAdmin(SecureModelView):
     column_list              = ["id", "language", "country", "city", "company_name", "company_type", "offer_description", "company_presentation", "job_title"]
     column_searchable_list   = ["id", "company_name", "city", "country"]
     column_filters           = ["language", "country", "company_type"]
@@ -112,7 +129,7 @@ class JobsAdmin(ModelView):
     page_size    = 20
 
 
-class CVApplicationsAdmin(ModelView):
+class CVApplicationsAdmin(SecureModelView):
     column_list              = ["id", "language", "header", "summary", "skills", "experience", "education", "certifications", "projects", "languages", "interests", "job_id", "cv_id", "matching_score", "generation_date"]
     column_searchable_list   = ["id", "cv_id", "job_id"]
     column_filters           = ["language", "matching_score", "generation_date"]
@@ -145,7 +162,7 @@ class CVApplicationsAdmin(ModelView):
     page_size    = 20
 
 
-class ApplicationsAdmin(ModelView):
+class ApplicationsAdmin(SecureModelView):
     column_list              = ["id", "job_id", "cv_id", "lm", "matching_score", "generation_date", "mail_content", "days_to_wait", "response_email"]
     column_searchable_list   = ["id", "cv_id", "job_id", "response_email"]
     column_filters           = ["matching_score", "generation_date", "days_to_wait"]

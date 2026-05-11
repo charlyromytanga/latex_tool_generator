@@ -79,8 +79,19 @@ def cv_base_ingest():
     return redirect(url_for("cv_base_list"))
 
 
+def _check_delete_password() -> bool:
+    """Vérifie le mot de passe de suppression depuis le formulaire POST."""
+    pwd      = request.form.get('delete_password', '').strip()
+    num_pwd  = os.environ.get('DELETE_NUMERIC_PASSWORD', '')
+    word_pwd = os.environ.get('DELETE_WORD_PASSWORD', '')
+    return bool(pwd) and pwd in (num_pwd, word_pwd)
+
+
 @app.route("/cv-base/<record_id>/delete", methods=["POST"])
 def cv_base_delete(record_id):
+    if not _check_delete_password():
+        flash('❌ Mot de passe de suppression incorrect.', 'error')
+        return redirect(url_for("cv_base_list"))
     try:
         delete_cv_base(record_id)
         flash(f"Deleted {record_id}", "success")
@@ -125,6 +136,9 @@ def job_add():
 
 @app.route("/jobs/<record_id>/delete", methods=["POST"])
 def job_delete(record_id):
+    if not _check_delete_password():
+        flash('❌ Mot de passe de suppression incorrect.', 'error')
+        return redirect(url_for("jobs_list"))
     try:
         delete_job(record_id)
         flash(f"Deleted {record_id}", "success")

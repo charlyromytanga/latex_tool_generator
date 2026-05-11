@@ -20,7 +20,7 @@
 <div style="display:flex; gap:1rem;">
   <a href="{{ url_for('jobs_list') }}" class="btn btn-primary">← Retour</a>
   <form action="{{ url_for('job_delete', record_id=record.get('id','')) }}" method="post"
-        onsubmit="return confirm('Supprimer ?')">
+        data-delete-form data-delete-label="{{ record.get('id','') }}">
     <button type="submit" class="btn btn-danger">Supprimer</button>
   </form>
 </div>

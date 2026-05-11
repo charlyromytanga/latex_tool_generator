@@ -31,7 +31,7 @@
         <td>{{ r.language or '' }}</td>
         <td>
           <form action="{{ url_for('job_delete', record_id=r.id) }}" method="post"
-                onsubmit="return confirm('Supprimer {{ r.id }} ?')">
+                data-delete-form data-delete-label="{{ r.id }}">
             <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
           </form>
         </td>

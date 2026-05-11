@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}CV Generator{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}"/>
+  <script src="{{ url_for('static', filename='secure_delete.js') }}" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font); background: var(--bg-page); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; font-size: var(--font-size-base); }
