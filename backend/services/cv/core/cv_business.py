@@ -5,17 +5,27 @@ import os
 import json
 import logging
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Imports compatibles exécution directe (python -m) ET import package
+# Imports compatibles exécution directe ET import package
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
 try:
-    from .cv_utils import CV, IntegrationService
+    from .cv_utils import CV, CVLatexGeneratorFR
+    try:
+        from .cv_utils import IntegrationService  # type: ignore
+    except ImportError:
+        IntegrationService = None  # type: ignore
 except ImportError:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-    from backend.services.cv.core.cv_utils import CV, IntegrationService  # type: ignore
+    if _REPO_ROOT not in sys.path:
+        sys.path.insert(0, _REPO_ROOT)
+    from backend.services.cv.core.cv_utils import CV, CVLatexGeneratorFR  # type: ignore
+    try:
+        from backend.services.cv.core.cv_utils import IntegrationService  # type: ignore
+    except ImportError:
+        IntegrationService = None  # type: ignore
 
 # ========CONFIG LOGGING========
 logging.basicConfig(
@@ -25,199 +35,113 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ========CHEMINS — résolus depuis la racine du projet========
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+_PROJECT_ROOT = _REPO_ROOT
 DATA_DIR = os.path.join(_PROJECT_ROOT, os.getenv("DATA_DIR", "data").lstrip("./"))
 OFFERS_DIR = os.path.join(_PROJECT_ROOT, os.getenv("OFFERS_DIR", "data/offers").lstrip("./"))
 OFFER_TEXT_PATH = os.path.join(OFFERS_DIR, "offer_text_1.txt")
 
 
-# ========PIPELINE CV — CHARGEMENT BASE========
-logger.info("=" * 60)
-logger.info("INITIALISATION PIPELINE CV")
-logger.info("=" * 60)
-
-cv = CV(data_dir=DATA_DIR)
-
-logger.info("Chargement formations / expériences / projets...")
-formations, experiences, projects = cv.load_alls()
-logger.info(f"  → {len(formations)} formations | {len(experiences)} expériences | {len(projects)} projets")
-
-logger.info("Construction cv_base_in_all FR + EN...")
-cv_base_in_all_fr, cv_base_in_all_en = cv.cv_base_in_all()
-logger.info(f"  → CV base FR sections : {list(cv_base_in_all_fr.keys())}")
-logger.info(f"  → CV base EN sections : {list(cv_base_in_all_en.keys())}")
 
 
-# ========INSTANCIATION IntegrationService========
-logger.info("Instanciation IntegrationService...")
-integration_service = IntegrationService(
-    cv_base_fr=cv_base_in_all_fr,
-    cv_base_en=cv_base_in_all_en,
-    n8n_webhook_url=os.getenv("N8N_WEBHOOK_URL", ""),
-)
-logger.info("  → IntegrationService prêt (modèles : %s / scoring : %s)",
-            integration_service.model, integration_service.model_scoring)
 
+# ========PIPELINE CV FR — GÉNÉRATION PDF LATEX========
 
-# ========PIPELINE COMPLET : 3 ÉTAPES========
+_DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "backend", "db", "jobcv.db")
 
-def run_full_pipeline(offer_text: str) -> Dict[str, Any]:
+def run_cv_fr_pipeline(
+    cv_base_id: str,
+    job_id: str,
+    db_path: str = _DEFAULT_DB_PATH,
+    target_title_index: Optional[int] = None,
+) -> Dict[str, Any]:
     """
-    Simule le flux complet de la web app Streamlit :
-      Étape 1 → POST /offer_input          (extraction + structuration)
-      Étape 2 → POST /offer_upgrade_by_llm (enrichissement LLM + sauvegarde job_offer)
-      Étape 3 → POST /score_and_cv_lm      (scoring ATS + génération CV/LM si ≥ 70 %)
+    Génère le CV FR au format PDF à partir des données SQLite.
+
+    Args:
+        cv_base_id: ID de la ligne cv_base.
+        job_id: ID de la ligne jobs.
+        db_path: Chemin vers jobcv.db.
+        target_title_index: Sélection du titre de poste visé.
+            None (défaut) → auto : job_title de l'offre si renseigné, sinon target_titles[0]
+            0  → Market Risk Analyst  (candidature spontanée, index 0)
+            1  → Trading Analyst      (candidature spontanée, index 1)
+            2  → Data Analyst         (candidature spontanée, index 2)
+            n  → target_titles[n]
+
+    Returns:
+        {"tex": <path>, "pdf": <path>} ou {} en cas d'erreur.
     """
     logger.info("")
     logger.info("=" * 60)
-    logger.info("DÉMARRAGE PIPELINE COMPLET")
+    logger.info("DÉMARRAGE PIPELINE CV FR — LATEX")
     logger.info("=" * 60)
-    logger.info("Taille de l'offre texte : %d caractères", len(offer_text))
-
-    # ─── ÉTAPE 1 : extraction et structuration ───────────────────────────────
-    logger.info("")
-    logger.info("─" * 50)
-    logger.info("ÉTAPE 1 — extraction et structuration de l'offre")
-    logger.info("─" * 50)
+    logger.info("  cv_base_id         : %s", cv_base_id)
+    logger.info("  job_id             : %s", job_id)
+    logger.info("  db_path            : %s", db_path)
+    logger.info("  target_title_index : %s", target_title_index)
 
     try:
-        step1_result = integration_service.extract_and_structure_offer(offer_text)
-
-        if not step1_result:
-            logger.error("ÉTAPE 1 ÉCHOUÉE — résultat vide")
-            return {}
-
-        structured_offer: Dict[str, Any] = step1_result["structured_offer"]
-
-        logger.info("OUTPUT ÉTAPE 1 — offre structurée :")
-        logger.info("  id            : %s", structured_offer.get("id"))
-        logger.info("  language      : %s", structured_offer.get("language"))
-        logger.info("  country       : %s", structured_offer.get("country"))
-        logger.info("  city          : %s", structured_offer.get("city"))
-        logger.info("  compagny_name : %s", structured_offer.get("compagny_name"))
-        logger.info("  compagny_type : %s", structured_offer.get("compagny_type"))
-        logger.info("  offer_title   : %s", structured_offer.get("offer_title"))
-        logger.info("  llm_header    : %s", structured_offer.get("llm_header"))
-        logger.info(
-            "  offer_description [%d chars] : %s...",
-            len(str(structured_offer.get("offer_description", ""))),
-            str(structured_offer.get("offer_description", ""))[:120],
+        gen = CVLatexGeneratorFR.from_db(
+            db_path=db_path,
+            cv_base_id=cv_base_id,
+            job_id=job_id,
+            target_title_index=target_title_index,
         )
-
+        logger.info("CVLatexGeneratorFR chargé — cv_base: %s | job: %s @ %s",
+                    gen.cv.get("id"), gen.job.get("company_name"), gen.job.get("city"))
     except Exception as e:
-        logger.exception("Exception non gérée à l'ÉTAPE 1 : %s", e)
+        logger.exception("Erreur chargement CVLatexGeneratorFR : %s", e)
         return {}
-
-    # ─── ÉTAPE 2 : enrichissement LLM croisé avec cv_base ───────────────────
-    logger.info("")
-    logger.info("─" * 50)
-    logger.info("ÉTAPE 2 — enrichissement LLM + sauvegarde job_offer")
-    logger.info("─" * 50)
 
     try:
-        full_offer: Dict[str, Any] = integration_service.enrich_offer_with_cv(
-            structured_offer=structured_offer,
-            offer_text=offer_text,
-        )
-
-        if not full_offer:
-            logger.error("ÉTAPE 2 ÉCHOUÉE — résultat vide")
-            return {}
-
-        logger.info("OUTPUT ÉTAPE 2 — offre enrichie (sections LLM) :")
-        llm_sections = [
-            "llm_summary", "llm_skills", "llm_experience",
-            "llm_education", "llm_certifications",
-            "llm_projects", "llm_languages", "llm_interests",
-        ]
-        for key in llm_sections:
-            val = str(full_offer.get(key, ""))
-            logger.info("  %s [%d chars] : %s...", key, len(val), val[:100])
-
+        tex_path, pdf_path = gen.generate()
+        logger.info("")
+        logger.info("PIPELINE CV FR TERMINÉ")
+        logger.info("  TEX → %s", tex_path)
+        logger.info("  PDF → %s", pdf_path)
+        logger.info("=" * 60)
+        return {"tex": str(tex_path), "pdf": str(pdf_path)}
     except Exception as e:
-        logger.exception("Exception non gérée à l'ÉTAPE 2 : %s", e)
+        logger.exception("Erreur génération CV FR : %s", e)
         return {}
-
-    # ─── ÉTAPE 3 : scoring ATS + génération CV / LM ──────────────────────────
-    logger.info("")
-    logger.info("─" * 50)
-    logger.info("ÉTAPE 3 — scoring ATS + génération CV/LM si score ≥ 70 %%")
-    logger.info("─" * 50)
-
-    try:
-        score_result: Dict[str, Any] = integration_service.score_and_generate(full_offer)
-
-        if not score_result:
-            logger.error("ÉTAPE 3 ÉCHOUÉE — résultat vide")
-            return {}
-
-        score = score_result.get("score", 0.0)
-        logger.info("OUTPUT ÉTAPE 3 — scoring :")
-        logger.info("  candidature_id     : %s", score_result.get("candidature_id"))
-        logger.info("  job_offer_id       : %s", score_result.get("job_offer_id"))
-        logger.info("  score ATS          : %.2f (%.0f %%)", score, score * 100)
-        logger.info("  documents générés  : %s", score_result.get("documents_generated"))
-        logger.info("  justification      : %s", score_result.get("justification"))
-
-        details = score_result.get("score_details") or {}
-        for k, v in details.items():
-            logger.info("    détail %-20s : %.2f", k, v)
-
-        if score_result.get("documents_generated"):
-            cv_text = str(score_result.get("cv", ""))
-            lm_text = str(score_result.get("lm", ""))
-            logger.info("  CV généré  [%d chars] : %s...", len(cv_text), cv_text[:150])
-            logger.info("  LM générée [%d chars] : %s...", len(lm_text), lm_text[:150])
-        else:
-            logger.info("  Score < 70 %% — aucun document généré")
-
-    except Exception as e:
-        logger.exception("Exception non gérée à l'ÉTAPE 3 : %s", e)
-        return {}
-
-    # ─── Résumé final ─────────────────────────────────────────────────────────
-    logger.info("")
-    logger.info("=" * 60)
-    logger.info("PIPELINE TERMINÉ")
-    logger.info("  Offre ID       : %s", full_offer.get("id"))
-    logger.info("  Candidature ID : %s", score_result.get("candidature_id"))
-    logger.info("  Score ATS      : %.0f %%", (score_result.get("score", 0.0)) * 100)
-    logger.info("  Documents      : %s", score_result.get("documents_generated"))
-    logger.info("=" * 60)
-
-    return {
-        "step1": step1_result,
-        "step2": full_offer,
-        "step3": score_result,
-    }
 
 
 # ========EXÉCUTION DIRECTE========
 if __name__ == "__main__":
-    logger.info("Lecture de l'offre : %s", OFFER_TEXT_PATH)
+    import argparse
 
-    try:
-        with open(OFFER_TEXT_PATH, "r", encoding="utf-8") as f:
-            offer_text = f.read().strip()
-        logger.info("Offre chargée (%d caractères)", len(offer_text))
-    except FileNotFoundError:
-        logger.error("Fichier introuvable : %s", OFFER_TEXT_PATH)
-        sys.exit(1)
-    except Exception as e:
-        logger.exception("Erreur lecture fichier : %s", e)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Pipeline CV")
+    parser.add_argument(
+        "--mode",
+        choices=["full", "cv-fr"],
+        default="full",
+        help="full = pipeline LLM 3 étapes | cv-fr = génération PDF LaTeX FR",
+    )
+    parser.add_argument("--cv-base-id", default=os.getenv("CV_BASE_ID", ""), help="ID cv_base (mode cv-fr)")
+    parser.add_argument("--job-id", default=os.getenv("JOB_ID", ""), help="ID job_offer (mode cv-fr)")
+    parser.add_argument("--db-path", default=_DEFAULT_DB_PATH, help="Chemin vers jobcv.db (mode cv-fr)")
+    parser.add_argument(
+        "--target-title-index",
+        type=int,
+        default=None,
+        help=(
+            "Index du titre de poste visé dans cv_base.target_titles (candidature spontanée). "
+            "Non fourni = auto (job_title de l'offre si dispo, sinon index 0). "
+            "Ex: 0=Market Risk Analyst, 1=Trading Analyst, 2=Data Analyst"
+        ),
+    )
+    args = parser.parse_args()
 
-    if not os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY", "").startswith("your_"):
-        logger.error("ANTHROPIC_API_KEY non définie — définis-la avant de lancer le pipeline")
-        sys.exit(1)
+    # ── MODE cv-fr : génération PDF LaTeX ────────────────────────────────────
+    if args.mode == "cv-fr":
+        if not args.cv_base_id or not args.job_id:
+            logger.error("--cv-base-id et --job-id sont requis pour le mode cv-fr")
+            sys.exit(1)
 
-    result = run_full_pipeline(offer_text)
-
-    if result:
-        output_path = os.path.join(DATA_DIR, "pipeline_output_last.json")
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(result, f, ensure_ascii=False, indent=2)
-            logger.info("Résultat complet sauvegardé → %s", output_path)
-        except Exception as e:
-            logger.warning("Impossible de sauvegarder le JSON de sortie : %s", e)
+        result = run_cv_fr_pipeline(
+            cv_base_id=args.cv_base_id,
+            job_id=args.job_id,
+            db_path=args.db_path,
+            target_title_index=args.target_title_index,
+        )
+        sys.exit(0 if result else 1)

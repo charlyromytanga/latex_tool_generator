@@ -1,9 +1,11 @@
 """
 Offer ingestion orchestration :
-Lecture d'une offre depuis un fichier JSON, extraction des champs principaux (company, location, title),
-extraction de mots-clés, et insertion dans la base de données (table offers).
+Lecture d'une offre depuis un fichier JSON, extraction des champs principaux,
+et insertion dans la base de données (table jobs — schéma actuel).
 
-Entités et extraction avancée désactivées (pipeline simplifié, extraction directe depuis le JSON).
+Colonnes de la table jobs :
+  id, language, country, city, company_name, company_type,
+  offer_description, company_presentation
 """
 
 from __future__ import annotations
@@ -23,7 +25,6 @@ from langdetect import detect
 
 from .config import OrchestrationConfig, LLMConfig
 from .database import Database
-import json
 import uuid
 
 from dotenv import load_dotenv
@@ -37,15 +38,16 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class OfferRecord:
-    offer_id: Optional[str]
-    offer_text: Optional[str]
-    metadata_json: Optional[str]
-    keywords_json: Optional[str]
-    created_at: Optional[str]
-    company: Optional[str]
-    location: Optional[str]
-    title: Optional[str]
+class JobRecord:
+    """Mirrors the `jobs` table schema exactly."""
+    id: str
+    language: str
+    country: str
+    city: Optional[str]
+    company_name: Optional[str]
+    company_type: Optional[str]
+    offer_description: Optional[str]
+    company_presentation: Optional[str]
 
 
 class OfferSourceReader:
@@ -60,42 +62,23 @@ class OfferSourceReader:
         return self.input_path.read_text(encoding="utf-8")
 
 
-
-
 class OfferRepositoryGateway:
-    """Database gateway for offers (nouvelle structure)."""
+    """Database gateway for the `jobs` table."""
 
-    def __init__(self, database: Database, schema_path: Path) -> None:
+    def __init__(self, database: Database) -> None:
         self.database = database
-        self.schema_path = schema_path.resolve()
 
-    def ensure_schema(self) -> None:
-        if self.database.has_table("offers"):
-            return
-        if not self.schema_path.exists():
-            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-        self.database.execute_script(self.schema_path.read_text(encoding="utf-8"))
-
-    def insert_offer(self, record: OfferRecord) -> None:
+    def upsert_job(self, record: JobRecord) -> None:
+        """Insert or replace a job offer into the `jobs` table."""
         sql = """
-        INSERT INTO offers (
-            offer_id,
-            offer_text,
-            metadata_json,
-            keywords_json,
-            created_at,
-            company,
-            location,
-            title
+        INSERT OR REPLACE INTO jobs (
+            id, language, country, city,
+            company_name, company_type,
+            offer_description, company_presentation
         ) VALUES (
-            :offer_id,
-            :offer_text,
-            :metadata_json,
-            :keywords_json,
-            :created_at,
-            :company,
-            :location,
-            :title
+            :id, :language, :country, :city,
+            :company_name, :company_type,
+            :offer_description, :company_presentation
         )
         """
         self.database.execute(sql, asdict(record))
@@ -104,130 +87,94 @@ class OfferRepositoryGateway:
 class OfferIngestionOrchestrator:
 
     def __init__(self, config: OrchestrationConfig) -> None:
-        """
-        Orchestrateur d'ingestion d'offre :
-        - Prend un fichier JSON d'offre en entrée
-        - Extrait les champs principaux (company, location, title)
-        - Extrait les mots-clés
-        - Insère l'offre dans la base
-        """
         self.config = config
-        self.repo = OfferRepositoryGateway(Database(config.database_url), config.schema_path)
+        self.repo = OfferRepositoryGateway(Database(config.database_url))
 
-    def _detect_language(self, offer_input: str) -> str:
-        """
-        Détecte la langue du texte d'offre (français ou anglais, fallback fr).
-        """
+    def _detect_language(self, text: str) -> str:
         try:
-            lang = detect(offer_input)
-            if lang not in ("fr", "en"):
-                lang = "fr"
+            lang = detect(text)
+            return lang if lang in ("fr", "en") else "fr"
         except Exception:
-            lang = "fr"
-        return lang
+            return "fr"
 
-    def extract_offer_text(self, raw) -> str:
+    def run_from_file(self, offer_path: Path) -> dict[str, Any]:
         """
-        Extrait le texte d'offre à partir du JSON (clé offer_input ou offer_text).
+        Lit un fichier JSON depuis docs/offers/ et insère l'offre dans la table `jobs`.
+        Champs JSON supportés : id, language, country, city, company_name, company_type,
+        offer_description, company_presentation, offer_title (ajouté en tête de offer_description).
         """
-        if isinstance(raw, dict):
-            return raw.get("offer_input") or raw.get("offer_text") or ""
-        return str(raw)
+        raw = json.loads(offer_path.read_text(encoding="utf-8"))
 
-    def _normalize_keyword(self, kw: str) -> str:
-        """
-        Normalise un mot-clé (minuscule, sans accents, sans ponctuation).
-        """
-        kw = kw.lower().strip()
-        kw = ''.join(c for c in unicodedata.normalize('NFD', kw) if unicodedata.category(c) != 'Mn')
-        kw = re.sub(r"[\W_]+", " ", kw)
-        kw = re.sub(r"\s+", " ", kw).strip()
-        return kw
+        offer_id = raw.get("id") or f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
 
-    def extract_company(self, raw, entities, description) -> Optional[str]:
-        """
-        Extrait le nom de l'entreprise depuis le JSON (clé company ou company_name).
-        """
-        if isinstance(raw, dict):
-            company = raw.get("company") or raw.get("company_name")
-            if company and str(company).strip():
-                return company
-        return None
+        description = raw.get("offer_description", "")
+        offer_title = raw.get("offer_title", "")
+        if offer_title and not description.startswith(offer_title):
+            description = f"{offer_title}\n\n{description}"
 
-    def extract_location(self, raw, entities, description) -> Optional[str]:
-        """
-        Extrait le lieu depuis le JSON (clé location).
-        """
-        if isinstance(raw, dict):
-            location = raw.get("location")
-            if location and str(location).strip():
-                return location
-        return None
+        language = raw.get("language") or self._detect_language(description)
+        country = raw.get("country", "").strip()
+        if not country:
+            raise ValueError(f"Champ 'country' manquant dans {offer_path}")
 
-    def extract_title(self, raw, entities, description) -> Optional[str]:
-        """
-        Extrait le titre depuis le JSON (clé offer_title ou title).
-        """
-        if isinstance(raw, dict):
-            title = raw.get("offer_title") or raw.get("title")
-            if title and str(title).strip():
-                return title
-        return None
+        record = JobRecord(
+            id=offer_id,
+            language=language,
+            country=country,
+            city=raw.get("city"),
+            company_name=raw.get("company_name"),
+            company_type=raw.get("company_type"),
+            offer_description=description,
+            company_presentation=raw.get("company_presentation"),
+        )
+        self.repo.upsert_job(record)
+        LOGGER.info("Job ingested: id=%s company=%s country=%s", offer_id, record.company_name, record.country)
 
-    def run_from_payload(self, offer_input: str, company: str, location: str, title: str, offer_path: Path | None) -> dict[str, object]:
-        """
-        Pipeline principal : prend les champs du payload, extrait les mots-clés, et insère en base.
-        """
-        self.llm_config = LLMConfig(model_version="all-MiniLM-L6-v2")
-        description = offer_input
-        lang = self._detect_language(offer_input=description)
-        keywords = self.llm_config.extract_keywords(description, top_k=100, stop_words=None if lang == "fr" else "english")
-        preprocessed_keywords = [self._normalize_keyword(kw) for kw in keywords if isinstance(kw, str)]
-
-        offer_id = f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
-        now = datetime.now().isoformat(timespec="seconds") + "Z"
-        metadata = {
-            "source_file": str(offer_path),
-            "ingested_at": now,
-            "lang": lang,
-            "has_sections": False
+        return {
+            "offer_id": offer_id,
+            "company": record.company_name,
+            "city": record.city,
+            "country": record.country,
+            "language": record.language,
         }
 
-        # Robustesse : lever une erreur explicite si un champ clé est manquant ou vide
-        missing = []
-        if not company or not str(company).strip():
-            missing.append("company")
-        if not location or not str(location).strip():
-            missing.append("location")
-        if not title or not str(title).strip():
-            missing.append("title")
-        if missing:
-            raise ValueError(f"Champ(s) obligatoire(s) manquant(s) ou vide(s) dans l'offre : {', '.join(missing)}")
+    def run_from_payload(
+        self,
+        offer_input: str,
+        company: str,
+        location: str,
+        title: str,
+        offer_path: Path | None = None,
+        country: str = "France",
+        city: str | None = None,
+        company_type: str | None = None,
+        company_presentation: str | None = None,
+    ) -> dict[str, Any]:
+        """Pipeline direct depuis des valeurs en mémoire — insère dans la table `jobs`."""
+        offer_id = f"offer-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
+        language = self._detect_language(offer_input)
+        description = f"{title}\n\n{offer_input}" if title else offer_input
 
-        record = OfferRecord(
-            offer_id=offer_id,
-            offer_text=description,
-            metadata_json=json.dumps(metadata, ensure_ascii=True),
-            keywords_json=json.dumps(preprocessed_keywords, ensure_ascii=True),
-            created_at=now,
-            company=company,
-            location=location,
-            title=title
+        record = JobRecord(
+            id=offer_id,
+            language=language,
+            country=country,
+            city=city or location,
+            company_name=company,
+            company_type=company_type,
+            offer_description=description,
+            company_presentation=company_presentation,
         )
-        self.repo.ensure_schema()
-        self.repo.insert_offer(record)
-        LOGGER.info("Offer ingested: offer_id=%s source=%s lang=%s", offer_id, offer_path, lang)
+        self.repo.upsert_job(record)
+        LOGGER.info("Job ingested: id=%s company=%s", offer_id, company)
 
         return {
             "offer_id": offer_id,
             "company": company,
-            "location": location,
-            "title": title,
-            "keywords": preprocessed_keywords,
+            "city": record.city,
+            "country": country,
+            "language": language,
         }
-
-
-
 
 
 def _build_parser() -> argparse.ArgumentParser:

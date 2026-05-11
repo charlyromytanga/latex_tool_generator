@@ -1,0 +1,139 @@
+% !TeX program = pdflatex
+% Template modulaire FR pour CV — deux colonnes, personnalisable via commandes en tête
+
+\documentclass[9pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[left=0mm, right=0mm, top=0mm, bottom=0mm]{geometry}
+\usepackage[stretch=25, shrink=25, tracking=true, letterspace=30]{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{marvosym}
+\usepackage{fontawesome5}
+\usepackage{enumitem}
+
+\usepackage{FiraSans}
+\renewcommand{\familydefault}{\sfdefault}
+
+\definecolor{cvblue}{HTML}{304263}
+\definecolor{cvgold}{HTML}{FFC600}
+
+\usepackage[colorlinks=true, urlcolor=white, linkcolor=white]{hyperref}
+\usepackage{datetime2}
+
+\usepackage{fancyhdr}
+
+% --- Personnalisation (modifiez ces commandes avant de compiler) ---
+\newcommand{\cvname}{Charly-Romy TANGA}
+\newcommand{\cvaddress}{Paris, France}
+\newcommand{\cvmail}{charlyromytanga@gmail.com}
+\newcommand{\cvphone}{+33 6 15 42 25 74}
+\newcommand{\cvlinkedin}{charly-romy-tanga}
+\newcommand{\cvgithub}{charlyromytanga}
+\newcommand{\jobtype}{Ingénieur en Mathématiques Appliquées Finance et Technologie}
+\newcommand{\presentation}{• Ingénieur passionné par la valorisation des données, l’analyse quantitative et l’innovation technologique.
+• Expérience confirmée en mathématiques appliquées, data science et développement d’outils }
+
+
+% ----- COMMANDES DE MISE EN FORME (style LuxSleek) -----
+\newlength{\headleftwidth}
+\newcommand{\headleft}[1]{%
+    \vspace*{1.5ex}%
+    \settowidth{\headleftwidth}{\textsc{\textbf{#1}}}%
+    {\color{cvgold}\textsc{\textbf{#1}}}\par%
+    \vspace*{-1.5ex}%
+    {\color{cvgold}\rule{\headleftwidth}{0.4pt}}%
+    \par\vspace*{0.3ex}}
+
+\newcommand{\headright}[1]{\vspace*{1ex}\textsc{\large\color{cvblue}#1}\par%
+    \vspace*{-1.5ex}{\color{cvblue}\hrulefill}\par\vspace*{0.1ex}}
+\newcommand{\dates}[1]{\hfill\mbox{\textbf{#1}}}
+\newcommand{\is}{\par\vskip.5ex plus .4ex}
+\newcommand{\smaller}[1]{{\small$\diamond$\ #1}}
+
+\setlist{parsep=0pt, topsep=0pt, partopsep=1pt, itemsep=1pt, leftmargin=6mm}
+
+\begin{document}
+
+\setlength{\topskip}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\fboxsep}{0pt}
+\raggedbottom
+
+% ===== COLONNE GAUCHE (sidebar color\'{e}e ~32%) =====
+\begin{minipage}[t][297mm]{0.32\textwidth}
+  \colorbox{cvblue}{%
+    \begin{minipage}[t][5mm][t]{\textwidth}\null\hfill\null\end{minipage}%
+  }
+
+  \vspace{-.2ex}
+  \colorbox{cvblue!90}{\color{white}%
+    \kern0.07\textwidth\relax
+    \begin{minipage}[t][297mm][t]{0.86\textwidth}
+      \raggedright
+
+      \vspace*{3ex}
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section INTITULE DE POSTE VISE =====
+      \input{sections/intitule_poste.tex}
+
+      \vspace*{05ex}
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Disponibilit\'{e} =====
+      \input{sections/disponibilite.tex}
+
+      \vspace*{05ex}
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Atouts =====
+      \input{sections/atouts.tex}
+      \vspace*{08ex}
+
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Langues =====
+      \input{sections/langues.tex}
+      \vspace*{06ex}
+
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Centre d'int\'{e}r\^{e}t =====
+      \input{sections/centre_interet.tex}
+
+      \vspace*{08ex}
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Photo profil =====
+      \input{sections/photo.tex}
+
+      % ===== DISPOSITION - COLONNE A DROITE | Section En-t\^{e}te =====
+      \input{sections/header.tex}
+
+      \vspace*{02ex}
+      % ===== DISPOSITION - COLONNE A GAUCHE | Section Informations =====
+      \input{sections/informations.tex}
+
+    \end{minipage}%
+    \kern0.07\textwidth\relax
+  }%
+\end{minipage}%
+% ===== COLONNE DROITE (contenu principal ~65%) =====
+\hskip0.015\textwidth%
+\begin{minipage}[t][297mm]{0.635\textwidth}
+  \setlength{\parskip}{0.1ex}
+  \vspace{3mm}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Comp\'{e}tences professionnelles =====
+  \input{sections/competences.tex}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Connaissances techniques =====
+  \input{sections/competences_techniques.tex}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Exp\'{e}riences professionnelles =====
+  \input{sections/experiences.tex}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Formations =====
+  \input{sections/formations.tex}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Certifications =====
+  \input{sections/certifications.tex}
+
+  % ===== DISPOSITION - COLONNE A DROITE | Section Projets =====
+  \input{sections/projets.tex}
+
+\end{minipage}
+
+\end{document}

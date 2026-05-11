@@ -1,19 +1,19 @@
 import os
 import json
 import re
-from pprint import pprint
+import shutil
+import sqlite3
+import subprocess
+import tempfile
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Tuple, Set, Optional
+from pprint import pprint
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import logging
 from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-# Insertion SQL dans la base après le dump JSON
-import sqlite3
-from dotenv import load_dotenv
-load_dotenv()
-import os
 
 class CV:
     """
@@ -302,342 +302,501 @@ class CandidatureTracker:
         """Supprime une candidature."""
         pass
 
-# --- Classe d'intégration pour LLM Claude et n8n ---
-import anthropic
-import requests as http_requests
-import uuid as uuid_lib
 
-class IntegrationService:
+# ---------------------------------------------------------------------------
+# CV LaTeX Generator — modèle _col_gauche / FR
+# ---------------------------------------------------------------------------
+
+_TEMPLATE_DIR = (
+    Path(__file__).resolve().parents[4]
+    / "shared" / "service_cv_latex" / "templates" / "_col_gauche"
+)
+_OUTPUT_DIR = (
+    Path(__file__).resolve().parents[4]
+    / "shared" / "output" / "FR"
+)
+
+
+class CVLatexGeneratorFR:
     """
-    Gère l'intégration avec Claude (LLM) pour la génération des sections LLM et avec n8n.
-    Pipeline en 3 méthodes : extraction → enrichissement → scoring + génération documents.
+    Generates a French two-column CV PDF from CVBase + Jobs data.
+
+    Usage (standalone, outside Flask):
+        gen = CVLatexGeneratorFR.from_db(
+            db_path="/app/db/jobcv.db",
+            cv_base_id="cv_base_in_all_fr",
+            job_id="<job_uuid>",
+        )
+        tex_path, pdf_path = gen.generate()
+
+    Usage (within Flask, passing model instances):
+        cv_dict  = {col: getattr(cv_base_obj, col) for col in CVBase.__table__.columns.keys()}
+        job_dict = {col: getattr(job_obj, col) for col in Jobs.__table__.columns.keys()}
+        gen = CVLatexGeneratorFR(cv_dict, job_dict)
+        tex_path, pdf_path = gen.generate()
     """
+
+    _DEFAULT_PERSONAL: Dict[str, str] = {
+        "name":      "Charly-Romy TANGA",
+        "lastname":  "TANGA",
+        "firstname": "Charly-Romy",
+        "address":   "Paris, France",
+        "mail":      "charlyromytanga@gmail.com",
+        "phone":     "+33 6 15 42 25 74",
+        "linkedin":  "charly-romy-tanga",
+        "github":    "charlyromytanga",
+        "jobtype":   "Ingénieur en Mathématiques Appliquées Finance et Technologie",
+        "disponibilite": "Disponible dès septembre 2026",
+    }
+
     def __init__(
         self,
-        cv_base_fr: dict,
-        cv_base_en: dict,
-        n8n_webhook_url: str = "",
-        model: str = "claude-sonnet-4-6",
-        model_scoring: str = "claude-sonnet-4-6",
-        max_tokens: int = 4096,
+        cv_base: Dict[str, Any],
+        job: Dict[str, Any],
+        personal: Optional[Dict[str, str]] = None,
+        output_dir: Optional[Path] = None,
+        target_title_index: Optional[int] = None,
     ):
-        self.api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.client = anthropic.Anthropic(api_key=self.api_key)
-        self.model = model
-        self.model_scoring = model_scoring
-        self.max_tokens = max_tokens
-        self.cv_base_fr = cv_base_fr
-        self.cv_base_en = cv_base_en
-        self.n8n_webhook_url = n8n_webhook_url
-        self.db_dir = os.getenv("DB_DIR", "./db")
+        self.cv = cv_base
+        self.job = job
+        self.personal = {**self._DEFAULT_PERSONAL, **(personal or {})}
+        self.output_dir = Path(output_dir) if output_dir else _OUTPUT_DIR
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._gen_date = datetime.now()
+        # None  → auto : job_title si disponible dans l'offre, sinon target_titles[0]
+        # int   → candidature spontanée : force target_titles[n]
+        self._target_title_index = target_title_index
 
-        # Prompts construits à l'instanciation — stables, mis en cache côté Anthropic
-        self.prompt_extract = self._build_prompt_extract()
-        self.prompt_enrich: Dict[str, str] = {
-            "fr": self._build_prompt_enrich("fr"),
-            "en": self._build_prompt_enrich("en"),
+    # ------------------------------------------------------------------
+    # Factory: load directly from SQLite (no Flask context needed)
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_db(
+        cls,
+        db_path: str,
+        cv_base_id: str,
+        job_id: str,
+        personal: Optional[Dict[str, str]] = None,
+        output_dir: Optional[Path] = None,
+        target_title_index: Optional[int] = None,
+    ) -> "CVLatexGeneratorFR":
+        """Load CVBase + Jobs rows from SQLite and return a configured instance.
+
+        Args:
+            db_path: Path to the SQLite DB.
+            cv_base_id: ID of the cv_base row.
+            job_id: ID of the jobs row (must exist, even for spontaneous applications —
+                    use a placeholder job row with no job_title set).
+            target_title_index: If None (default), use job.job_title when set, else
+                fallback to cv_base.target_titles[0].
+                If an int, force spontaneous mode and pick target_titles[n].
+                  0 → Market Risk Analyst
+                  1 → Trading Analyst
+                  2 → Data Analyst
+        """
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+
+            cur.execute("SELECT * FROM cv_base WHERE id = ?", (cv_base_id,))
+            row_cv = cur.fetchone()
+            if row_cv is None:
+                raise ValueError(f"CVBase id '{cv_base_id}' not found in {db_path}")
+
+            cur.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
+            row_job = cur.fetchone()
+            if row_job is None:
+                raise ValueError(f"Job id '{job_id}' not found in {db_path}")
+
+        return cls(
+            cv_base=dict(row_cv),
+            job=dict(row_job),
+            personal=personal,
+            output_dir=output_dir,
+            target_title_index=target_title_index,
+        )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _escape(text: str) -> str:
+        """Escape LaTeX special characters in plain text."""
+        if not text:
+            return ""
+        replacements = [
+            ("\\", r"\textbackslash{}"),
+            ("&",  r"\&"),
+            ("%",  r"\%"),
+            ("$",  r"\$"),
+            ("#",  r"\#"),
+            ("_",  r"\_"),
+            ("{",  r"\{"),
+            ("}",  r"\}"),
+            ("~",  r"\textasciitilde{}"),
+            ("^",  r"\textasciicircum{}"),
+        ]
+        for char, escaped in replacements:
+            text = text.replace(char, escaped)
+        return text
+
+    @staticmethod
+    def _bullets_to_items(text: str, max_items: int = 0, truncate: bool = False) -> str:
+        """Convert '• item1\\n• item2' text into LaTeX \\item lines.
+
+        Args:
+            text: Source text with optional bullet prefix.
+            max_items: If > 0, cap the number of items returned.
+            truncate: If True, keep only the first sentence of each item
+                      (text before the first '. ' or first 110 chars).
+        """
+        if not text:
+            return r"\item ~"
+        items = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("•"):
+                line = line[1:].strip()
+            if truncate:
+                # Keep up to the first period followed by space/end, or 110 chars
+                dot_idx = line.find(". ")
+                if dot_idx != -1 and dot_idx < 110:
+                    line = line[: dot_idx + 1]
+                elif len(line) > 110:
+                    line = line[:110].rstrip() + "…"
+            items.append(r"\item " + line)
+        if max_items > 0:
+            items = items[:max_items]
+        return "\n".join(items) if items else r"\item ~"
+
+    def _output_stem(self) -> str:
+        mm_yyyy = self._gen_date.strftime("%m_%Y")
+        cv_id   = self.cv.get("id", "cv")
+        job_id  = self.job.get("id", "job")
+        return f"archiv_{job_id}_{cv_id}_{mm_yyyy}"
+
+    def _pdf_name(self) -> str:
+        mm_yyyy     = self._gen_date.strftime("%m_%Y")
+        lastname    = self.personal["lastname"].replace(" ", "_")
+        firstname   = self.personal["firstname"].replace(" ", "_").replace("-", "_")
+        offer_raw   = self.job.get("company_name") or self.job.get("id", "offre")
+        offer_name  = re.sub(r"[^a-zA-Z0-9À-ÿ]+", "_", offer_raw).strip("_")
+        return f"{lastname}_{firstname}_{offer_name}_{mm_yyyy}.pdf"
+
+    # ------------------------------------------------------------------
+    # Section renderers — each returns a LaTeX string
+    # ------------------------------------------------------------------
+
+    def _section_photo(self) -> str:
+        return (
+            r"\null\hfill" "\n"
+            r"\includegraphics[width=0.60\textwidth]{pictures/photo_cv.jpg}" "\n"
+            r"\hfill\null" "\n"
+            r"\vspace*{0.3ex}" "\n"
+        )
+
+    def _section_disponibilite(self) -> str:
+        p = self.personal
+        dispo = p.get("disponibilite", "").strip()
+        if not dispo:
+            return ""
+        return (
+            r"\headleft{Disponibilit\'{e}}" "\n"
+            r"\small " + self._escape(dispo) + "\n"
+            r"\normalsize" "\n"
+        )
+
+    def _section_informations(self) -> str:
+        p = self.personal
+        return (
+            r"\headleft{Contact}" "\n"
+            r"\small" "\n"
+            r"\faEnvelope\ \href{mailto:" + p["mail"] + r"}{" + self._escape(p["mail"]) + r"} \\[0.5ex]" "\n"
+            r"\faMobile*\ " + self._escape(p["phone"]) + r" \\[0.5ex]" "\n"
+            r"\faLinkedin\ \href{https://linkedin.com/in/" + p["linkedin"] + r"}{"
+            + self._escape(p["linkedin"]) + r"} \\[0.5ex]" "\n"
+            r"\faGithub\ \href{https://github.com/" + p["github"] + r"}{"
+            + self._escape(p["github"]) + r"} \\[0.5ex]" "\n"
+            r"\faMapMarker\ " + self._escape(p["address"]) + "\n"
+            r"\normalsize" "\n"
+        )
+
+    def _section_intitule_poste(self) -> str:
+        """Affiche l'intitulé du poste visé.
+
+        Logique de sélection (contrôlée par self._target_title_index) :
+
+        - None (défaut) → mode auto :
+            • job.job_title renseigné  → titre de l'offre
+            • job.job_title absent     → cv_base.target_titles[0] (candidature spontanée)
+        - int n → force candidature spontanée → cv_base.target_titles[n]
+            0 = Market Risk Analyst
+            1 = Trading Analyst
+            2 = Data Analyst
+            …
+        """
+        raw_targets = self.cv.get("target_titles", "")
+        targets = [t.strip() for t in raw_targets.split(";") if t.strip()]
+
+        idx = self._target_title_index
+        if idx is not None:
+            # Candidature spontanée forcée
+            title = targets[idx] if idx < len(targets) else (targets[0] if targets else "")
+        else:
+            # Auto : offre si dispo, sinon premier titre spontané
+            title = (self.job.get("job_title") or "").strip()
+            if not title:
+                title = targets[0] if targets else ""
+
+        if not title:
+            return ""
+        return (
+            r"\headleft{Poste vis\'{e}}" "\n"
+            r"\begin{center}" "\n"
+            r"\vspace*{0.3ex}" "\n"
+            r"{\Large\bfseries\color{white}" + self._escape(title) + r"}\\[2pt]" "\n"
+            r"\normalsize" "\n"
+            r"\end{center}" "\n"
+        )
+
+    def _section_atouts(self) -> str:
+        skills_text = self.cv.get("skills", "")
+        lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
+        # For each of the first 3 lines, keep only the first 2 comma-separated parts
+        snippets = []
+        for line in lines[:3]:
+            parts = [p.strip() for p in line.split(",") if p.strip()]
+            snippet = ", ".join(parts[:2])
+            snippets.append(self._escape(snippet))
+        content = r" \\[0.5ex]" "\n".join(snippets) if snippets else "~"
+        return (
+            r"\headleft{Atouts}" "\n"
+            r"\small " + content + "\n"
+            r"\normalsize" "\n"
+        )
+
+    def _section_langues(self) -> str:
+        langs = self._escape(self.cv.get("languages", ""))
+        lines = [l.strip() for l in langs.replace(";", "\n").splitlines() if l.strip()]
+        content = r" \\[0.4ex]" "\n".join(lines) if lines else "~"
+        return r"\headleft{Langues}" "\n" + content + "\n"
+
+    def _section_centre_interet(self) -> str:
+        interests = self.cv.get("interests", "")
+        # Split on comma, strip bullets and whitespace
+        parts = [p.strip().lstrip("•").strip() for p in interests.split(",") if p.strip()]
+        line1 = ", ".join(parts[:2]) if len(parts) >= 1 else ""
+        line2 = ", ".join(parts[2:4]) if len(parts) >= 3 else ""
+        content = self._escape(line1)
+        if line2:
+            content += r" \\[0.4ex]" "\n" + self._escape(line2)
+        return (
+            r"\headleft{Centres d'int\'{e}r\^{e}t}" "\n"
+            r"\small " + content + "\n"
+            r"\normalsize" "\n"
+        )
+
+    def _section_header(self) -> str:
+        name    = self._escape(self.personal["name"])
+        summary = self.cv.get("summary", "")
+        lines   = [l.strip().lstrip("•").strip() for l in summary.splitlines() if l.strip()]
+        summary_tex = " ".join(lines[:2]) if lines else ""
+        return (
+            r"\begin{center}" "\n"
+            r"{\Large\bfseries\color{white}" + name + r"}\\[2pt]" "\n"
+            r"\vspace*{0.3ex}" "\n"
+            r"{\small\color{white}\jobtype}" "\n"
+            r"\end{center}" "\n"
+        )
+
+    def _section_type_recherche(self) -> str:
+        company = self._escape(self.job.get("company_name", ""))
+        city    = self._escape(self.job.get("city", ""))
+        country = self._escape(self.job.get("country", ""))
+        loc     = ", ".join(filter(None, [city, country]))
+        return (
+            r"\headright{Type de recherche}" "\n"
+            r"\textbf{\jobtype}" + (f" --- {company}" if company else "")
+            + (f" ({loc})" if loc else "") + "\n"
+        )
+
+    def _section_competences(self) -> str:
+        # Show first half only (soft skills)
+        skills_text = self.cv.get("skills", "")
+        lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
+        mid = max(1, len(lines) // 2)
+        items = "\n".join(r"\item " + l for l in lines[:mid][:2]) if lines else r"\item ~"
+        return (
+            r"\headright{Comp\'{e}tences}" "\n"
+            r"{\footnotesize\begin{itemize}" "\n"
+            + items + "\n"
+            r"\end{itemize}}" "\n"
+        )
+
+    def _section_competences_techniques(self) -> str:
+        # Second half of skills — technical
+        skills_text = self.cv.get("skills", "")
+        lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
+        mid = max(1, len(lines) // 2)
+        tech_lines = lines[mid:] if mid > 0 else lines
+        items = "\n".join(r"\item " + l for l in tech_lines[:3]) if tech_lines else r"\item ~"
+        return (
+            r"\headright{Connaissances techniques}" "\n"
+            r"{\footnotesize\begin{itemize}" "\n"
+            + items + "\n"
+            r"\end{itemize}}" "\n"
+        )
+
+    def _section_experiences(self) -> str:
+        items = self._bullets_to_items(self.cv.get("experience", ""), max_items=8, truncate=True)
+        return (
+            r"\headright{Exp\'{e}riences professionnelles}" "\n"
+            r"{\footnotesize\begin{itemize}" "\n"
+            + items + "\n"
+            r"\end{itemize}}" "\n"
+        )
+
+    def _section_formations(self) -> str:
+        items = self._bullets_to_items(self.cv.get("education", ""), max_items=2, truncate=True)
+        return (
+            r"\headright{Formations}" "\n"
+            r"{\footnotesize\begin{itemize}" "\n"
+            + items + "\n"
+            r"\end{itemize}}" "\n"
+        )
+
+    def _section_certifications(self) -> str:
+        text = self._escape(self.cv.get("certifications", ""))
+        return r"\headright{Certifications}" "\n" + text + "\n"
+
+    def _section_projets(self) -> str:
+        items = self._bullets_to_items(self.cv.get("projects", ""), max_items=10, truncate=True)
+        return (
+            r"\headright{Projets}" "\n"
+            r"{\footnotesize\begin{itemize}" "\n"
+            + items + "\n"
+            r"\end{itemize}}" "\n"
+        )
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def render_sections(self) -> Dict[str, str]:
+        """Return dict of section filename → LaTeX content."""
+        return {
+            "photo.tex":                  self._section_photo(),
+            "disponibilite.tex":          self._section_disponibilite(),
+            "informations.tex":           self._section_informations(),
+            "intitule_poste.tex":         self._section_intitule_poste(),
+            "atouts.tex":                 self._section_atouts(),
+            "langues.tex":                self._section_langues(),
+            "centre_interet.tex":         self._section_centre_interet(),
+            "header.tex":                 self._section_header(),
+            "type_recherche.tex":         self._section_type_recherche(),
+            "competences.tex":            self._section_competences(),
+            "competences_techniques.tex": self._section_competences_techniques(),
+            "experiences.tex":            self._section_experiences(),
+            "formations.tex":             self._section_formations(),
+            "certifications.tex":         self._section_certifications(),
+            "projets.tex":                self._section_projets(),
         }
-        self.prompt_score = self._build_prompt_score()
 
-    # ─── Builders de prompts ──────────────────────────────────────────────────
-
-    def _build_prompt_extract(self) -> str:
-        return """Tu es un expert en analyse d'offres d'emploi. Extrais les informations structurées d'une offre et retourne un JSON strict.
-
-Règles d'extraction :
-- language : langue de l'offre → "fr" ou "en" uniquement
-- country : pays du poste → valeurs autorisées uniquement : "fr", "uk", "lu", "de", "ch"
-- city : ville (string ou null)
-- compagny_name : nom de l'entreprise (string ou null)
-- compagny_type : type → valeurs autorisées : "grand groupe", "tpe", "pme", "esn", "banque", "assurance", "industrie", "cabinet conseil", ou null
-- offer_title : intitulé exact du poste
-- offer_description : description complète du poste (texte brut intégral, ne pas tronquer)
-- compagny_presentation : présentation de l'entreprise (string ou null)
-- llm_header : reformulation ATS du titre → verbe d'action + domaine + niveau (ex: "Analyste Données Senior | Power BI & Python | Finance")
-
-Retourne UNIQUEMENT le JSON valide, sans markdown ni commentaires."""
-
-    def _build_prompt_enrich(self, language: str) -> str:
-        cv_base = self.cv_base_fr if language == "fr" else self.cv_base_en
-        cv_json = json.dumps(cv_base, ensure_ascii=False, indent=2)
-        lang_label = "français" if language == "fr" else "anglais"
-        return f"""
-                Tu es un expert ATS (Applicant Tracking System). Tu personnalises un CV pour dépasser 70 % sur les ATS stricts ET souples.
-                Langue de travail : {lang_label}.
-
-                CV de base du candidat — source de vérité, ne pas inventer de données :
-                <cv_base>
-                {cv_json}
-                </cv_base>
-
-                Règles impératives :
-                - Utilise UNIQUEMENT les informations du CV de base et de l'offre fournie
-                - Intègre les mots-clés exacts de l'offre (technologies, méthodes, certifications)
-                - Quantifie avec les chiffres déjà présents dans le CV base
-                - Bullet points avec "•" pour chaque section de liste
-                - Sois factuel, pas d'invention ni d'extrapolation
-
-                Génère un JSON strict avec ces clés :
-                - llm_summary : résumé professionnel 4-5 lignes ciblant l'offre
-                - llm_skills : 10-12 compétences ordonnées par pertinence pour l'offre
-                - llm_experience : 5-8 bullet points d'expérience avec mots-clés de l'offre
-                - llm_education : formations reformulées en soulignant les aspects liés à l'offre
-                - llm_certifications : certifications pertinentes pour l'offre
-                - llm_projects : 3-4 projets les plus pertinents reformulés pour l'offre
-                - llm_languages : niveaux de langues
-                - llm_interests : centres d'intérêt (conserver sauf pertinence pour l'offre)
-
-                Retourne UNIQUEMENT le JSON valide.
-            """
-
-    def _build_prompt_score(self) -> str:
-        return """
-                    Tu es un moteur ATS expert. Évalue la correspondance entre un CV personnalisé et une offre d'emploi.
-
-                    Critères pondérés (total = 1.0) :
-                    - Mots-clés techniques (0.30) : présence des technologies, outils, frameworks demandés
-                    - Titre et niveau (0.20) : adéquation titre ciblé / profil / séniorité
-                    - Expérience et domaine (0.25) : années, secteur, type de missions
-                    - Formation et certifications (0.15) : diplômes et certifications requis
-                    - Soft skills et langues (0.10) : compétences comportementales, langues requises
-
-                    Retourne UNIQUEMENT ce JSON strict :
-                    {
-                    "score": <float 0.0-1.0>,
-                    "details": {
-                        "keywords": <float>,
-                        "title_level": <float>,
-                        "experience": <float>,
-                        "education": <float>,
-                        "soft_skills": <float>
-                    },
-                    "justification": "<2-3 phrases expliquant le score>",
-                    "generate_documents": <true si score >= 0.70, sinon false>
-                    }"""
-
-    # ─── Méthode 1 : Extraction et structuration de l'offre ──────────────────
-
-    def extract_and_structure_offer(self, offer_text: str) -> Dict[str, Any]:
+    def write_tex_bundle(self, build_dir: Path) -> Path:
         """
-        Extrait les métadonnées structurées d'une offre texte brut (première moitié de job_offer).
-        Retourne {"structured_offer": dict, "offer_text": str}.
+        Write main_fr.tex (with personal info substituted) + all sections
+        into build_dir. Returns path to the main .tex file.
         """
-        logger.info("[M1] extract_and_structure_offer — appel Claude (%s) | offre %d chars",
-                    self.model, len(offer_text))
-        try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1024,
-                system=[{"type": "text", "text": self.prompt_extract, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": f"Offre d'emploi :\n\n{offer_text}"}],
+        build_dir = Path(build_dir)
+        sections_dir = build_dir / "sections"
+        sections_dir.mkdir(parents=True, exist_ok=True)
+
+        # Read template
+        template_path = _TEMPLATE_DIR / "main_fr.tex"
+        tex = template_path.read_text(encoding="utf-8")
+
+        # Substitute personal info placeholders
+        p = self.personal
+        substitutions = {
+            "<<CVNAME>>":       self._escape(p["name"]),
+            "<<CVADDRESS>>":    self._escape(p["address"]),
+            "<<CVMAIL>>":       p["mail"],
+            "<<CVPHONE>>":      self._escape(p["phone"]),
+            "<<CVLINKEDIN>>":   p["linkedin"],
+            "<<CVGITHUB>>":     p["github"],
+            "<<JOBTYPE>>":      self._escape(p["jobtype"]),
+            "<<PRESENTATION>>": self._escape(self.cv.get("summary", "")[:200]),
+        }
+        for placeholder, value in substitutions.items():
+            tex = tex.replace(placeholder, value)
+
+        tex_path = build_dir / "main_fr.tex"
+        tex_path.write_text(tex, encoding="utf-8")
+
+        # Write section files
+        for filename, content in self.render_sections().items():
+            (sections_dir / filename).write_text(content, encoding="utf-8")
+
+        # Copy photo if it exists in the pictures dir
+        photo_src = _TEMPLATE_DIR.parent / "pictures" / "photo_cv.jpg"
+        if photo_src.exists():
+            pictures_dir = build_dir / "pictures"
+            pictures_dir.mkdir(exist_ok=True)
+            shutil.copy2(photo_src, pictures_dir / "photo_cv.jpg")
+
+        return tex_path
+
+    def compile_pdf(self, build_dir: Path) -> Path:
+        """
+        Run pdflatex twice in build_dir to produce main_fr.pdf.
+        Returns the path to the generated PDF.
+        Raises RuntimeError if pdflatex fails.
+        """
+        cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "main_fr.tex"]
+        for _ in range(2):  # two passes for lastpage / refs
+            result = subprocess.run(
+                cmd,
+                cwd=build_dir,
+                capture_output=True,
+                text=True,
             )
-            logger.info("[M1] tokens utilisés — input: %d | output: %d | cache_read: %d",
-                        response.usage.input_tokens,
-                        response.usage.output_tokens,
-                        getattr(response.usage, "cache_read_input_tokens", 0))
-            raw = next(b.text for b in response.content if b.type == "text")
-            logger.debug("[M1] réponse brute Claude : %s", raw[:300])
-            structured: Dict[str, Any] = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
-            structured["id"] = str(uuid_lib.uuid4())
-            structured["cv_base_id"] = "cv_base_in_all_fr" if structured.get("language") == "fr" else "cv_base_in_all_en"
-            logger.info("[M1] extraction OK — id=%s | langue=%s | pays=%s | titre=%s",
-                        structured.get("id"), structured.get("language"),
-                        structured.get("country"), structured.get("offer_title"))
-            return {"structured_offer": structured, "offer_text": offer_text}
-        except json.JSONDecodeError as e:
-            logger.error("[M1] Échec parsing JSON Claude : %s | réponse brute : %s", e, raw[:500] if 'raw' in dir() else "N/A")
-            return {}
-        except Exception as e:
-            logger.exception("[M1] Exception extract_and_structure_offer : %s", e)
-            return {}
+            if result.returncode != 0:
+                log_snippet = result.stdout[-2000:] + result.stderr[-500:]
+                raise RuntimeError(f"pdflatex failed:\n{log_snippet}")
 
-    # ─── Méthode 2 : Enrichissement LLM croisé avec cv_base ─────────────────
+        return build_dir / "main_fr.pdf"
 
-    def enrich_offer_with_cv(self, structured_offer: Dict[str, Any], offer_text: str) -> Dict[str, Any]:
+    def generate(self) -> Tuple[Path, Path]:
         """
-        Enrichit l'offre structurée avec les sections LLM croisées avec cv_base_in_all.
-        Sauvegarde l'offre complète dans job_offer. Retourne l'offre complète.
+        Full pipeline:
+          1. Write .tex bundle to a temp build dir
+          2. Compile to PDF
+          3. Copy outputs to self.output_dir:
+               - archiv_{job_id}_{cv_id}_{mm}_{yyyy}.tex
+               - {LASTNAME}_{Firstname}_{Company}_{mm}_{yyyy}.pdf
+          4. Clean up build dir
+
+        Returns (tex_dest, pdf_dest).
         """
-        language = structured_offer.get("language", "fr")
-        system_prompt = self.prompt_enrich.get(language, self.prompt_enrich["fr"])
-        logger.info("[M2] enrich_offer_with_cv — langue=%s | modèle=%s | max_tokens=%d",
-                    language, self.model, self.max_tokens)
-        try:
-            with self.client.messages.stream(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": (
-                    f"Offre texte complète :\n{offer_text}\n\n"
-                    f"Offre structurée (première partie) :\n{json.dumps(structured_offer, ensure_ascii=False)}"
-                )}],
-            ) as stream:
-                response = stream.get_final_message()
+        stem     = self._output_stem()
+        pdf_name = self._pdf_name()
 
-            logger.info("[M2] tokens utilisés — input: %d | output: %d | cache_read: %d",
-                        response.usage.input_tokens,
-                        response.usage.output_tokens,
-                        getattr(response.usage, "cache_read_input_tokens", 0))
+        with tempfile.TemporaryDirectory(prefix="cvlatex_") as tmp:
+            build_dir = Path(tmp)
+            self.write_tex_bundle(build_dir)
 
-            raw = next(b.text for b in response.content if b.type == "text")
-            logger.debug("[M2] réponse brute Claude : %s", raw[:300])
+            logger.info("Compiling CV LaTeX for %s …", stem)
+            pdf_src = self.compile_pdf(build_dir)
 
-            try:
-                llm_sections: Dict[str, Any] = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
-            except json.JSONDecodeError as e:
-                logger.error("[M2] Échec parsing JSON sections LLM : %s | extrait: %s", e, raw[:500])
-                return {}
+            tex_dest = self.output_dir / f"{stem}.tex"
+            pdf_dest = self.output_dir / pdf_name
 
-            full_offer = {**structured_offer, **llm_sections}
-            sections_generees = [k for k in llm_sections if k.startswith("llm_")]
-            logger.info("[M2] sections LLM générées : %s", sections_generees)
+            shutil.copy2(build_dir / "main_fr.tex", tex_dest)
+            shutil.copy2(pdf_src, pdf_dest)
 
-            cols = [
-                "id", "cv_base_id", "language", "country", "city",
-                "compagny_name", "compagny_type", "offer_title", "offer_description",
-                "compagny_presentation", "llm_header", "llm_summary", "llm_skills",
-                "llm_experience", "llm_education", "llm_certifications",
-                "llm_projects", "llm_languages", "llm_interests",
-            ]
-            sql = f"INSERT OR REPLACE INTO job_offer ({', '.join(cols)}) VALUES ({', '.join(['?'] * len(cols))});"
-            try:
-                with sqlite3.connect(os.path.join(self.db_dir, "recruitment.db")) as conn:
-                    conn.execute(sql, tuple(full_offer.get(c) for c in cols))
-                    conn.commit()
-                logger.info("[M2] job_offer sauvegardée en base → id=%s", full_offer.get("id"))
-            except Exception as db_err:
-                logger.error("[M2] Échec sauvegarde DB : %s", db_err)
-
-            return full_offer
-        except Exception as e:
-            logger.exception("[M2] Exception enrich_offer_with_cv : %s", e)
-            return {}
-
-    # ─── Méthode 3 : Scoring ATS + génération CV/LM ──────────────────────────
-
-    def score_and_generate(self, full_offer: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calcule le score ATS de l'offre enrichie vs cv_base.
-        Si score >= 0.70 : génère CV et LM en texte et sauvegarde dans candidature_tracking.
-        """
-        language = full_offer.get("language", "fr")
-        cv_base = self.cv_base_fr if language == "fr" else self.cv_base_en
-
-        scoring_input = json.dumps({
-            "cv_personnalise": {k: full_offer.get(k) for k in [
-                "llm_header", "llm_summary", "llm_skills", "llm_experience",
-                "llm_education", "llm_certifications", "llm_projects",
-                "llm_languages", "llm_interests",
-            ]},
-            "offre": {k: full_offer.get(k) for k in [
-                "offer_title", "offer_description", "compagny_type", "compagny_presentation",
-            ]},
-        }, ensure_ascii=False)
-
-        logger.info("[M3] score_and_generate — langue=%s | modèle scoring=%s",
-                    language, self.model_scoring)
-        logger.info("[M3] taille input scoring : %d chars", len(scoring_input))
-        try:
-            score_resp = self.client.messages.create(
-                model=self.model_scoring,
-                max_tokens=512,
-                system=[{"type": "text", "text": self.prompt_score, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": scoring_input}],
-            )
-            logger.info("[M3] tokens scoring — input: %d | output: %d",
-                        score_resp.usage.input_tokens, score_resp.usage.output_tokens)
-
-            raw_score = next(b.text for b in score_resp.content if b.type == "text")
-            logger.debug("[M3] réponse scoring brute : %s", raw_score)
-
-            try:
-                score_data: Dict[str, Any] = json.loads(raw_score[raw_score.find("{"):raw_score.rfind("}") + 1])
-            except json.JSONDecodeError as e:
-                logger.error("[M3] Échec parsing JSON score : %s | extrait: %s", e, raw_score[:500])
-                return {}
-
-            score = float(score_data.get("score", 0.0))
-            logger.info("[M3] score ATS = %.2f (%.0f %%) | generate_documents=%s",
-                        score, score * 100, score_data.get("generate_documents"))
-            logger.info("[M3] justification : %s", score_data.get("justification", ""))
-
-            cv_text: Optional[str] = None
-            lm_text: Optional[str] = None
-
-            if score >= 0.70:
-                lang_label = "français" if language == "fr" else "anglais"
-                logger.info("[M3] score >= 70 %% — génération CV + LM en %s (modèle=%s)",
-                            lang_label, self.model)
-                doc_prompt = (
-                    f"Génère en {lang_label} un CV complet et une lettre de motivation ATS-optimisés.\n\n"
-                    f"CV de base : {json.dumps(cv_base, ensure_ascii=False)}\n"
-                    f"Offre personnalisée : {json.dumps(full_offer, ensure_ascii=False)}\n\n"
-                    "Retourne UNIQUEMENT ce JSON strict :\n"
-                    '{"cv": "<CV complet structuré en texte>", '
-                    '"lm": "<Lettre de motivation 3 paragraphes, ton professionnel>"}'
-                )
-                with self.client.messages.stream(
-                    model=self.model,
-                    max_tokens=4096,
-                    messages=[{"role": "user", "content": doc_prompt}],
-                ) as stream:
-                    doc_resp = stream.get_final_message()
-
-                logger.info("[M3] tokens génération docs — input: %d | output: %d",
-                            doc_resp.usage.input_tokens, doc_resp.usage.output_tokens)
-                raw_docs = next(b.text for b in doc_resp.content if b.type == "text")
-
-                try:
-                    docs: Dict[str, str] = json.loads(raw_docs[raw_docs.find("{"):raw_docs.rfind("}") + 1])
-                    cv_text = docs.get("cv")
-                    lm_text = docs.get("lm")
-                    logger.info("[M3] CV généré : %d chars | LM générée : %d chars",
-                                len(cv_text or ""), len(lm_text or ""))
-                except json.JSONDecodeError as e:
-                    logger.error("[M3] Échec parsing JSON CV/LM : %s | extrait: %s", e, raw_docs[:500])
-            else:
-                logger.info("[M3] score < 70 %% — aucun document généré")
-
-            candidature_id = str(uuid_lib.uuid4())
-            try:
-                with sqlite3.connect(os.path.join(self.db_dir, "recruitment.db")) as conn:
-                    conn.execute(
-                        "INSERT INTO candidature_tracking (id, job_offer_id, cv, lm, matching_score) VALUES (?, ?, ?, ?, ?);",
-                        (candidature_id, full_offer.get("id"), cv_text, lm_text, score),
-                    )
-                    conn.commit()
-                logger.info("[M3] candidature_tracking sauvegardée → id=%s | score=%.2f",
-                            candidature_id, score)
-            except Exception as db_err:
-                logger.error("[M3] Échec sauvegarde candidature_tracking : %s", db_err)
-
-            return {
-                "candidature_id": candidature_id,
-                "job_offer_id": full_offer.get("id"),
-                "score": score,
-                "score_details": score_data.get("details"),
-                "justification": score_data.get("justification"),
-                "documents_generated": score >= 0.70,
-                "cv": cv_text,
-                "lm": lm_text,
-            }
-        except Exception as e:
-            logger.exception("[M3] Exception score_and_generate : %s", e)
-            return {}
-
-    # ─── Envoi email via n8n ──────────────────────────────────────────────────
-
-    def send_n8n_email(self, to_email: str, subject: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
-        """Déclenche un workflow n8n pour envoyer un email ou surveiller une réponse."""
-        if not self.n8n_webhook_url:
-            logger.warning("n8n_webhook_url non configuré")
-            return False
-        try:
-            payload = {"to": to_email, "subject": subject, "content": content, **(metadata or {})}
-            resp = http_requests.post(self.n8n_webhook_url, json=payload, timeout=10)
-            resp.raise_for_status()
-            logger.info(f"Email déclenché via n8n → {to_email}")
-            return True
-        except Exception as e:
-            logger.error(f"Erreur send_n8n_email : {e}")
-            return False
+        logger.info("CV generated: %s | %s", tex_dest.name, pdf_dest.name)
+        return tex_dest, pdf_dest

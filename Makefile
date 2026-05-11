@@ -20,7 +20,7 @@ DOCKER_RUN_MAIN = docker run --rm -v "$(PRINCIPAL_DIR):$(CONTAINER_SRC)" -v "$(B
 # Docker Compose
 COMPOSE = docker compose
 
-.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init db-init-postgres db-mirror-postgres db-seed-backend
+.PHONY: help uv-sync build-image build generate build_principal archive validate index-archive clean clobber shell docker-build docker-up docker-down docker-logs docker-ps docker-test docker-shell monitor-db monitor-data db-init db-init-postgres db-mirror-postgres db-seed-backend cv-generate-fr
 
 uv-sync:
 	$(UV) sync
@@ -81,6 +81,7 @@ help:
 	@echo "  make db-init              - Initialize SQLite schema"
 	@echo "  make db-init-postgres     - Initialize PostgreSQL mirror schema"
 	@echo "  make db-mirror-postgres   - Mirror SQLite into PostgreSQL"
+	@echo "  make cv-generate-fr CV_BASE_ID=<id> JOB_ID=<id> - Generate FR CV PDF"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean                - Clean temporary files"
@@ -149,6 +150,9 @@ monitor-all:
 
 db-seed-backend:
 	@bash scripts/copy_local_db_into_dev_container.sh
+
+cv-generate-fr:
+	@bash scripts/generate_cv_fr.sh $(CV_BASE_ID) $(JOB_ID) $(or $(DB_PATH),backend/db/jobcv.db)
 
 db-init:
 	@bash scripts/init_db.sh
