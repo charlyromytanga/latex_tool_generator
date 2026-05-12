@@ -48,6 +48,7 @@ class JobRecord:
     company_type: Optional[str]
     offer_description: Optional[str]
     company_presentation: Optional[str]
+    job_title: Optional[str]
 
 
 class OfferSourceReader:
@@ -74,11 +75,11 @@ class OfferRepositoryGateway:
         INSERT OR REPLACE INTO jobs (
             id, language, country, city,
             company_name, company_type,
-            offer_description, company_presentation
+            offer_description, company_presentation, job_title
         ) VALUES (
             :id, :language, :country, :city,
             :company_name, :company_type,
-            :offer_description, :company_presentation
+            :offer_description, :company_presentation, :job_title
         )
         """
         self.database.execute(sql, asdict(record))
@@ -126,6 +127,7 @@ class OfferIngestionOrchestrator:
             company_type=raw.get("company_type"),
             offer_description=description,
             company_presentation=raw.get("company_presentation"),
+            job_title=raw.get("job_title"),
         )
         self.repo.upsert_job(record)
         LOGGER.info("Job ingested: id=%s company=%s country=%s", offer_id, record.company_name, record.country)
@@ -164,6 +166,7 @@ class OfferIngestionOrchestrator:
             company_type=company_type,
             offer_description=description,
             company_presentation=company_presentation,
+            job_title=title,
         )
         self.repo.upsert_job(record)
         LOGGER.info("Job ingested: id=%s company=%s", offer_id, company)

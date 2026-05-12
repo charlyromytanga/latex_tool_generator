@@ -37,8 +37,8 @@ _DEFAULT_DB_PATH = _REPO_ROOT / "backend" / "db" / "jobcv.db"
 # ---------------------------------------------------------------------------
 
 def _bullets(items: List[str]) -> str:
-    """['a', 'b'] → '• a\n• b'"""
-    return "\n".join(f"• {i}" for i in items if i)
+    """['a', 'b'] → ' a\n b'"""
+    return "\n".join(f" {i}" for i in items if i)
 
 
 def _serialize_summary(data: List[str]) -> str:
@@ -77,9 +77,9 @@ def _serialize_education(data: List[Dict[str, Any]]) -> str:
         end     = edu.get("end", "")
         desc    = edu.get("description", "")
         period  = f"{start} - {end}" if start and end else start or end
-        label   = f"{degree} ({field})" if field and field != degree else degree
-        header  = f"{label} - {school} ({loc}), {period}." if loc else f"{label} - {school}, {period}."
-        lines.append(f"•  {header} {desc}")
+        label   = f"{degree} {field}" if field and field != degree else degree
+        header  = f"{period} - {label} - {school} - {loc}." if loc else f"{label} - {school}, {period}."
+        lines.append(f"  {header} {desc}")
     return "\n".join(lines)
 
 
@@ -210,14 +210,24 @@ class CVBaseIngestionOrchestrator:
     def run_from_file(self, source_path: Path) -> Dict[str, Any]:
         """
         Ingère un seul fichier JSON source dans cv_base.
+        Si l'enregistrement existe déjà, il est supprimé puis réinséré.
 
         Returns:
-            {"id": ..., "language": ..., "status": "upserted"} ou {"error": ...}
+            {"id": ..., "language": ..., "status": "inserted"|"replaced"} ou {"error": ...}
         """
         LOGGER.info("Ingestion cv_base ← %s", source_path)
         try:
             data   = CVBaseSourceReader(source_path).read()
             record = self.converter.convert(data)
+
+            existing = self.db.get_cv_base(record.id)
+            if existing:
+                self.db.delete_cv_base(record.id)
+                LOGGER.info("cv_base supprimé (remplacement) → id=%s", record.id)
+                status = "replaced"
+            else:
+                status = "inserted"
+
             self.db.add_cv_base({
                 "id":            record.id,
                 "language":      record.language,
@@ -232,8 +242,8 @@ class CVBaseIngestionOrchestrator:
                 "interests":     record.interests,
                 "target_titles": record.target_titles,
             })
-            LOGGER.info("cv_base upserted → id=%s lang=%s", record.id, record.language)
-            return {"id": record.id, "language": record.language, "status": "upserted"}
+            LOGGER.info("cv_base %s → id=%s lang=%s", status, record.id, record.language)
+            return {"id": record.id, "language": record.language, "status": status}
         except Exception as exc:
             LOGGER.exception("Erreur ingestion %s : %s", source_path, exc)
             return {"file": str(source_path), "error": str(exc)}
@@ -250,9 +260,13 @@ class CVBaseIngestionOrchestrator:
             LOGGER.warning("Aucun fichier JSON trouvé dans %s", docs_dir)
             return []
         results = [self.run_from_file(f) for f in files]
-        ok  = sum(1 for r in results if "error" not in r)
-        err = len(results) - ok
-        LOGGER.info("cv_base ingestion terminée : %d ok / %d erreur(s)", ok, err)
+        inserted  = sum(1 for r in results if r.get("status") == "inserted")
+        replaced  = sum(1 for r in results if r.get("status") == "replaced")
+        err       = sum(1 for r in results if "error" in r)
+        LOGGER.info(
+            "cv_base ingestion terminée : %d inséré(s), %d remplacé(s), %d erreur(s)",
+            inserted, replaced, err,
+        )
         return results
 
 

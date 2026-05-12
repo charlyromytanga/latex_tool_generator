@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS cv_base (
     certifications TEXT,
     projects TEXT,
     languages TEXT,
-    interests TEXT
+    interests TEXT,
+    target_title TEXT
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     company_name TEXT,
     company_type TEXT,
     offer_description TEXT,
-    company_presentation TEXT
+    company_presentation TEXT,
+    job_title TEXT
 );
 
 CREATE TABLE IF NOT EXISTS applications (
