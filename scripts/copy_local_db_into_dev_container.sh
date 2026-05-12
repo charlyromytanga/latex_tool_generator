@@ -15,6 +15,9 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 1
 fi
 
+echo "Suppression des fichiers WAL SQLite dans le container..."
+docker exec "$CONTAINER" rm -f "${CONTAINER_DB}-shm" "${CONTAINER_DB}-wal"
+
 echo "Copying $LOCAL_DB → $CONTAINER:$CONTAINER_DB ..."
 docker cp "$LOCAL_DB" "$CONTAINER:$CONTAINER_DB"
 

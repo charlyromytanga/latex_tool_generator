@@ -78,7 +78,7 @@ def _serialize_education(data: List[Dict[str, Any]]) -> str:
         desc    = edu.get("description", "")
         period  = f"{start} - {end}" if start and end else start or end
         label   = f"{degree} {field}" if field and field != degree else degree
-        header  = f"{period} - {label} - {school} - {loc}." if loc else f"{label} - {school}, {period}."
+        header  = f"{period}  {label} - {school} - {loc}." if loc else f"{label} - {school}, {period}."
         lines.append(f"  {header} {desc}")
     return "\n".join(lines)
 
