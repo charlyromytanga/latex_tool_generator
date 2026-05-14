@@ -383,21 +383,117 @@ class CandidatureTracker:
 
 import os as _os
 
+
+def _resolve_repo_root() -> Path:
+    candidates = []
+    project_root_env = _os.getenv("PROJECT_ROOT")
+    if project_root_env:
+        candidates.append(Path(project_root_env).resolve())
+    candidates.append(Path.cwd().resolve())
+    module_path = Path(__file__).resolve()
+    candidates.extend(module_path.parents)
+
+    for candidate in candidates:
+        if (candidate / "backend").exists() and (candidate / "shared").exists():
+            return candidate
+
+    return module_path.parents[4]
+
+
+_REPO_ROOT = _resolve_repo_root()
+
 _TEMPLATE_DIR = Path(
     _os.environ.get(
         "CV_TEMPLATE_DIR",
-        str(Path(__file__).resolve().parents[4] / "shared" / "service_cv_latex" / "templates" / "_col_gauche"),
+        str(_REPO_ROOT / "shared" / "service_cv_latex" / "templates" / "_col_gauche"),
     )
 )
 _OUTPUT_DIR = Path(
     _os.environ.get(
         "CV_OUTPUT_DIR",
-        str(Path(__file__).resolve().parents[4] / "shared" / "output" / "FR"),
+        str(_REPO_ROOT / "shared" / "output" / "FR"),
     )
 )
 
+_OUTPUT_DIR_BY_LANGUAGE: Dict[str, Path] = {
+    "fr": _OUTPUT_DIR,
+    "en": Path(
+        _os.environ.get(
+            "CV_OUTPUT_DIR_EN",
+            str(_REPO_ROOT / "shared" / "output" / "EN"),
+        )
+    ),
+}
 
-class CVLatexGeneratorFR:
+_DEFAULT_PERSONAL_FR: Dict[str, str] = {
+    "name":      "Charly-Romy TANGA",
+    "lastname":  "TANGA",
+    "firstname": "Charly-Romy",
+    "address":   "Paris, France",
+    "mail":      "charlyromytanga@gmail.com",
+    "phone":     "+33 6 15 42 25 74",
+    "linkedin":  "charly-romy-tanga",
+    "github":    "charlyromytanga",
+    "jobtype":   "Ingénieur en Mathématiques Appliquées Finance et Technologie",
+    "disponibilite": "Disponible dès septembre 2026",
+}
+
+_DEFAULT_PERSONAL_EN: Dict[str, str] = {
+    **_DEFAULT_PERSONAL_FR,
+    "jobtype": "Engineer in Applied Mathematics, Finance and Technology",
+    "disponibilite": "Available from September 2026",
+}
+
+_DEFAULT_PERSONAL_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
+    "fr": _DEFAULT_PERSONAL_FR,
+    "en": _DEFAULT_PERSONAL_EN,
+}
+
+_LABELS_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
+    "fr": {
+        "availability": r"Disponibilit\'{e}",
+        "contact": "Contact",
+        "email": "Email",
+        "phone": r"T\'{e}l\'{e}phone",
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "location": "Adresse",
+        "target_position": r"Poste vis\'{e}",
+        "strengths": "Atouts",
+        "languages": "Langues",
+        "interests": r"Centres d'int\'{e}r\^{e}t",
+        "search_type": "Type de recherche",
+        "skills": r"comp\'{e}tences",
+        "technical_skills": r"comp\'{e}tences techniques",
+        "experience": r"exp\'{e}riences professionnelles",
+        "education": "formation",
+        "certifications": "certifications",
+        "projects": r"comp\'{e}tences techniques",
+    },
+    "en": {
+        "availability": "Availability",
+        "contact": "Contact",
+        "email": "Email",
+        "phone": "Phone",
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "location": "Location",
+        "target_position": "Target Position",
+        "strengths": "Strengths",
+        "languages": "Languages",
+        "interests": "Interests",
+        "search_type": "Target Role",
+        "skills": "skills",
+        "technical_skills": "technical knowledge",
+        "experience": "professional experience",
+        "education": "education",
+        "certifications": "certifications",
+        "projects": "technical skills",
+    },
+}
+
+
+class CVLatexGeneratorBase:
     """
     Generates a French two-column CV PDF from CVBase + Jobs data.
 
@@ -416,18 +512,7 @@ class CVLatexGeneratorFR:
         tex_path, pdf_path = gen.generate()
     """
 
-    _DEFAULT_PERSONAL: Dict[str, str] = {
-        "name":      "Charly-Romy TANGA",
-        "lastname":  "TANGA",
-        "firstname": "Charly-Romy",
-        "address":   "Paris, France",
-        "mail":      "charlyromytanga@gmail.com",
-        "phone":     "+33 6 15 42 25 74",
-        "linkedin":  "charly-romy-tanga",
-        "github":    "charlyromytanga",
-        "jobtype":   "Ingénieur en Mathématiques Appliquées Finance et Technologie",
-        "disponibilite": "Disponible dès septembre 2026",
-    }
+    _LANGUAGE = "fr"
 
     def __init__(
         self,
@@ -436,16 +521,49 @@ class CVLatexGeneratorFR:
         personal: Optional[Dict[str, str]] = None,
         output_dir: Optional[Path] = None,
         target_title_index: Optional[int] = None,
+        max_projects: int = 11,
+        max_experiences: int = 8,
+        max_competences: int = 7,
+        max_competences_techniques: int = 3,
+        selected_project_indices: Optional[List[int]] = None,
+        selected_experience_indices: Optional[List[int]] = None,
+        selected_competence_indices: Optional[List[int]] = None,
+        selected_competence_technique_indices: Optional[List[int]] = None,
     ):
+        if self._LANGUAGE not in _LABELS_BY_LANGUAGE:
+            raise ValueError(f"Unsupported CV language: {self._LANGUAGE}")
+
         self.cv = cv_base
         self.job = job
-        self.personal = {**self._DEFAULT_PERSONAL, **(personal or {})}
-        self.output_dir = Path(output_dir) if output_dir else _OUTPUT_DIR
+        self.language = self._LANGUAGE
+        base_personal = _DEFAULT_PERSONAL_BY_LANGUAGE[self.language]
+        self.personal = {**base_personal, **(personal or {})}
+        self.output_dir = Path(output_dir) if output_dir else _OUTPUT_DIR_BY_LANGUAGE[self.language]
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._gen_date = datetime.now()
         # None  → auto : job_title si disponible dans l'offre, sinon target_titles[0]
-        # int   → candidature spontanée : force target_titles[n]
+        # int   → code 1-based : 1 = premier target_titles, 2 = deuxième, etc.
         self._target_title_index = target_title_index
+
+        # Sélection modulable par section pour adapter le CV à l'offre.
+        self.max_projects = max_projects
+        self.max_experiences = max_experiences
+        self.max_competences = max_competences
+        self.max_competences_techniques = max_competences_techniques
+        self.selected_project_indices = selected_project_indices
+        self.selected_experience_indices = selected_experience_indices
+        self.selected_competence_indices = selected_competence_indices
+        self.selected_competence_technique_indices = selected_competence_technique_indices
+
+        all_skills = self._normalize_lines(self.cv.get("skills", ""))
+        mid = max(1, len(all_skills) // 2)
+        self.section_lines: Dict[str, List[str]] = {
+            "projects": self._normalize_lines(self.cv.get("projects", "")),
+            "experiences": self._normalize_lines(self.cv.get("experience", "")),
+            "skills": all_skills,
+            "competences": all_skills[:mid],
+            "competences_techniques": all_skills[mid:] if mid > 0 else all_skills,
+        }
 
     # ------------------------------------------------------------------
     # Factory: load directly from SQLite (no Flask context needed)
@@ -460,7 +578,15 @@ class CVLatexGeneratorFR:
         personal: Optional[Dict[str, str]] = None,
         output_dir: Optional[Path] = None,
         target_title_index: Optional[int] = None,
-    ) -> "CVLatexGeneratorFR":
+        max_projects: int = 11,
+        max_experiences: int = 8,
+        max_competences: int = 7,
+        max_competences_techniques: int = 3,
+        selected_project_indices: Optional[List[int]] = None,
+        selected_experience_indices: Optional[List[int]] = None,
+        selected_competence_indices: Optional[List[int]] = None,
+        selected_competence_technique_indices: Optional[List[int]] = None,
+    ) -> "CVLatexGeneratorBase":
         """Load CVBase + Jobs rows from SQLite and return a configured instance.
 
         Args:
@@ -468,12 +594,13 @@ class CVLatexGeneratorFR:
             cv_base_id: ID of the cv_base row.
             job_id: ID of the jobs row (must exist, even for spontaneous applications —
                     use a placeholder job row with no job_title set).
-            target_title_index: If None (default), use job.job_title when set, else
-                fallback to cv_base.target_titles[0].
-                If an int, force spontaneous mode and pick target_titles[n].
-                  0 → Market Risk Analyst
-                  1 → Trading Analyst
-                  2 → Data Analyst
+                        target_title_index: If None (default), use job.job_title when set, else
+                                fallback to cv_base.target_titles[0].
+                                If an int, interpret it as a 1-based code and pick
+                                cv_base.target_titles[target_title_index - 1].
+                                    1 → Market Risk Analyst
+                                    2 → Trading Analyst
+                                    3 → Data Analyst
         """
         with sqlite3.connect(db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -495,7 +622,21 @@ class CVLatexGeneratorFR:
             personal=personal,
             output_dir=output_dir,
             target_title_index=target_title_index,
+            max_projects=max_projects,
+            max_experiences=max_experiences,
+            max_competences=max_competences,
+            max_competences_techniques=max_competences_techniques,
+            selected_project_indices=selected_project_indices,
+            selected_experience_indices=selected_experience_indices,
+            selected_competence_indices=selected_competence_indices,
+            selected_competence_technique_indices=selected_competence_technique_indices,
         )
+
+    def _label(self, key: str) -> str:
+        return _LABELS_BY_LANGUAGE[self.language][key]
+
+    def _babel_package_language(self) -> str:
+        return "english" if self.language == "en" else "french"
 
     # ------------------------------------------------------------------
     # Helpers
@@ -553,6 +694,95 @@ class CVLatexGeneratorFR:
             items = items[:max_items]
         return "\n".join(items) if items else r"\item ~"
 
+    @staticmethod
+    def _normalize_lines(value: Any) -> List[str]:
+        """Normalize section content into clean plain-text lines."""
+        lines: List[str] = []
+        if value is None:
+            return lines
+
+        if isinstance(value, str):
+            raw = value.splitlines()
+        elif isinstance(value, list):
+            raw = [str(v) for v in value]
+        else:
+            raw = [str(value)]
+
+        for line in raw:
+            line = line.strip()
+            if not line:
+                continue
+            line = re.sub(r"^(?:[\-\*•]+\s*)+", "", line).strip()
+            if line:
+                lines.append(line)
+        return lines
+
+    @staticmethod
+    def _pick_lines(lines: List[str], max_items: int, selected_indices: Optional[List[int]]) -> List[str]:
+        """Select relevant lines (optional indices), then apply max_items."""
+        if selected_indices:
+            chosen: List[str] = []
+            seen: Set[int] = set()
+            for idx in selected_indices:
+                if idx in seen:
+                    continue
+                if 0 <= idx < len(lines):
+                    chosen.append(lines[idx])
+                    seen.add(idx)
+        else:
+            chosen = list(lines)
+
+        if max_items > 0:
+            return chosen[:max_items]
+        return chosen
+
+    def _education_to_blocks(self, text: str, max_items: int = 0) -> str:
+        """Render serialized education as simple blocks: years + degree, then description.
+
+        Expected format per line: 'YYYY - YYYY degree. description'
+        Renders as: line 1 with years + degree, line 2 with description.
+        """
+        if not text:
+            return "~"
+
+        blocks: List[str] = []
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("•"):
+                line = line[1:].strip()
+
+            # Split on ". " separator: header = period+degree, rest = description
+            if ". " in line:
+                header, desc = line.split(". ", 1)
+                header = header.strip() + "."
+                desc = desc.strip()
+            else:
+                header = line if line.endswith(".") else line + "."
+                desc = ""
+
+            if desc and re.match(r"^Domaines?\s*:\s*", desc, flags=re.IGNORECASE):
+                desc = ""
+
+            # Build LaTeX lines
+            year_match = re.match(r"^(\d{4}\s*[-–]\s*\d{4})\s+(.*)$", header)
+            if year_match:
+                escaped_header = self._escape(year_match.group(1) + " : " + year_match.group(2))
+            else:
+                escaped_header = self._escape(header)
+            latex_lines = [r"\noindent " + escaped_header + r" \\"]
+            if desc:
+                escaped_desc = self._escape(desc)
+                latex_lines.append(escaped_desc)
+
+            block = "\n".join(latex_lines) + "\n\\par"
+            blocks.append(block)
+
+        if max_items > 0:
+            blocks = blocks[:max_items]
+        return "\n\\vspace{0.1ex}\n".join(blocks) if blocks else "~"
+
     def _output_stem(self) -> str:
         mm_yyyy = self._gen_date.strftime("%m_%Y")
         cv_id   = self.cv.get("id", "cv")
@@ -563,9 +793,10 @@ class CVLatexGeneratorFR:
         mm_yyyy     = self._gen_date.strftime("%m_%Y")
         lastname    = self.personal["lastname"].replace(" ", "_")
         firstname   = self.personal["firstname"].replace(" ", "_").replace("-", "_")
+        jobtitle   = self.job.get("job_title", "").replace(" ", "_").replace("-", "_")
         offer_raw   = self.job.get("company_name") or self.job.get("id", "offre")
-        offer_name  = re.sub(r"[^a-zA-Z0-9À-ÿ]+", "_", offer_raw).strip("_")
-        return f"{lastname}_{firstname}_{offer_name}_{mm_yyyy}.pdf"
+        offer_name  = re.sub(r"[^a-zA-Z0-9À-ÿ]+", "_", jobtitle).strip("_")
+        return f"{lastname}_{firstname}_{offer_raw}_{offer_name}_{mm_yyyy}.pdf"
 
     # ------------------------------------------------------------------
     # Section renderers — each returns a LaTeX string
@@ -585,7 +816,7 @@ class CVLatexGeneratorFR:
         if not dispo:
             return ""
         return (
-            r"\headleft{Disponibilit\'{e}}" "\n"
+            r"\headleft{" + self._label("availability") + r"}" "\n"
             r"\small " + self._escape(dispo) + "\n"
             r"\normalsize" "\n"
         )
@@ -593,15 +824,15 @@ class CVLatexGeneratorFR:
     def _section_informations(self) -> str:
         p = self.personal
         return (
-            r"\headleft{Contact}" "\n"
+            r"\headleft{" + self._label("contact") + r"}" "\n"
             r"\small" "\n"
-            r"\faEnvelope\ \href{mailto:" + p["mail"] + r"}{" + self._escape(p["mail"]) + r"} \\[0.5ex]" "\n"
-            r"\faMobile*\ " + self._escape(p["phone"]) + r" \\[0.5ex]" "\n"
-            r"\faLinkedin\ \href{https://linkedin.com/in/" + p["linkedin"] + r"}{"
+            r"\textbf{" + self._label("email") + r":}\ \href{mailto:" + p["mail"] + r"}{" + self._escape(p["mail"]) + r"} \\[0.5ex]" "\n"
+            r"\textbf{" + self._label("phone") + r":}\ " + self._escape(p["phone"]) + r" \\[0.5ex]" "\n"
+            r"\textbf{" + self._label("linkedin") + r":}\ \href{https://linkedin.com/in/" + p["linkedin"] + r"}{"
             + self._escape(p["linkedin"]) + r"} \\[0.5ex]" "\n"
-            r"\faGithub\ \href{https://github.com/" + p["github"] + r"}{"
+            r"\textbf{" + self._label("github") + r":}\ \href{https://github.com/" + p["github"] + r"}{"
             + self._escape(p["github"]) + r"} \\[0.5ex]" "\n"
-            r"\faMapMarker\ " + self._escape(p["address"]) + "\n"
+            r"\textbf{" + self._label("location") + r":}\ " + self._escape(p["address"]) + "\n"
             r"\normalsize" "\n"
         )
 
@@ -613,29 +844,34 @@ class CVLatexGeneratorFR:
         - None (défaut) → mode auto :
             • job.job_title renseigné  → titre de l'offre
             • job.job_title absent     → cv_base.target_titles[0] (candidature spontanée)
-        - int n → force candidature spontanée → cv_base.target_titles[n]
-            0 = Market Risk Analyst
-            1 = Trading Analyst
-            2 = Data Analyst
+        - int n → force candidature spontanée → code 1-based
+            1 = Market Risk Analyst
+            2 = Trading Analyst
+            3 = Data Analyst
             …
         """
-        raw_targets = self.cv.get("target_titles") or ""
-        targets = [t.strip() for t in raw_targets.split(";") if t.strip()]
+        raw_targets = self.job.get("job_title") or self.cv.get("target_titles") or ""
+        targets = self._normalize_lines(raw_targets.replace(";", "\n"))
 
         idx = self._target_title_index
         if idx is not None:
-            # Candidature spontanée forcée
-            title = targets[idx] if idx < len(targets) else (targets[0] if targets else "")
+            # Candidature spontanée forcée via code 1-based.
+            normalized_idx = idx - 1
+            title = targets[normalized_idx] if 0 <= normalized_idx < len(targets) else (targets[0] if targets else "")
         else:
             # Auto : offre si dispo, sinon premier titre spontané
             title = (self.job.get("job_title") or "").strip()
             if not title:
                 title = targets[0] if targets else ""
 
+        # Les titres spontanés sont stockés avec un préfixe numérique "01 ",
+        # mais ce code ne doit pas apparaître sur le CV final.
+        title = re.sub(r"^\d{2}\s+", "", title).strip()
+
         if not title:
             return ""
         return (
-            r"\headleft{Poste vis\'{e}}" "\n"
+            r"\headleft{" + self._label("target_position") + r"}" "\n"
             r"\begin{center}" "\n"
             r"\vspace*{0.3ex}" "\n"
             r"{\Large\bfseries\color{white}" + self._escape(title) + r"}\\[2pt]" "\n"
@@ -648,13 +884,13 @@ class CVLatexGeneratorFR:
         lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
         # For each of the first 3 lines, keep only the first 2 comma-separated parts
         snippets = []
-        for line in lines[:3]:
+        for line in lines:
             parts = [p.strip() for p in line.split(",") if p.strip()]
             snippet = ", ".join(parts[:2])
             snippets.append(self._escape(snippet))
         content = r" \\[0.5ex]" "\n".join(snippets) if snippets else "~"
         return (
-            r"\headleft{Atouts}" "\n"
+            r"\headleft{" + self._label("strengths") + r"}" "\n"
             r"\small " + content + "\n"
             r"\normalsize" "\n"
         )
@@ -663,7 +899,7 @@ class CVLatexGeneratorFR:
         langs = self._escape(self.cv.get("languages", ""))
         lines = [l.strip() for l in langs.replace(";", "\n").splitlines() if l.strip()]
         content = r" \\[0.4ex]" "\n".join(lines) if lines else "~"
-        return r"\headleft{Langues}" "\n" + content + "\n"
+        return r"\headleft{" + self._label("languages") + r"}" "\n" + content + "\n"
 
     def _section_centre_interet(self) -> str:
         interests = self.cv.get("interests", "")
@@ -675,7 +911,7 @@ class CVLatexGeneratorFR:
         if line2:
             content += r" \\[0.4ex]" "\n" + self._escape(line2)
         return (
-            r"\headleft{Centres d'int\'{e}r\^{e}t}" "\n"
+            r"\headleft{" + self._label("interests") + r"}" "\n"
             r"\small " + content + "\n"
             r"\normalsize" "\n"
         )
@@ -699,67 +935,162 @@ class CVLatexGeneratorFR:
         country = self._escape(self.job.get("country", ""))
         loc     = ", ".join(filter(None, [city, country]))
         return (
-            r"\headright{Type de recherche}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("search_type") + r"}}}" "\n"
             r"\textbf{\jobtype}" + (f" --- {company}" if company else "")
             + (f" ({loc})" if loc else "") + "\n"
         )
 
     def _section_competences(self) -> str:
-        # Show first half only (soft skills)
-        skills_text = self.cv.get("skills", "")
-        lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
-        mid = max(1, len(lines) // 2)
-        items = "\n".join(r"\item " + l for l in lines[:mid][:2]) if lines else r"\item ~"
+        lines = self._pick_lines(
+            self.section_lines.get("competences", []),
+            self.max_competences,
+            self.selected_competence_indices,
+        )
+        items = "\n".join(r"\item " + l for l in lines) if lines else r"\item ~"
         return (
-            r"\headright{Comp\'{e}tences}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("skills") + r"}}}" "\n"
             r"{\footnotesize\begin{itemize}" "\n"
+            r"\setlength{\itemsep}{1pt}" "\n"
+            r"\setlength{\parsep}{0pt}" "\n"
+            r"\setlength{\topsep}{0pt}" "\n"
+            r"\setlength{\partopsep}{1pt}" "\n"
+            r"\setlength{\leftmargini}{6mm}" "\n"
             + items + "\n"
             r"\end{itemize}}" "\n"
         )
 
     def _section_competences_techniques(self) -> str:
-        # Second half of skills — technical
-        skills_text = self.cv.get("skills", "")
-        lines = [l.strip().lstrip("•").strip() for l in skills_text.splitlines() if l.strip()]
-        mid = max(1, len(lines) // 2)
-        tech_lines = lines[mid:] if mid > 0 else lines
-        items = "\n".join(r"\item " + l for l in tech_lines[:3]) if tech_lines else r"\item ~"
+        lines = self._pick_lines(
+            self.section_lines.get("competences_techniques", []),
+            self.max_competences_techniques,
+            self.selected_competence_technique_indices,
+        )
+        items = "\n".join(r"\item " + l for l in lines) if lines else r"\item ~"
         return (
-            r"\headright{Connaissances techniques}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("technical_skills") + r"}}}" "\n"
             r"{\footnotesize\begin{itemize}" "\n"
+            r"\setlength{\itemsep}{1pt}" "\n"
+            r"\setlength{\parsep}{0pt}" "\n"
+            r"\setlength{\topsep}{0pt}" "\n"
+            r"\setlength{\partopsep}{1pt}" "\n"
+            r"\setlength{\leftmargini}{6mm}" "\n"
             + items + "\n"
             r"\end{itemize}}" "\n"
         )
 
+    # ----------------------------------------------------------------
+    # Experience formatter
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def _experience_to_blocks(lines: List[str]) -> str:
+        """
+        Parse each experience line of the form:
+          role - company (location), start – end. description
+                and format as two-line blocks:
+                    start – end : role - company\\
+          description
+                Falls back to a plain block if the line doesn't match.
+        """
+        _PAT = re.compile(
+            r"^(.*) - ([^(]+?) \(([^)]+)\), (.+?) \u2013 (.+?)\. (.+)$",
+            re.DOTALL,
+        )
+        blocks: List[str] = []
+        for line in lines:
+            m = _PAT.match(line)
+            if m:
+                role, company, _loc, start, end, description = m.groups()
+                start = CVLatexGeneratorBase._escape(start.strip())
+                end = CVLatexGeneratorBase._escape(end.strip())
+                role = CVLatexGeneratorBase._escape(role.strip())
+                company = CVLatexGeneratorBase._escape(company.strip())
+                description = CVLatexGeneratorBase._escape(description.strip())
+                header = f"{start} \u2013 {end} : {role} - {company}"
+                blocks.append(
+                    r"\noindent " + header + r"\\" + "\n"
+                    + r"\noindent\hspace*{25mm}\parbox[t]{\dimexpr\linewidth-25mm\relax}{"
+                    + description
+                    + r"}" + "\n" + r"\par"
+                )
+            else:
+                blocks.append(r"\noindent " + CVLatexGeneratorBase._escape(line) + "\n" + r"\par")
+        return "\n" + r"\vspace{1ex}" + "\n".join(blocks) if len(blocks) == 1 else ("\n" + r"\vspace{1ex}" + "\n").join(blocks) if blocks else r"~"
+
     def _section_experiences(self) -> str:
-        items = self._bullets_to_items(self.cv.get("experience", ""), max_items=8, truncate=True)
+        lines = self._pick_lines(
+            self.section_lines.get("experiences", []),
+            self.max_experiences,
+            self.selected_experience_indices,
+        )
+        #blocks = self._experience_to_blocks(lines)
+        blocks = self._project_to_blocks(lines)
         return (
-            r"\headright{Exp\'{e}riences professionnelles}" "\n"
-            r"{\footnotesize\begin{itemize}" "\n"
-            + items + "\n"
-            r"\end{itemize}}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("experience") + r"}}}" "\n"
+            r"{\footnotesize" "\n"
+            + blocks + "\n"
+            r"}" "\n"
         )
 
     def _section_formations(self) -> str:
-        items = self._bullets_to_items(self.cv.get("education", ""), max_items=2, truncate=True)
+        blocks = self._education_to_blocks(self.cv.get("education", ""), max_items=4)
         return (
-            r"\headright{Formations}" "\n"
-            r"{\footnotesize\begin{itemize}" "\n"
-            + items + "\n"
-            r"\end{itemize}}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("education") + r"}}}" "\n"
+            r"{\footnotesize" "\n"
+            + blocks + "\n"
+            r"}" "\n"
         )
 
     def _section_certifications(self) -> str:
         text = self._escape(self.cv.get("certifications", ""))
-        return r"\headright{Certifications}" "\n" + text + "\n"
+        return (
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("certifications") + r"}}}" "\n"
+            r"{\footnotesize" "\n"
+            + text + "\n"
+            r"}" "\n"
+        )
+
+    @staticmethod
+    def _project_to_blocks(lines: List[str]) -> str:
+        """
+        Render project lines as two-line blocks, similar to experiences:
+          line 1: project header (or full line if no description split)
+          line 2: description, indented with a fixed left margin
+        """
+        blocks: List[str] = []
+        for raw in lines:
+            line = raw.strip()
+            if not line:
+                continue
+
+            # Prefer splitting on first sentence separator to isolate description.
+            if ". " in line:
+                header, desc = line.split(". ", 1)
+                header = CVLatexGeneratorBase._escape(header.strip() + ".")
+                desc = CVLatexGeneratorBase._escape(desc.strip())
+                blocks.append(
+                    r"\noindent " + header + r"\\" + "\n"
+                    + r"\noindent\hspace*{25mm}\parbox[t]{\dimexpr\linewidth-25mm\relax}{"
+                    + desc
+                    + r"}" + "\n" + r"\par"
+                )
+            else:
+                blocks.append(r"\noindent " + CVLatexGeneratorBase._escape(line) + "\n" + r"\par")
+
+        return "\n" + r"\vspace{1ex}" + "\n".join(blocks) if len(blocks) == 1 else ("\n" + r"\vspace{1ex}" + "\n").join(blocks) if blocks else r"~"
 
     def _section_projets(self) -> str:
-        items = self._bullets_to_items(self.cv.get("projects", ""), max_items=10, truncate=True)
+        lines = self._pick_lines(
+            self.section_lines.get("projects", []),
+            self.max_projects,
+            self.selected_project_indices,
+        )
+        blocks = self._project_to_blocks(lines)
         return (
-            r"\headright{Projets}" "\n"
-            r"{\footnotesize\begin{itemize}" "\n"
-            + items + "\n"
-            r"\end{itemize}}" "\n"
+            r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("projects") + r"}}}" "\n"
+            r"{\footnotesize" "\n"
+            + blocks + "\n"
+            r"}" "\n"
         )
 
     # ------------------------------------------------------------------
@@ -798,6 +1129,7 @@ class CVLatexGeneratorFR:
         # Read template
         template_path = _TEMPLATE_DIR / "main_fr.tex"
         tex = template_path.read_text(encoding="utf-8")
+        tex = tex.replace(r"\usepackage[french]{babel}", rf"\usepackage[{self._babel_package_language()}]{{babel}}")
 
         # Substitute personal info placeholders
         p = self.personal
@@ -842,10 +1174,11 @@ class CVLatexGeneratorFR:
                 cmd,
                 cwd=build_dir,
                 capture_output=True,
-                text=True,
             )
             if result.returncode != 0:
-                log_snippet = result.stdout[-2000:] + result.stderr[-500:]
+                stdout = result.stdout.decode("utf-8", errors="replace")
+                stderr = result.stderr.decode("utf-8", errors="replace")
+                log_snippet = stdout[-2000:] + stderr[-500:]
                 raise RuntimeError(f"pdflatex failed:\n{log_snippet}")
 
         return build_dir / "main_fr.pdf"
@@ -857,7 +1190,7 @@ class CVLatexGeneratorFR:
           2. Compile to PDF
           3. Copy outputs to self.output_dir:
                - archiv_{job_id}_{cv_id}_{mm}_{yyyy}.tex
-               - {LASTNAME}_{Firstname}_{Company}_{mm}_{yyyy}.pdf
+               - {lastname}_{firstname}_{offer_raw}_{offer_name}_{mm_yyyy}.pdf
           4. Clean up build dir
 
         Returns (tex_dest, pdf_dest).
@@ -880,5 +1213,17 @@ class CVLatexGeneratorFR:
 
         logger.info("CV generated: %s | %s", tex_dest.name, pdf_dest.name)
         return tex_dest, pdf_dest
+
+
+class CVLatexGeneratorFR(CVLatexGeneratorBase):
+    """French two-column CV PDF generator."""
+
+    _LANGUAGE = "fr"
+
+
+class CVLatexGeneratorEN(CVLatexGeneratorBase):
+    """English two-column CV PDF generator."""
+
+    _LANGUAGE = "en"
 
 

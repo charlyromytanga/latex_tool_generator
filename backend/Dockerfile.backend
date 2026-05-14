@@ -1,16 +1,11 @@
 FROM python:3.12-slim
 WORKDIR /app
 
-# texlive retiré volontairement : la compilation LaTeX se fait sur le host.
-# Réactiver si on veut compiler dans le container (sans texlive-fonts-extra
-# qui ajoute ~300s pour des centaines de polices inutiles) :
-#
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     texlive-latex-base \
-#     texlive-latex-extra \
-#     texlive-fonts-recommended \
-#     texlive-lang-french \
-#     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	texlive-latex-base \
+	texlive-latex-recommended \
+	texlive-lang-french \
+	&& rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip && pip install uv
 

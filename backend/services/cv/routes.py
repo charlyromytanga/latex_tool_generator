@@ -11,6 +11,7 @@ Endpoints :
     PUT    /cv/db/<table>/<id>           → met à jour un enregistrement
     DELETE /cv/db/<table>/<id>           → supprime un enregistrement
     POST   /cv/generate/fr               → génère le PDF LaTeX FR
+    POST   /cv/generate/en               → génère le PDF LaTeX EN
 """
 
 from __future__ import annotations
@@ -24,21 +25,21 @@ from flask import Blueprint, jsonify, request, send_file
 # Imports compatibles package ET exécution directe
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 try:
-    from .core.cv_business import run_db_pipeline, run_cv_fr_pipeline, _DEFAULT_DB_PATH
+    from .core.cv_business import run_db_pipeline, run_cv_fr_pipeline, run_cv_en_pipeline, _DEFAULT_DB_PATH
 except ImportError:
     if _REPO_ROOT not in sys.path:
         sys.path.insert(0, _REPO_ROOT)
-    from backend.services.cv.core.cv_business import run_db_pipeline, run_cv_fr_pipeline, _DEFAULT_DB_PATH  # type: ignore
+    from backend.services.cv.core.cv_business import run_db_pipeline, run_cv_fr_pipeline, run_cv_en_pipeline, _DEFAULT_DB_PATH  # type: ignore
 
 try:
     from .schemas import (
         DBAddCVBaseSchema, DBAddSchema, DBGetSchema, DBListSchema,
-        DBUpdateSchema, DBDeleteSchema, CVGenerateFRSchema, ok, error,
+        DBUpdateSchema, DBDeleteSchema, CVGenerateFRSchema, CVGenerateENSchema, ok, error,
     )
 except ImportError:
     from backend.services.cv.schemas import (  # type: ignore
         DBAddCVBaseSchema, DBAddSchema, DBGetSchema, DBListSchema,
-        DBUpdateSchema, DBDeleteSchema, CVGenerateFRSchema, ok, error,
+        DBUpdateSchema, DBDeleteSchema, CVGenerateFRSchema, CVGenerateENSchema, ok, error,
     )
 
 logger = logging.getLogger(__name__)
@@ -260,7 +261,7 @@ def db_delete(table: str, record_id: str):
 
 
 # ---------------------------------------------------------------------------
-# CV generation — FR
+# CV generation — FR 
 # ---------------------------------------------------------------------------
 
 @cv_blueprint.route("/generate/fr", methods=["POST"])
@@ -272,7 +273,7 @@ def generate_cv_fr():
         cv_base_id         : str   — ex: "cv_base_in_all_fr"
         job_id             : str   — ex: "offer-711607447"
     Corps JSON optionnel :
-        target_title_index : int   — index dans target_titles ; absent = auto
+        target_title_index : int   — code 1-based dans target_titles ; absent = auto
         db_path            : str   — chemin custom vers jobcv.db
     """
     body = request.get_json(silent=True) or {}
@@ -281,8 +282,13 @@ def generate_cv_fr():
         result = run_cv_fr_pipeline(
             cv_base_id=body["cv_base_id"],
             job_id=body["job_id"],
+            job_title="",  # Valeur par défaut, peut être remplacée par la logique métier dans run_cv_fr_pipeline
             db_path=body.get("db_path") or _DEFAULT_DB_PATH,
             target_title_index=body.get("target_title_index"),
+            max_projects=body.get("max_projects", 10),
+            max_experiences=body.get("max_experiences", 6),
+            selected_project_indices=body.get("selected_project_indices"),
+            selected_experience_indices=body.get("selected_experience_indices"),
         )
         if not result:
             return jsonify(error("Échec de la génération du CV.", 500)), 500
@@ -291,4 +297,43 @@ def generate_cv_fr():
         return jsonify(error(str(exc), 400)), 400
     except Exception as exc:
         logger.exception("generate_cv_fr error: %s", exc)
+        return jsonify(error(str(exc), 500)), 500
+
+# ---------------------------------------------------------------------------
+# CV generation — EN 
+# ---------------------------------------------------------------------------
+
+@cv_blueprint.route("/generate/en", methods=["POST"])
+def generate_cv_en():
+    """
+    Génère le CV EN au format PDF LaTeX.
+
+    Corps JSON requis :
+        cv_base_id         : str   — ex: "cv_base_in_all_en"
+        job_id             : str   — ex: "offer-711607447"
+    Corps JSON optionnel :
+        target_title_index : int   — code 1-based dans target_titles ; absent = auto
+        db_path            : str   — chemin custom vers jobcv.db
+    """
+    body = request.get_json(silent=True) or {}
+    try:
+        CVGenerateENSchema.validate(body)
+        result = run_cv_en_pipeline(
+            cv_base_id=body["cv_base_id"],
+            job_id=body["job_id"],
+            job_title="",  # Valeur par défaut, peut être remplacée par la logique métier dans run_cv_en_pipeline
+            db_path=body.get("db_path") or _DEFAULT_DB_PATH,
+            target_title_index=body.get("target_title_index"),
+            max_projects=body.get("max_projects", 10),
+            max_experiences=body.get("max_experiences", 6),
+            selected_project_indices=body.get("selected_project_indices"),
+            selected_experience_indices=body.get("selected_experience_indices"),
+        )
+        if not result:
+            return jsonify(error("Échec de la génération du CV.", 500)), 500
+        return jsonify(ok(result, "CV généré")), 200
+    except ValueError as exc:
+        return jsonify(error(str(exc), 400)), 400
+    except Exception as exc:
+        logger.exception("generate_cv_en error: %s", exc)
         return jsonify(error(str(exc), 500)), 500

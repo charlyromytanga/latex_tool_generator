@@ -25,17 +25,41 @@
       {% endfor %}
     </select>
 
-    <label>Index du titre cible
-      <span style="font-weight:400;color:var(--text-muted);">(0 = premier, laisser 0 par défaut)</span>
+    <label for="selected_experience_indices" style="margin-top:0;">Expériences professionnelles
+      <span style="font-weight:400;color:var(--text-muted);">(aucune sélection = toutes)</span>
     </label>
-    <input type="number" name="target_title_index" id="target_title_index" value="0" min="0" style="width:100px;"/>
+    <div class="multi-select" data-field="experience" style="margin-bottom:0.9rem;">
+      <button type="button" class="multi-select-trigger" id="selected_experience_indices" aria-expanded="false">
+        Toutes les expériences
+      </button>
+      <div class="multi-select-panel" id="selected_experience_indices_panel"></div>
+    </div>
+
+    <label for="selected_competence_technique_indices" style="margin-top:0;">Compétences techniques
+      <span style="font-weight:400;color:var(--text-muted);">(aucune sélection = toutes)</span>
+    </label>
+    <div class="multi-select" data-field="competence-technique" style="margin-bottom:0.9rem;">
+      <button type="button" class="multi-select-trigger" id="selected_competence_technique_indices" aria-expanded="false">
+        Toutes les compétences techniques
+      </button>
+      <div class="multi-select-panel" id="selected_competence_technique_indices_panel"></div>
+    </div>
+
+    <label>Index du titre cible
+      <span style="font-weight:400;color:var(--text-muted);">(0 ou vide = titre de l'offre, sinon code target_titles)</span>
+    </label>
+    <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+      <div style="min-width:120px;">
+        <input type="number" name="target_title_index" id="target_title_index" value="0" min="0" placeholder="0" style="width:100%;"/>
+      </div>
+    </div>
+
+    <div style="margin-top:0.4rem;color:var(--text-muted);font-size:12px;">
+      Cliquez pour ouvrir le sélecteur, puis cochez les éléments à garder. Sans sélection, tout est conservé.
+    </div>
 
     <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;">
       <button type="submit" class="btn btn-primary" id="generate-btn">⚡ Générer le CV</button>
-      <label style="display:flex;align-items:center;gap:0.4rem;font-size:var(--font-size-sm);color:var(--text-muted);cursor:pointer;">
-        <input type="checkbox" id="force-regen" style="width:auto;margin:0;"/>
-        Forcer la regénération
-      </label>
     </div>
   </form>
 </div>
@@ -60,7 +84,6 @@
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
     <div style="display:flex;align-items:center;gap:0.5rem;">
       <h2 style="margin:0;">📄 CV généré</h2>
-      <span id="cached-badge" style="display:none;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:2px 8px;border-radius:20px;">cache</span>
     </div>
     <div style="display:flex;gap:0.5rem;">
       <a id="download-btn" href="#" class="btn btn-primary" download>⬇ Télécharger</a>
@@ -75,6 +98,7 @@
   </div>
 </div>
 
+<script id="cv-options-data" type="application/json">{{ cv_options|tojson }}</script>
 <script>
 const form = document.getElementById('generate-form');
 const btnGenerate = document.getElementById('generate-btn');
@@ -85,8 +109,186 @@ const msgError = document.getElementById('error-msg');
 const pdfFrame = document.getElementById('pdf-frame');
 const downloadBtn = document.getElementById('download-btn');
 const openBtn = document.getElementById('open-btn');
-const cachedBadge = document.getElementById('cached-badge');
 const pdfFallback = document.getElementById('pdf-fallback');
+const cvOptions = JSON.parse(document.getElementById('cv-options-data').textContent);
+const cvSelect = document.getElementById('cv_id');
+const experienceSelect = document.getElementById('selected_experience_indices');
+const experiencePanel = document.getElementById('selected_experience_indices_panel');
+const competenceTechniqueSelect = document.getElementById('selected_competence_technique_indices');
+const competenceTechniquePanel = document.getElementById('selected_competence_technique_indices_panel');
+
+const multiSelectState = {
+  experience: [],
+  competenceTechnique: [],
+};
+
+const multiSelectLabels = {
+  experience: 'Toutes les expériences',
+  competenceTechnique: 'Toutes les compétences techniques',
+};
+
+const multiSelectCss = document.createElement('style');
+multiSelectCss.textContent = `
+  .multi-select { position: relative; }
+  .multi-select-trigger {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    min-height: 36px;
+  }
+  .multi-select-trigger::after {
+    content: '▾';
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+  .multi-select-trigger:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(29,185,84,0.12);
+  }
+  .multi-select-panel {
+    display: none;
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-md);
+    padding: 0.35rem;
+  }
+  .multi-select.open .multi-select-panel { display: block; }
+  .multi-select-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.45rem 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    margin-bottom: 0.1rem;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .multi-select-option:hover { background: var(--bg-secondary); }
+  .multi-select-option input { margin-top: 0.15rem; }
+  .multi-select-empty {
+    padding: 0.45rem 0.5rem;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+`;
+document.head.appendChild(multiSelectCss);
+
+function updateMultiSelectLabel(button, values, items, defaultLabel) {
+  if (!values.length) {
+    button.textContent = defaultLabel;
+    return;
+  }
+  const selectedLabels = items
+    .filter((item) => values.includes(item.index))
+    .map((item) => item.label);
+  if (selectedLabels.length <= 2) {
+    button.textContent = selectedLabels.join(' | ');
+    return;
+  }
+  button.textContent = `${selectedLabels.length} éléments sélectionnés`;
+}
+
+function closeMultiSelect(container) {
+  container.classList.remove('open');
+  const trigger = container.querySelector('.multi-select-trigger');
+  if (trigger) {
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function renderMultiSelect(panel, button, items, stateKey, emptyLabel) {
+  panel.innerHTML = '';
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'multi-select-empty';
+    empty.textContent = emptyLabel;
+    panel.appendChild(empty);
+    updateMultiSelectLabel(button, [], items, multiSelectLabels[stateKey]);
+    return;
+  }
+
+  for (const item of items) {
+    const label = document.createElement('label');
+    label.className = 'multi-select-option';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = String(item.index);
+    checkbox.checked = multiSelectState[stateKey].includes(item.index);
+    checkbox.addEventListener('change', () => {
+      multiSelectState[stateKey] = Array.from(panel.querySelectorAll('input[type="checkbox"]:checked'))
+        .map((input) => Number.parseInt(input.value, 10))
+        .filter((value) => Number.isInteger(value));
+      updateMultiSelectLabel(button, multiSelectState[stateKey], items, multiSelectLabels[stateKey]);
+      closeMultiSelect(panel.closest('.multi-select'));
+    });
+
+    const text = document.createElement('span');
+    text.textContent = item.label;
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    panel.appendChild(label);
+  }
+
+  updateMultiSelectLabel(button, multiSelectState[stateKey], items, multiSelectLabels[stateKey]);
+}
+
+function refreshCvSelections() {
+  const cvId = cvSelect.value;
+  const options = cvOptions[cvId] || { experiences: [], competences_techniques: [] };
+  multiSelectState.experience = [];
+  multiSelectState.competenceTechnique = [];
+  renderMultiSelect(experiencePanel, experienceSelect, options.experiences || [], 'experience', 'Aucune expérience disponible');
+  renderMultiSelect(competenceTechniquePanel, competenceTechniqueSelect, options.competences_techniques || [], 'competenceTechnique', 'Aucune compétence technique disponible');
+}
+
+function bindMultiSelect(container, button) {
+  button.addEventListener('click', () => {
+    const isOpen = container.classList.contains('open');
+    document.querySelectorAll('.multi-select.open').forEach((element) => {
+      closeMultiSelect(element);
+    });
+    if (!isOpen) {
+      container.classList.add('open');
+      button.setAttribute('aria-expanded', 'true');
+    }
+  });
+}
+
+document.addEventListener('click', (event) => {
+  document.querySelectorAll('.multi-select.open').forEach((element) => {
+    if (!element.contains(event.target)) {
+      closeMultiSelect(element);
+    }
+  });
+});
+
+bindMultiSelect(document.querySelector('[data-field="experience"]'), experienceSelect);
+bindMultiSelect(document.querySelector('[data-field="competence-technique"]'), competenceTechniqueSelect);
+
+cvSelect.addEventListener('change', refreshCvSelections);
+refreshCvSelections();
 
 function setState(state) {
   cardLoading.style.display = state === 'loading' ? '' : 'none';
@@ -95,14 +297,13 @@ function setState(state) {
   btnGenerate.disabled = state === 'loading';
 }
 
-function showPdf(filename, lang, cached) {
+function showPdf(filename, lang) {
   const url = `/generate/pdf/${lang}/${filename}`;
   pdfFrame.src = url;
   downloadBtn.href = url;
   downloadBtn.download = filename;
   openBtn.href = url;
   if (pdfFallback) pdfFallback.href = url;
-  cachedBadge.style.display = cached ? '' : 'none';
   setState('result');
 }
 
@@ -115,11 +316,19 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const cv_id = document.getElementById('cv_id').value.trim();
   const job_id = document.getElementById('job_id').value.trim();
-  const target_title_index = parseInt(document.getElementById('target_title_index').value) || 0;
-  const force = document.getElementById('force-regen').checked;
+  const targetTitleRaw = document.getElementById('target_title_index').value.trim();
+  const target_title_index = targetTitleRaw === '' ? 0 : parseInt(targetTitleRaw, 10);
+  const selected_experience_indices = [...multiSelectState.experience];
+  const selected_competence_technique_indices = [...multiSelectState.competenceTechnique];
 
   if (!cv_id || !job_id) {
     msgError.textContent = 'Veuillez sélectionner un profil CV et une offre.';
+    setState('error');
+    return;
+  }
+
+  if (Number.isNaN(target_title_index) || target_title_index < 0) {
+    msgError.textContent = 'Le target_title_index doit être vide, égal à 0, ou un entier positif.';
     setState('error');
     return;
   }
@@ -130,7 +339,13 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/generate/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv_id, job_id, target_title_index, force }),
+      body: JSON.stringify({
+        cv_id,
+        job_id,
+        target_title_index,
+        selected_experience_indices,
+        selected_competence_technique_indices,
+      }),
     });
     let data;
     try {
@@ -141,7 +356,7 @@ form.addEventListener('submit', async (e) => {
       return;
     }
     if (data.ok && data.filename) {
-      showPdf(data.filename, data.lang || 'FR', data.cached);
+      showPdf(data.filename, data.lang || 'FR');
     } else {
       msgError.textContent = data.message || 'Erreur inconnue.';
       setState('error');

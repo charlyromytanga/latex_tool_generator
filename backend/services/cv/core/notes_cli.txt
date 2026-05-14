@@ -31,3 +31,26 @@ python shared/db_orchestration/cv_base_ingestor.py
 
 # Ingérer un seul fichier
 python shared/db_orchestration/cv_base_ingestor.py docs/cv_base/cv_base_fr.json
+
+
+
+Tes projets couvrent 4 axes :
+
+A. Quant / C++ / finance (ULTRA IMPORTANT)
+energy_derivatives_pricing
+quant_engine
+cpp_finance_utils
+B. Data science / ML / signal (IMPORTANT)
+music_genre_classification
+api_prime_pricing
+edo_edp_solver
+C. Software engineering / systems (IMPORTANT mais secondaire quant)
+automata_c_project
+latex_tool_generator
+artist_radar
+portfolio_optimizer_demo
+D. Web / full stack générique (LOW PRIORITY pour quant pur)
+autooccas
+projet_films_java
+poly_bet
+proj_sbt_scala_cmd (moyen / hybride)

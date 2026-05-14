@@ -47,7 +47,8 @@ def _serialize_summary(data: List[str]) -> str:
 
 def _serialize_skills(data: Dict[str, List[str]]) -> str:
     """Fusionne soft + technical en une seule liste de bullets."""
-    all_items = data.get("soft", []) + data.get("technical", [])
+    #all_items = data.get("soft", []) + data.get("technical", [])
+    all_items = data.get("soft", [])
     return _bullets(all_items)
 
 
@@ -61,25 +62,24 @@ def _serialize_experience(data: List[Dict[str, Any]]) -> str:
         end     = exp.get("end", "")
         desc    = exp.get("description", "")
         period  = f"{start} – {end}" if start and end else start or end
-        header  = f"{role} - {company} ({loc}), {period}." if loc else f"{role} - {company}, {period}."
-        lines.append(f"•  {header} {desc}")
+        header  = f"{period} : {role} - {company} ({loc})." if loc else f"{period} {role} - {company}, {period}."
+        lines.append(f"{header} {desc}")
     return "\n".join(lines)
 
 
 def _serialize_education(data: List[Dict[str, Any]]) -> str:
+    """Serialize education as: 'YYYY - YYYY degree. description' per line."""
     lines = []
     for edu in data:
         degree  = edu.get("degree", "")
-        field   = edu.get("field", "")
-        school  = edu.get("school", "")
-        loc     = edu.get("location", "")
+        desc    = edu.get("description", "")
         start   = edu.get("start", "")
         end     = edu.get("end", "")
-        desc    = edu.get("description", "")
         period  = f"{start} - {end}" if start and end else start or end
-        label   = f"{degree} {field}" if field and field != degree else degree
-        header  = f"{period}  {label} - {school} - {loc}." if loc else f"{label} - {school}, {period}."
-        lines.append(f"  {header} {desc}")
+        if degree and desc:
+            lines.append(f"{period} {degree}. {desc}")
+        elif degree:
+            lines.append(f"{period} {degree}.")
     return "\n".join(lines)
 
 
@@ -95,8 +95,19 @@ def _serialize_certifications(data: List[Dict[str, Any]]) -> str:
 def _serialize_projects(data: List[Dict[str, Any]]) -> str:
     lines = []
     for proj in data:
-        desc = proj.get("description", proj.get("title", ""))
-        lines.append(f"• - {desc}")
+        title = proj.get("title", "")
+        stack = proj.get("stack", [])
+        start = proj.get("start", "")
+        end   = proj.get("end", "")
+        desc  = proj.get("description", "")
+        period = f"{start} – {end}" if start and end else start or end
+        stack_str = ", ".join(stack) if stack else ""
+        if stack_str:
+            header = f"{period} : {title} ({stack_str})" if period else f"{title} ({stack_str})"
+        else:
+            header = f"{period} : {title}" if period else title
+        line = f"{header}. {desc}" if desc else f"{header}."
+        lines.append(line)
     return "\n".join(lines)
 
 
@@ -119,7 +130,7 @@ def _serialize_header(data: Dict[str, Any]) -> str:
 
 
 def _serialize_target_titles(data: List[str]) -> str:
-    return ";".join(data)
+    return "\n".join(data)
 
 
 # ---------------------------------------------------------------------------

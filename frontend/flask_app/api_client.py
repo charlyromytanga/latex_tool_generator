@@ -101,16 +101,33 @@ def delete_job(record_id: str) -> dict:
 
 
 # --- Generate ---
-def generate_cv_fr(cv_id: str, job_id: str, target_title_index: int = 0) -> dict:
-    return _post("/cv/generate/fr", {
+def generate_cv(
+    cv_id: str,
+    job_id: str,
+    language: str = "fr",
+    target_title_index: int = 0,
+    selected_experience_indices: list[int] | None = None,
+    selected_project_indices: list[int] | None = None,
+    max_projects: int | None = None,
+    max_experiences: int | None = None,
+) -> dict:
+    lang = (language or "fr").lower()
+    if lang not in {"fr", "en"}:
+        raise BackendApiError(f"Langue de génération invalide : {language}")
+    payload = {
         "cv_base_id": cv_id,
         "job_id": job_id,
         "target_title_index": target_title_index,
-    })
-
-
-def check_existing_pdf(cv_base_id: str, job_id: str) -> dict:
-    return _get(f"/cv/check/{cv_base_id}/{job_id}")
+    }
+    if selected_experience_indices is not None:
+        payload["selected_experience_indices"] = selected_experience_indices
+    if selected_project_indices is not None:
+        payload["selected_project_indices"] = selected_project_indices
+    if max_projects is not None:
+        payload["max_projects"] = max_projects
+    if max_experiences is not None:
+        payload["max_experiences"] = max_experiences
+    return _post(f"/cv/generate/{lang}", payload)
 
 
 def get_pdf_bytes(filename: str, lang: str = "FR") -> bytes:

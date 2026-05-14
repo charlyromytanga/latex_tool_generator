@@ -120,11 +120,22 @@ class CVGenerateFRSchema:
         cv_base_id         : str   — ex: "cv_base_in_all_fr"
         job_id             : str   — ex: "offer-711607447"
     Corps optionnel :
-        target_title_index : int   — 0/1/2/… ; absent = auto
+        target_title_index : int   — 0/1/2/3/… ; 0 ou absent = auto
         db_path            : str   — chemin custom vers jobcv.db
+        max_projects       : int   — 0 = tous les projets retenus
+        max_experiences    : int   — 0 = toutes les expériences retenues
+        selected_project_indices : list[int] — indices 0-based, vide/absent = tous
+        selected_experience_indices : list[int] — indices 0-based, vide/absent = toutes
     """
     REQUIRED = ["cv_base_id", "job_id"]
-    OPTIONAL = ["target_title_index", "db_path"]
+    OPTIONAL = [
+        "target_title_index",
+        "db_path",
+        "max_projects",
+        "max_experiences",
+        "selected_project_indices",
+        "selected_experience_indices",
+    ]
 
     @staticmethod
     def validate(data: dict) -> None:
@@ -132,6 +143,34 @@ class CVGenerateFRSchema:
         tti = data.get("target_title_index")
         if tti is not None and not isinstance(tti, int):
             raise ValueError("'target_title_index' doit être un entier.")
+        if isinstance(tti, int) and tti < 0:
+            raise ValueError("'target_title_index' doit être un entier >= 0.")
+
+        for field in ("max_projects", "max_experiences"):
+            value = data.get(field)
+            if value is not None and not isinstance(value, int):
+                raise ValueError(f"'{field}' doit être un entier.")
+            if isinstance(value, int) and value < 0:
+                raise ValueError(f"'{field}' doit être un entier >= 0.")
+
+        for field in ("selected_project_indices", "selected_experience_indices"):
+            value = data.get(field)
+            if value is None:
+                continue
+            if not isinstance(value, list):
+                raise ValueError(f"'{field}' doit être une liste d'entiers.")
+            if any(not isinstance(item, int) for item in value):
+                raise ValueError(f"'{field}' doit contenir uniquement des entiers.")
+            if any(item < 0 for item in value):
+                raise ValueError(f"'{field}' doit contenir uniquement des entiers >= 0.")
+        
+
+
+class CVGenerateENSchema(CVGenerateFRSchema):
+    """
+    POST /cv/generate/en
+    Même schéma que FR, avec un cv_base en anglais.
+    """
 
 
 # ---------------------------------------------------------------------------

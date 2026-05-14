@@ -23,7 +23,7 @@ import unicodedata
 import re
 from langdetect import detect
 
-from .config import OrchestrationConfig, LLMConfig
+from .config import OrchestrationConfig
 from .database import Database
 import uuid
 
@@ -91,6 +91,44 @@ class OfferIngestionOrchestrator:
         self.config = config
         self.repo = OfferRepositoryGateway(Database(config.database_url))
 
+    def _docs_offers_dir(self) -> Path:
+        return self.config.sqlite_schema_path.resolve().parents[1] / "docs" / "offers"
+
+    @staticmethod
+    def _build_offer_document(
+        record: JobRecord,
+        offer_title: str | None = None,
+    ) -> dict[str, Any]:
+        reference = record.id.removeprefix("offer-") if record.id.startswith("offer-") else record.id
+        return {
+            "id": record.id,
+            "reference": reference,
+            "language": record.language,
+            "country": record.country,
+            "city": record.city,
+            "company_name": record.company_name,
+            "company_type": record.company_type,
+            "offer_title": offer_title or record.job_title,
+            "offer_description": record.offer_description,
+            "company_presentation": record.company_presentation,
+            "job_title": record.job_title,
+        }
+
+    def _write_offer_json(
+        self,
+        record: JobRecord,
+        offer_title: str | None = None,
+    ) -> Path:
+        offers_dir = self._docs_offers_dir()
+        offers_dir.mkdir(parents=True, exist_ok=True)
+        json_path = offers_dir / f"{record.id}.json"
+        json_payload = self._build_offer_document(record, offer_title=offer_title)
+        json_path.write_text(
+            json.dumps(json_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return json_path
+
     def _detect_language(self, text: str) -> str:
         try:
             lang = detect(text)
@@ -130,6 +168,7 @@ class OfferIngestionOrchestrator:
             job_title=raw.get("job_title"),
         )
         self.repo.upsert_job(record)
+        self._write_offer_json(record, offer_title=offer_title)
         LOGGER.info("Job ingested: id=%s company=%s country=%s", offer_id, record.company_name, record.country)
 
         return {
@@ -169,6 +208,7 @@ class OfferIngestionOrchestrator:
             job_title=title,
         )
         self.repo.upsert_job(record)
+        json_path = self._write_offer_json(record, offer_title=title)
         LOGGER.info("Job ingested: id=%s company=%s", offer_id, company)
 
         return {
@@ -177,6 +217,7 @@ class OfferIngestionOrchestrator:
             "city": record.city,
             "country": country,
             "language": language,
+            "json_path": str(json_path),
         }
 
 

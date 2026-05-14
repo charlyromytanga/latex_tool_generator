@@ -39,7 +39,7 @@ class OrchestrationConfig:
     def from_repo_root(cls, root: Path) -> "OrchestrationConfig":
         # Centralized environment loading from repository root.
         load_dotenv(root / ".env", override=False)
-        sqlite_path = Path(os.getenv("RECRUITMENT_DB_PATH", root / "db" / "recruitment_assistant.db"))
+        sqlite_path = Path(os.getenv("RECRUITMENT_DB_PATH", root / "backend" / "db" / "jobcv.db"))
         database_url = normalize_database_url(os.getenv("DATABASE_URL"), root, sqlite_path)
         # Correction : priorité à SCHEMA_PATH, puis RECRUITMENT_SCHEMA_PATH, puis chemin par défaut
         schema_env = os.getenv("SCHEMA_PATH")
@@ -65,8 +65,6 @@ class OrchestrationConfig:
         )
 
 
-@dataclass(frozen=False)
-class LLMConfig:
     """Configuration spécifique pour les interactions avec les LLMs, si besoin."""
 
     model_version: str

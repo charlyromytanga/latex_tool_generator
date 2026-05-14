@@ -11,12 +11,14 @@ services:
     env_file:
       - .env
     environment:
+      - PROJECT_ROOT=/app
       - DATABASE_PATH=/app/db/jobcv.db
       - CV_TEMPLATE_DIR=/app/shared/service_cv_latex/templates/_col_gauche
       - CV_OUTPUT_DIR=/app/shared/output/FR
       - CV_OUTPUT_BASE=/app/shared/output
     volumes:
-      - sqlite_data:/app/db
+      - ./backend/db:/app/db
+      - ./docs:/app/docs
       - ./shared/output:/app/shared/output
     networks:
       - latex-network
@@ -40,10 +42,6 @@ services:
     networks:
       - latex-network
     restart: unless-stopped
-
-volumes:
-  sqlite_data:
-    driver: local
 
 networks:
   latex-network:
