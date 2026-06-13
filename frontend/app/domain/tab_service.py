@@ -15,9 +15,9 @@ from frontend.app.utils_functions import (
     OfferDetailsOutput,
 )
 from shared.db_orchestration.config import OrchestrationConfig
-from shared.db_orchestration.ingest import OfferIngestionOrchestrator
+from shared.db_orchestration.jobs_ingestor import JobsIngestionOrchestrator
 from shared.db_orchestration.database import Database
-from shared.db_orchestration.ingest import OfferSourceReader, OfferRecord, OfferRepositoryGateway
+from shared.db_orchestration.jobs_ingestor import OfferSourceReader, OfferRecord, OfferRepositoryGateway
 from pathlib import Path
 import os
 
@@ -35,7 +35,7 @@ class TabService:
             repo_root = Path(__file__).resolve().parents[3]
         self.repo_root = repo_root
         self.config = OrchestrationConfig.from_repo_root(self.repo_root)
-        self.ingestor = OfferIngestionOrchestrator(self.config)
+        self.ingestor = JobsIngestionOrchestrator(self.config)
         self.db = Database(self.config.database_url)
 
     def submit_offer(self, offer_input: str, company: str, location: str, title: str) -> Dict[str, object]:

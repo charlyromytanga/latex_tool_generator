@@ -289,6 +289,7 @@ def generate_cv_fr():
             max_experiences=body.get("max_experiences", 6),
             selected_project_indices=body.get("selected_project_indices"),
             selected_experience_indices=body.get("selected_experience_indices"),
+            selected_competence_technique_indices=body.get("selected_competence_technique_indices"),
         )
         if not result:
             return jsonify(error("Échec de la génération du CV.", 500)), 500
@@ -328,6 +329,7 @@ def generate_cv_en():
             max_experiences=body.get("max_experiences", 6),
             selected_project_indices=body.get("selected_project_indices"),
             selected_experience_indices=body.get("selected_experience_indices"),
+            selected_competence_technique_indices=body.get("selected_competence_technique_indices"),
         )
         if not result:
             return jsonify(error("Échec de la génération du CV.", 500)), 500

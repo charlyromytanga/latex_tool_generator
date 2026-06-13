@@ -15,5 +15,6 @@
 -- Clés étrangères
 -- PRAGMA foreign_key_list(candidature_tracking);
 
+PRAGMA table_info(cv_base);
 
 

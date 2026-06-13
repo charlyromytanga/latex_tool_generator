@@ -1,0 +1,4 @@
+cd /home/cytech/dev/python/latex_tool_generator
+sudo chown cytech:cytech backend/db/jobcv.db
+
+chmod 664 backend/db/jobcv.db

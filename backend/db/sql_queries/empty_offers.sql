@@ -1,5 +1,5 @@
--- Supprimer toutes les offres de la table offers (vider la table)
-DELETE FROM offers;
+-- Supprimer toutes les offres de la table jobs (vider la table)
+DELETE FROM jobs;
 
 -- (Optionnel) Réinitialiser la table de sauvegarde aussi
-DELETE FROM offers_backup;
+-- DELETE FROM offers_backup;

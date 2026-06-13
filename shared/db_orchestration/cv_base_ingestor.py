@@ -46,9 +46,15 @@ def _serialize_summary(data: List[str]) -> str:
 
 
 def _serialize_skills(data: Dict[str, List[str]]) -> str:
-    """Fusionne soft + technical en une seule liste de bullets."""
+    """Uniquement soft"""
     #all_items = data.get("soft", []) + data.get("technical", [])
     all_items = data.get("soft", [])
+    return _bullets(all_items)
+
+
+def _serialize_technical(data: Dict[str, List[str]]) -> str:
+    """Prend technical pour les compétences."""
+    all_items = data.get("technical", [])
     return _bullets(all_items)
 
 
@@ -56,30 +62,44 @@ def _serialize_experience(data: List[Dict[str, Any]]) -> str:
     lines = []
     for exp in data:
         role    = exp.get("role", "")
+        realisation    = exp.get("realisation", "")
         company = exp.get("company", "")
         loc     = exp.get("location", "")
-        start   = exp.get("start", "")
-        end     = exp.get("end", "")
+        period   = exp.get("periode", "")
         desc    = exp.get("description", "")
-        period  = f"{start} – {end}" if start and end else start or end
-        header  = f"{period} : {role} - {company} ({loc})." if loc else f"{period} {role} - {company}, {period}."
-        lines.append(f"{header} {desc}")
+        header_parts = [part for part in (role, realisation, company, loc, period, desc) if part]
+        header = " | ".join(header_parts)
+        lines.append(header)
     return "\n".join(lines)
 
 
 def _serialize_education(data: List[Dict[str, Any]]) -> str:
-    """Serialize education as: 'YYYY - YYYY degree. description' per line."""
+    """Serialize education with degree, field, school, location, period and description."""
     lines = []
     for edu in data:
-        degree  = edu.get("degree", "")
-        desc    = edu.get("description", "")
-        start   = edu.get("start", "")
-        end     = edu.get("end", "")
-        period  = f"{start} - {end}" if start and end else start or end
-        if degree and desc:
-            lines.append(f"{period} {degree}. {desc}")
-        elif degree:
-            lines.append(f"{period} {degree}.")
+        degree   = edu.get("degree", "")
+        field    = edu.get("field", "")
+        school   = edu.get("school", "")
+        location = edu.get("location", "")
+        desc     = edu.get("description", "")
+        period    = edu.get("periode", "")
+
+        header_parts = [part for part in (degree, field, school, location, period, desc) if part]
+        header = " | ".join(header_parts)
+        """
+        if location:
+            header = f"{header} — {location}" if header else location
+        if period:
+            header = f"{period} : {header}" if header else period
+
+        if header and desc:
+            lines.append(f"{header}. {desc}")
+        elif header:
+            lines.append(f"{header}.")
+        elif desc:
+            lines.append(desc)
+        """        
+        lines.append(header)
     return "\n".join(lines)
 
 
@@ -95,19 +115,20 @@ def _serialize_certifications(data: List[Dict[str, Any]]) -> str:
 def _serialize_projects(data: List[Dict[str, Any]]) -> str:
     lines = []
     for proj in data:
+        ref = proj.get("ref", "")
         title = proj.get("title", "")
-        stack = proj.get("stack", [])
-        start = proj.get("start", "")
-        end   = proj.get("end", "")
+        mots_cles = proj.get("Mots-clés", [])
+        period = proj.get("periode", "")
         desc  = proj.get("description", "")
-        period = f"{start} – {end}" if start and end else start or end
-        stack_str = ", ".join(stack) if stack else ""
-        if stack_str:
-            header = f"{period} : {title} ({stack_str})" if period else f"{title} ({stack_str})"
-        else:
-            header = f"{period} : {title}" if period else title
-        line = f"{header}. {desc}" if desc else f"{header}."
-        lines.append(line)
+
+        # Conversion lite en string
+        if isinstance(mots_cles, list):
+            mots_cles = ", ".join(mots_cles)
+            
+        header_parts = [part for part in (ref, title, mots_cles, period, desc) if part]
+        header = " | ".join(header_parts)
+        lines.append(header)
+
     return "\n".join(lines)
 
 
@@ -146,6 +167,7 @@ class CVBaseRecord:
     skills: str
     experience: str
     education: str
+    technical: str
     certifications: str
     projects: str
     languages: str
@@ -189,6 +211,7 @@ class CVBaseConverter:
             skills         = _serialize_skills(data.get("skills", {})),
             experience     = _serialize_experience(data.get("experience", [])),
             education      = _serialize_education(data.get("education", [])),
+            technical      = _serialize_technical(data.get("skills", {})),
             certifications = _serialize_certifications(data.get("certifications", [])),
             projects       = _serialize_projects(data.get("projects", [])),
             languages      = _serialize_languages(data.get("languages", [])),
@@ -234,7 +257,7 @@ class CVBaseIngestionOrchestrator:
             existing = self.db.get_cv_base(record.id)
             if existing:
                 self.db.delete_cv_base(record.id)
-                LOGGER.info("cv_base supprimé (remplacement) → id=%s", record.id)
+                LOGGER.info("cv_base supprimé avant réinsertion → id=%s", record.id)
                 status = "replaced"
             else:
                 status = "inserted"
@@ -247,6 +270,7 @@ class CVBaseIngestionOrchestrator:
                 "skills":        record.skills,
                 "experience":    record.experience,
                 "education":     record.education,
+                "technical":     record.technical,
                 "certifications": record.certifications,
                 "projects":      record.projects,
                 "languages":     record.languages,

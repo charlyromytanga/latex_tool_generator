@@ -29,17 +29,27 @@
       <span style="font-weight:400;color:var(--text-muted);">(aucune sélection = toutes)</span>
     </label>
     <div class="multi-select" data-field="experience" style="margin-bottom:0.9rem;">
-      <button type="button" class="multi-select-trigger" id="selected_experience_indices" aria-expanded="false">
+      <button type="button" class="multi-select-trigger" id="selected_experience_indices" aria-expanded="true">
         Toutes les expériences
       </button>
       <div class="multi-select-panel" id="selected_experience_indices_panel"></div>
+    </div>
+
+    <label for="selected_project_indices" style="margin-top:0;">Projets académiques
+      <span style="font-weight:400;color:var(--text-muted);">(aucune sélection = tous)</span>
+    </label>
+    <div class="multi-select" data-field="project" style="margin-bottom:0.9rem;">
+      <button type="button" class="multi-select-trigger" id="selected_project_indices" aria-expanded="true">
+        Tous les projets académiques
+      </button>
+      <div class="multi-select-panel" id="selected_project_indices_panel"></div>
     </div>
 
     <label for="selected_competence_technique_indices" style="margin-top:0;">Compétences techniques
       <span style="font-weight:400;color:var(--text-muted);">(aucune sélection = toutes)</span>
     </label>
     <div class="multi-select" data-field="competence-technique" style="margin-bottom:0.9rem;">
-      <button type="button" class="multi-select-trigger" id="selected_competence_technique_indices" aria-expanded="false">
+      <button type="button" class="multi-select-trigger" id="selected_competence_technique_indices" aria-expanded="true">
         Toutes les compétences techniques
       </button>
       <div class="multi-select-panel" id="selected_competence_technique_indices_panel"></div>
@@ -114,16 +124,20 @@ const cvOptions = JSON.parse(document.getElementById('cv-options-data').textCont
 const cvSelect = document.getElementById('cv_id');
 const experienceSelect = document.getElementById('selected_experience_indices');
 const experiencePanel = document.getElementById('selected_experience_indices_panel');
+const projectSelect = document.getElementById('selected_project_indices');
+const projectPanel = document.getElementById('selected_project_indices_panel');
 const competenceTechniqueSelect = document.getElementById('selected_competence_technique_indices');
 const competenceTechniquePanel = document.getElementById('selected_competence_technique_indices_panel');
 
 const multiSelectState = {
   experience: [],
+  projects: [],
   competenceTechnique: [],
 };
 
 const multiSelectLabels = {
   experience: 'Toutes les expériences',
+  projects: 'Tous les projets académiques',
   competenceTechnique: 'Toutes les compétences techniques',
 };
 
@@ -256,10 +270,12 @@ function renderMultiSelect(panel, button, items, stateKey, emptyLabel) {
 
 function refreshCvSelections() {
   const cvId = cvSelect.value;
-  const options = cvOptions[cvId] || { experiences: [], competences_techniques: [] };
+  const options = cvOptions[cvId] || { experiences: [], projects: [], competences_techniques: [] };
   multiSelectState.experience = [];
+  multiSelectState.projects = [];
   multiSelectState.competenceTechnique = [];
   renderMultiSelect(experiencePanel, experienceSelect, options.experiences || [], 'experience', 'Aucune expérience disponible');
+  renderMultiSelect(projectPanel, projectSelect, options.projects || [], 'projects', 'Aucun projet académique disponible');
   renderMultiSelect(competenceTechniquePanel, competenceTechniqueSelect, options.competences_techniques || [], 'competenceTechnique', 'Aucune compétence technique disponible');
 }
 
@@ -285,6 +301,7 @@ document.addEventListener('click', (event) => {
 });
 
 bindMultiSelect(document.querySelector('[data-field="experience"]'), experienceSelect);
+bindMultiSelect(document.querySelector('[data-field="project"]'), projectSelect);
 bindMultiSelect(document.querySelector('[data-field="competence-technique"]'), competenceTechniqueSelect);
 
 cvSelect.addEventListener('change', refreshCvSelections);
@@ -319,6 +336,7 @@ form.addEventListener('submit', async (e) => {
   const targetTitleRaw = document.getElementById('target_title_index').value.trim();
   const target_title_index = targetTitleRaw === '' ? 0 : parseInt(targetTitleRaw, 10);
   const selected_experience_indices = [...multiSelectState.experience];
+  const selected_project_indices = [...multiSelectState.projects];
   const selected_competence_technique_indices = [...multiSelectState.competenceTechnique];
 
   if (!cv_id || !job_id) {
@@ -344,6 +362,7 @@ form.addEventListener('submit', async (e) => {
         job_id,
         target_title_index,
         selected_experience_indices,
+        selected_project_indices,
         selected_competence_technique_indices,
       }),
     });

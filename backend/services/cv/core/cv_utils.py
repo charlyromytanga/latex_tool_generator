@@ -43,7 +43,7 @@ class DatabaseManager:
     _COLUMNS: Dict[str, List[str]] = {
         "cv_base": [
             "id", "language", "header", "summary", "skills",
-            "experience", "education", "certifications", "projects",
+            "experience", "education", "technical", "certifications", "projects",
             "languages", "interests", "target_titles",
         ],
         "jobs": [
@@ -468,7 +468,9 @@ _LABELS_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
         "experience": r"exp\'{e}riences professionnelles",
         "education": "formation",
         "certifications": "certifications",
-        "projects": r"comp\'{e}tences techniques",
+        #"projects": r"comp\'{e}tences techniques",
+        "projects": r"projets acad\'{e}miques",
+        "keywords": r"Mots-cl\'{e}s",
     },
     "en": {
         "availability": "Availability",
@@ -488,7 +490,8 @@ _LABELS_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
         "experience": "professional experience",
         "education": "education",
         "certifications": "certifications",
-        "projects": "technical skills",
+        "projects": "academic projects",
+        "keywords": "Keywords",
     },
 }
 
@@ -502,6 +505,10 @@ class CVLatexGeneratorBase:
             db_path="/app/db/jobcv.db",
             cv_base_id="cv_base_in_all_fr",
             job_id="<job_uuid>",
+            max_projects="$Max_PROJECTS",
+            max_experiences="$Max_EXPERIENCES",
+            max_competences="$Max_COMPETENCES",
+            max_competences_techniques="$Max_COMPETENCES_TECHNIQUES",
         )
         tex_path, pdf_path = gen.generate()
 
@@ -524,7 +531,7 @@ class CVLatexGeneratorBase:
         max_projects: int = 11,
         max_experiences: int = 8,
         max_competences: int = 7,
-        max_competences_techniques: int = 3,
+        max_competences_techniques: int = 4,
         selected_project_indices: Optional[List[int]] = None,
         selected_experience_indices: Optional[List[int]] = None,
         selected_competence_indices: Optional[List[int]] = None,
@@ -562,7 +569,8 @@ class CVLatexGeneratorBase:
             "experiences": self._normalize_lines(self.cv.get("experience", "")),
             "skills": all_skills,
             "competences": all_skills[:mid],
-            "competences_techniques": all_skills[mid:] if mid > 0 else all_skills,
+            #"competences_techniques": all_skills[mid:] if mid > 0 else all_skills,
+            "competences_techniques": self._normalize_lines(self.cv.get("technical", ""))
         }
 
     # ------------------------------------------------------------------
@@ -581,7 +589,7 @@ class CVLatexGeneratorBase:
         max_projects: int = 11,
         max_experiences: int = 8,
         max_competences: int = 7,
-        max_competences_techniques: int = 3,
+        max_competences_techniques: int = 4,
         selected_project_indices: Optional[List[int]] = None,
         selected_experience_indices: Optional[List[int]] = None,
         selected_competence_indices: Optional[List[int]] = None,
@@ -664,6 +672,13 @@ class CVLatexGeneratorBase:
         return text
 
     @staticmethod
+    def _md_inline(text: str) -> str:
+        """Convert inline markdown bold/italic to LaTeX after _escape() has run."""
+        text = re.sub(r'(?s)\*\*(.+?)\*\*', r'\\textbf{\1}', text)
+        text = re.sub(r'(?s)\*([^*]+?)\*', r'\\textit{\1}', text)
+        return text
+
+    @staticmethod
     def _bullets_to_items(text: str, max_items: int = 0, truncate: bool = False) -> str:
         """Convert '• item1\\n• item2' text into LaTeX \\item lines.
 
@@ -717,9 +732,56 @@ class CVLatexGeneratorBase:
                 lines.append(line)
         return lines
 
+    # Normalisation pour une liste
+    @staticmethod
+    def normalize_keywords(kw : Any):
+        if not kw:
+            return ""
+
+        if isinstance(kw, list):
+            kw = [str(k) for k in kw if k]
+        else:
+            kw = str(kw).split(",")
+
+        # clean + fix line breaks
+        kw = [k.replace("\n", " ").replace("-", "").strip() for k in kw]
+
+        # remove empty + deduplicate light
+        kw = [k for k in kw if k]
+
+        return ", ".join(kw)
+
+    # Filtre pour une liste vide
+    @staticmethod
+    def is_not_empty(val1 : Any, val2 : Any, val3 : Any):
+        return bool(val2.strip()) and bool(val3.strip())
+
+    # Traitement dess coupures des mots dans description 
+    @staticmethod
+    def clean_ocr_text(text: str) -> str:
+        if not text:
+            return ""
+
+        # 1. supprimer césures type "per-\nformance" ou "per-\n formance"
+        text = re.sub(r"-\s*\n\s*", "", text)
+
+        # 2. remplacer retours ligne simples par espace
+        text = re.sub(r"\n+", " ", text)
+
+        # 3. normaliser espaces
+        text = re.sub(r"\s{2,}", " ", text)
+
+        return text.strip()
+
+
     @staticmethod
     def _pick_lines(lines: List[str], max_items: int, selected_indices: Optional[List[int]]) -> List[str]:
-        """Select relevant lines (optional indices), then apply max_items."""
+        """Select relevant lines (optional indices), then apply max_items.
+
+        When selected_indices is provided, it represents an explicit user choice
+        and max_items is not applied — the selection itself is the limit.
+        When selected_indices is None, max_items caps the result.
+        """
         if selected_indices:
             chosen: List[str] = []
             seen: Set[int] = set()
@@ -729,60 +791,84 @@ class CVLatexGeneratorBase:
                 if 0 <= idx < len(lines):
                     chosen.append(lines[idx])
                     seen.add(idx)
-        else:
-            chosen = list(lines)
+            return chosen
 
+        chosen = list(lines)
         if max_items > 0:
             return chosen[:max_items]
         return chosen
 
-    def _education_to_blocks(self, text: str, max_items: int = 0) -> str:
-        """Render serialized education as simple blocks: years + degree, then description.
+    def _filter_text(self, text: str, selected_indices: Optional[List[int]], max_items: int) -> str:
+        """Pre-filter a multiline text field by selected indices and max count."""
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        return "\n".join(self._pick_lines(lines, max_items, selected_indices))
 
-        Expected format per line: 'YYYY - YYYY degree. description'
-        Renders as: line 1 with years + degree, line 2 with description.
+    def _education_to_blocks(self, text: str, max_items: int = 0) -> str:
+        """Render serialized education as simple blocks.
+
+        Expected format per line:
+        'degree | field | school | location | period | description'
+
+        Output:
+        Line 1: period + degree
+        Line 2: field at school (location)
+        Line 3: description
         """
         if not text:
             return "~"
 
         blocks: List[str] = []
+
         for raw_line in text.splitlines():
             line = raw_line.strip()
             if not line:
                 continue
+
+            # Remove bullet if present
             if line.startswith("•"):
                 line = line[1:].strip()
 
-            # Split on ". " separator: header = period+degree, rest = description
-            if ". " in line:
-                header, desc = line.split(". ", 1)
-                header = header.strip() + "."
-                desc = desc.strip()
+            # Parse line
+            parts = line.split("|")
+            if len(parts) >= 6:
+                degree, field, school, location, period, desc = [p.strip() for p in parts[:6]]
             else:
-                header = line if line.endswith(".") else line + "."
-                desc = ""
+                # fallback propre si format incorrect
+                degree = field = school = location = period = desc = ""
 
-            if desc and re.match(r"^Domaines?\s*:\s*", desc, flags=re.IGNORECASE):
-                desc = ""
+            # Build LaTeX strings (strings, pas listes)
+            header = f"{period} {degree}"
+            subline = f"{field} {school} ({location})"
 
-            # Build LaTeX lines
-            year_match = re.match(r"^(\d{4}\s*[-–]\s*\d{4})\s+(.*)$", header)
-            if year_match:
-                escaped_header = self._escape(year_match.group(1) + " : " + year_match.group(2))
-            else:
-                escaped_header = self._escape(header)
-            latex_lines = [r"\noindent " + escaped_header + r" \\"]
-            if desc:
-                escaped_desc = self._escape(desc)
-                latex_lines.append(escaped_desc)
+            # Escape
+            escaped_header = self._escape(header)
+            escaped_subline = self._escape(subline)
+
+            # protection contre les coupures des mots dans desc
+            clean_desc = self.clean_ocr_text(desc)
+            escaped_desc = self._escape(clean_desc)
+
+            # Build LaTeX block
+            latex_lines = [
+                r"\noindent " + escaped_header + r"\\" + "\n"
+                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + escaped_subline
+                + r"}" + "\n" + r"\par",
+                r"\vspace{0.5em}"
+            ]
+            full_latex_lines = []
+            if escaped_desc:
+                full_latex_lines.append(rf"\noindent {escaped_desc}")
 
             block = "\n".join(latex_lines) + "\n\\par"
             blocks.append(block)
 
         if max_items > 0:
             blocks = blocks[:max_items]
-        return "\n\\vspace{0.1ex}\n".join(blocks) if blocks else "~"
 
+        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
+    
+    
     def _output_stem(self) -> str:
         mm_yyyy = self._gen_date.strftime("%m_%Y")
         cv_id   = self.cv.get("id", "cv")
@@ -850,22 +936,21 @@ class CVLatexGeneratorBase:
             3 = Data Analyst
             …
         """
-        raw_targets = self.job.get("job_title") or self.cv.get("target_titles") or ""
-        targets = self._normalize_lines(raw_targets.replace(";", "\n"))
-
         idx = self._target_title_index
         if idx is not None:
-            # Candidature spontanée forcée via code 1-based.
+            # Explicit index → always pick from cv_base.target_titles (1-based).
+            cv_targets = self._normalize_lines((self.cv.get("target_titles") or "").replace(";", "\n"))
             normalized_idx = idx - 1
-            title = targets[normalized_idx] if 0 <= normalized_idx < len(targets) else (targets[0] if targets else "")
+            title = cv_targets[normalized_idx] if 0 <= normalized_idx < len(cv_targets) else (cv_targets[0] if cv_targets else "")
         else:
-            # Auto : offre si dispo, sinon premier titre spontané
+            # Auto: use offer job_title if set, else first cv_base.target_titles entry.
             title = (self.job.get("job_title") or "").strip()
             if not title:
-                title = targets[0] if targets else ""
+                cv_targets = self._normalize_lines((self.cv.get("target_titles") or "").replace(";", "\n"))
+                title = cv_targets[0] if cv_targets else ""
 
         # Les titres spontanés sont stockés avec un préfixe numérique "01 ",
-        # mais ce code ne doit pas apparaître sur le CV final.
+        # mais ce code ne fait pas apparaître sur le CV final.
         title = re.sub(r"^\d{2}\s+", "", title).strip()
 
         if not title:
@@ -874,7 +959,7 @@ class CVLatexGeneratorBase:
             r"\headleft{" + self._label("target_position") + r"}" "\n"
             r"\begin{center}" "\n"
             r"\vspace*{0.3ex}" "\n"
-            r"{\Large\bfseries\color{white}" + self._escape(title) + r"}\\[2pt]" "\n"
+            r"{\bfseries\color{white}" + self._escape(title) + r"}\\[0.5pt]" "\n"
             r"\normalsize" "\n"
             r"\end{center}" "\n"
         )
@@ -940,13 +1025,17 @@ class CVLatexGeneratorBase:
             + (f" ({loc})" if loc else "") + "\n"
         )
 
+    # ----------------------------------------------------------------
+    # Skills/competences sections : Not used
+    # ----------------------------------------------------------------
     def _section_competences(self) -> str:
         lines = self._pick_lines(
             self.section_lines.get("competences", []),
             self.max_competences,
             self.selected_competence_indices,
         )
-        items = "\n".join(r"\item " + l for l in lines) if lines else r"\item ~"
+        escaped_lines = [self._escape(line) for line in lines]
+        items = "\n".join(r"\item " + l for l in escaped_lines) if escaped_lines else r"\item ~"
         return (
             r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("skills") + r"}}}" "\n"
             r"{\footnotesize\begin{itemize}" "\n"
@@ -959,78 +1048,146 @@ class CVLatexGeneratorBase:
             r"\end{itemize}}" "\n"
         )
 
+
+    # ----------------------------------------------------------------
+    # Technical skills section : Used
+    # ----------------------------------------------------------------
+
+    def _competences_techniques_to_block(self, text: str, max_items: int = 0) -> str:
+        """Render serialized competences techniques as simple blocks.
+
+        Expected format per line:
+        'field : description'
+
+        Output:
+        Line 1: field1 : description1
+        Line 2: field2 : description2
+        """
+        if not text:
+            return "~"
+
+        blocks: List[str] = []
+
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            # Remove bullet if present
+            if line.startswith("•"):
+                line = line[1:].strip()
+
+            # Parse line
+            parts = line.split(":")
+            if len(parts) >= 2:
+                field, desc = [p.strip() for p in parts[:2]]
+            else:
+                # fallback propre si format incorrect
+                field = desc = ""
+
+            # Build LaTeX strings (strings, pas listes)
+            header = f"{field} : "
+            subline = f"{desc}"
+
+            # Escape
+            escaped_header = self._escape(header)
+            escaped_subline = self._escape(subline)
+
+
+            # Build LaTeX block
+            latex_lines = [
+                r"\noindent " + escaped_header + r"\\" + "\n"
+                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + escaped_subline
+                + r"}" + "\n" + r"\par"
+            ]
+
+            block = "\n".join(latex_lines) + "\n\\par"
+            blocks.append(block)
+
+        if max_items > 0:
+            blocks = blocks[:max_items]
+
+        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
+
     def _section_competences_techniques(self) -> str:
-        lines = self._pick_lines(
-            self.section_lines.get("competences_techniques", []),
-            self.max_competences_techniques,
-            self.selected_competence_technique_indices,
-        )
-        items = "\n".join(r"\item " + l for l in lines) if lines else r"\item ~"
+        text = self._filter_text(self.cv.get("technical", ""), self.selected_competence_technique_indices, self.max_competences_techniques)
+        blocks = self._competences_techniques_to_block(text, max_items=0)
         return (
             r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("technical_skills") + r"}}}" "\n"
-            r"{\footnotesize\begin{itemize}" "\n"
-            r"\setlength{\itemsep}{1pt}" "\n"
-            r"\setlength{\parsep}{0pt}" "\n"
-            r"\setlength{\topsep}{0pt}" "\n"
-            r"\setlength{\partopsep}{1pt}" "\n"
-            r"\setlength{\leftmargini}{6mm}" "\n"
-            + items + "\n"
-            r"\end{itemize}}" "\n"
+            r"{\footnotesize" "\n"
+            + blocks + "\n"
+            r"}" "\n"
         )
 
     # ----------------------------------------------------------------
     # Experience formatter
     # ----------------------------------------------------------------
 
-    @staticmethod
-    def _experience_to_blocks(lines: List[str]) -> str:
+    def _experience_to_blocks(self, text: str, max_items: int = 0) -> str:
         """
-        Parse each experience line of the form:
-          role - company (location), start – end. description
-                and format as two-line blocks:
-                    start – end : role - company\\
-          description
-                Falls back to a plain block if the line doesn't match.
+            Render serialized experience as simple blocks.
+            Expected format per line:
+            'role | realisation | company | location | period | description'
+            Output:
+            Line 1: period : realisation company (location)
+            Line 2: description, indented with a fixed left margin
         """
-        _PAT = re.compile(
-            r"^(.*) - ([^(]+?) \(([^)]+)\), (.+?) \u2013 (.+?)\. (.+)$",
-            re.DOTALL,
-        )
+        if not text:
+            return "~"
         blocks: List[str] = []
-        for line in lines:
-            m = _PAT.match(line)
-            if m:
-                role, company, _loc, start, end, description = m.groups()
-                start = CVLatexGeneratorBase._escape(start.strip())
-                end = CVLatexGeneratorBase._escape(end.strip())
-                role = CVLatexGeneratorBase._escape(role.strip())
-                company = CVLatexGeneratorBase._escape(company.strip())
-                description = CVLatexGeneratorBase._escape(description.strip())
-                header = f"{start} \u2013 {end} : {role} - {company}"
-                blocks.append(
-                    r"\noindent " + header + r"\\" + "\n"
-                    + r"\noindent\hspace*{25mm}\parbox[t]{\dimexpr\linewidth-25mm\relax}{"
-                    + description
-                    + r"}" + "\n" + r"\par"
-                )
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            # Remove bullet if present
+            if line.startswith("•"):
+                line = line[1:].strip()
+            # Parse line
+            parts = line.split("|")
+            if len(parts) >= 6:
+                role, realisation, company, loc, period, desc = [p.strip() for p in parts[:6]]
             else:
-                blocks.append(r"\noindent " + CVLatexGeneratorBase._escape(line) + "\n" + r"\par")
-        return "\n" + r"\vspace{1ex}" + "\n".join(blocks) if len(blocks) == 1 else ("\n" + r"\vspace{1ex}" + "\n").join(blocks) if blocks else r"~"
+                # fallback propre si format incorrect
+                role = realisation = company = loc = period = desc = ""
+
+            # Escape 
+            escaped_realisation = CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(realisation.strip()))
+            
+            # Protection contre les coupures de mots dans desc
+            clean_desc = self.clean_ocr_text(desc)
+            escaped_desc =  CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(clean_desc.strip()))
+            
+            escaped_header = f"{period} : {escaped_realisation} {company} ({loc})"
+            
+            
+            escaped_subline = f"{escaped_desc}"
+
+            # Build LaTeX block
+            latex_lines = [
+                r"\noindent " + escaped_header + r"\\" + "\n"
+                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + escaped_subline
+                + r"}" + "\n" + r"\par",
+                r"\vspace{1em}"
+            ]
+            block = "\n".join(latex_lines) + "\n\\par"
+            blocks.append(block)
+
+        if max_items > 0:
+            blocks = blocks[:max_items]
+        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
 
     def _section_experiences(self) -> str:
-        lines = self._pick_lines(
-            self.section_lines.get("experiences", []),
-            self.max_experiences,
-            self.selected_experience_indices,
-        )
-        #blocks = self._experience_to_blocks(lines)
-        blocks = self._project_to_blocks(lines)
+        text = self._filter_text(self.cv.get("experience", ""), self.selected_experience_indices, self.max_experiences)
+        blocks = self._experience_to_blocks(text, max_items=0)
         return (
             r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("experience") + r"}}}" "\n"
             r"{\footnotesize" "\n"
             + blocks + "\n"
             r"}" "\n"
         )
+
 
     def _section_formations(self) -> str:
         blocks = self._education_to_blocks(self.cv.get("education", ""), max_items=4)
@@ -1050,42 +1207,67 @@ class CVLatexGeneratorBase:
             r"}" "\n"
         )
 
-    @staticmethod
-    def _project_to_blocks(lines: List[str]) -> str:
+
+    def _project_to_blocks(self, text: str, max_items: int = 0) -> str:
         """
         Render project lines as two-line blocks, similar to experiences:
           line 1: project header (or full line if no description split)
           line 2: description, indented with a fixed left margin
         """
+        if not text:
+                return "~"
         blocks: List[str] = []
-        for raw in lines:
-            line = raw.strip()
+
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
             if not line:
                 continue
-
-            # Prefer splitting on first sentence separator to isolate description.
-            if ". " in line:
-                header, desc = line.split(". ", 1)
-                header = CVLatexGeneratorBase._escape(header.strip() + ".")
-                desc = CVLatexGeneratorBase._escape(desc.strip())
-                blocks.append(
-                    r"\noindent " + header + r"\\" + "\n"
-                    + r"\noindent\hspace*{25mm}\parbox[t]{\dimexpr\linewidth-25mm\relax}{"
-                    + desc
-                    + r"}" + "\n" + r"\par"
-                )
+            # Remove bullet if present
+            if line.startswith("•"):
+                line = line[1:].strip()
+            # Parse line
+            parts = line.split("|")
+            if len(parts) >= 5:
+                ref, title, mots_cles, period, desc = [p.strip() for p in parts[:5]]
             else:
-                blocks.append(r"\noindent " + CVLatexGeneratorBase._escape(line) + "\n" + r"\par")
+                # fallback propre si format incorrect
+                ref = title = mots_cles = period = desc = ""
+            if not self.is_not_empty(ref, title, desc):
+                continue
+            # Escape 
+            clean_mots_cles = self.normalize_keywords(mots_cles)
 
-        return "\n" + r"\vspace{1ex}" + "\n".join(blocks) if len(blocks) == 1 else ("\n" + r"\vspace{1ex}" + "\n").join(blocks) if blocks else r"~"
+            escaped_title = CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(title.strip()))
+            
+            # Protection contre les coupures de mots dans desc
+            clean_desc = self.clean_ocr_text(desc)
+            escaped_desc =  CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(clean_desc.strip()))
+            escaped_mots_cles =  CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(clean_mots_cles.strip()))
+            
+            escaped_header = f"{escaped_title} : "
+            escaped_subline = f"{escaped_desc}"
+            escaped_sub_subline = f"{escaped_mots_cles}"
+
+            # Build LaTeX block
+            latex_lines = [
+                r"\noindent " + escaped_header + r"\\",
+                r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + (escaped_subline or "") + r"}\\",
+                r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + self._label("keywords") + " : " + (escaped_sub_subline or "") + r"}",
+                r"\vspace{0.1em}"
+            ]
+            block = "\n".join(latex_lines) + "\n\\par"
+            blocks.append(block)
+
+        if max_items > 0:
+            blocks = blocks[:max_items]
+        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
 
     def _section_projets(self) -> str:
-        lines = self._pick_lines(
-            self.section_lines.get("projects", []),
-            self.max_projects,
-            self.selected_project_indices,
-        )
-        blocks = self._project_to_blocks(lines)
+        text = self._filter_text(self.cv.get("projects", ""), self.selected_project_indices, self.max_projects)
+        blocks = self._project_to_blocks(text, max_items=0)
+        
         return (
             r"\headright{\Large\bfseries{\MakeUppercase{" + self._label("projects") + r"}}}" "\n"
             r"{\footnotesize" "\n"

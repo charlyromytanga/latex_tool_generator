@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# Automatisation de l'appel des orchestrateurs pour l'insertion des données
+
+set -e
+
+# Répertoire racine du dépôt
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Expose REPO_ROOT to child processes (and to sudo via --preserve-env)
+export REPO_ROOT
+
+# Exporte PYTHONPATH vers la racine pour que le package `shared` soit importable
+export PYTHONPATH="$REPO_ROOT"
+export DATABASE_URL="sqlite:///${REPO_ROOT}/backend/db/jobcv.db"
+
+# Appel orchestrateur cv_base
+python3 shared/db_orchestration/cv_base_ingestor.py --db-path backend/db/jobcv.db
+
+# Ingestion des offres depuis docs/offers
+OFFERS_DIR="$REPO_ROOT/docs/offers"
+# s'assurer que le dossier existe
+mkdir -p "$OFFERS_DIR"
+# Donner la propriété et les droits au user courant pour écriture (A)
+sudo --preserve-env=REPO_ROOT chown -R "$(whoami)":"$(whoami)" "$OFFERS_DIR" || true
+sudo --preserve-env=REPO_ROOT chmod -R u+rw "$OFFERS_DIR" || true
+if [ -d "$OFFERS_DIR" ]; then
+    RESULTS_FILE="$REPO_ROOT/.offers_ingest_results.tmp"
+    : > "$RESULTS_FILE"
+    for f in "$OFFERS_DIR"/*.{json,md}; do
+        [ -e "$f" ] || continue
+        echo "Processing offer file: $f"
+        if [[ "$f" == *.json ]]; then
+            OUT=$(sudo --preserve-env=PYTHONPATH,DATABASE_URL,REPO_ROOT "$REPO_ROOT"/.venv/bin/python3 - "$f" <<PY
+import os, pathlib, sys, json
+from shared.db_orchestration.ingest import OrchestrationConfig, OfferIngestionOrchestrator
+root = pathlib.Path(os.environ['REPO_ROOT'])
+config = OrchestrationConfig.from_repo_root(root)
+o = OfferIngestionOrchestrator(config)
+res = o.run_from_file(pathlib.Path(sys.argv[1]))
+print(json.dumps(res, ensure_ascii=False))
+PY
+)
+            echo "$OUT" >> "$RESULTS_FILE"
+        else
+            OUT=$(sudo --preserve-env=PYTHONPATH,DATABASE_URL,REPO_ROOT "$REPO_ROOT"/.venv/bin/python3 -m shared.db_orchestration.ingest "$f")
+            echo "$OUT" >> "$RESULTS_FILE"
+        fi
+    done
+    if [ -s "$RESULTS_FILE" ]; then
+        cat "$RESULTS_FILE" | "$REPO_ROOT"/.venv/bin/python3 - <<PY
+import json,sys
+arr=[json.loads(line) for line in sys.stdin if line.strip()]
+print(json.dumps(arr, ensure_ascii=False, indent=2))
+PY
+    fi
+    rm -f "$RESULTS_FILE"
+fi
+#!/usr/bin/env bash
+# Automatisation de l'appel des orchestrateurs pour l'insertion des données
+
+set -e
+
+# Répertoire racine du dépôt
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Expose REPO_ROOT to child processes (and to sudo via --preserve-env)
+export REPO_ROOT
+
+# Exporte PYTHONPATH vers la racine pour que le package `shared` soit importable
+export PYTHONPATH="$REPO_ROOT"
+export DATABASE_URL="sqlite:///${REPO_ROOT}/backend/db/jobcv.db"
+
+# Appel orchestrateur cv_base
+python3 shared/db_orchestration/cv_base_ingestor.py --db-path backend/db/jobcv.db
+
+# Ingestion des offres depuis docs/offers
+OFFERS_DIR="$REPO_ROOT/docs/offers"
+# s'assurer que le dossier existe
+mkdir -p "$OFFERS_DIR"
+# Donner la propriété et les droits au user courant pour écriture (A)
+sudo --preserve-env=REPO_ROOT chown -R "$(whoami)":"$(whoami)" "$OFFERS_DIR" || true
+sudo --preserve-env=REPO_ROOT chmod -R u+rw "$OFFERS_DIR" || true
+if [ -d "$OFFERS_DIR" ]; then
+	RESULTS_FILE="$REPO_ROOT/.offers_ingest_results.tmp"
+	: > "$RESULTS_FILE"
+	for f in "$OFFERS_DIR"/*.{json,md}; do
+		[ -e "$f" ] || continue
+		echo "Processing offer file: $f"
+		if [[ "$f" == *.json ]]; then
+			OUT=$(sudo --preserve-env=PYTHONPATH,DATABASE_URL,REPO_ROOT "$REPO_ROOT"/.venv/bin/python3 - "$f" <<PY
+import os, pathlib, sys, json
+from shared.db_orchestration.ingest import OrchestrationConfig, OfferIngestionOrchestrator
+root = pathlib.Path(os.environ['REPO_ROOT'])
+config = OrchestrationConfig.from_repo_root(root)
+o = OfferIngestionOrchestrator(config)
+res = o.run_from_file(pathlib.Path(sys.argv[1]))
+print(json.dumps(res, ensure_ascii=False))
+PY
+)
+	echo "$OUT" >> "$RESULTS_FILE"
+		else
+			OUT=$(sudo --preserve-env=PYTHONPATH,DATABASE_URL,REPO_ROOT "$REPO_ROOT"/.venv/bin/python3 -m shared.db_orchestration.ingest "$f")
+			echo "$OUT" >> "$RESULTS_FILE"
+		fi
+	done
+	if [ -s "$RESULTS_FILE" ]; then
+		"$REPO_ROOT"/.venv/bin/python3 - <<PY
+import json,sys
+with open(sys.argv[1], 'r', encoding='utf-8') as fh:
+	arr=[json.loads(line) for line in fh if line.strip()]
+	print(json.dumps(arr, ensure_ascii=False, indent=2))
+PY
+	fi
+	rm -f "$RESULTS_FILE"
+fi

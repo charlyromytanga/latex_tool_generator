@@ -108,6 +108,7 @@ def generate_cv(
     target_title_index: int = 0,
     selected_experience_indices: list[int] | None = None,
     selected_project_indices: list[int] | None = None,
+    selected_competence_technique_indices: list[int] | None = None,
     max_projects: int | None = None,
     max_experiences: int | None = None,
 ) -> dict:
@@ -123,6 +124,8 @@ def generate_cv(
         payload["selected_experience_indices"] = selected_experience_indices
     if selected_project_indices is not None:
         payload["selected_project_indices"] = selected_project_indices
+    if selected_competence_technique_indices is not None:
+        payload["selected_competence_technique_indices"] = selected_competence_technique_indices
     if max_projects is not None:
         payload["max_projects"] = max_projects
     if max_experiences is not None:

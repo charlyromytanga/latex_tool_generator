@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .config import OrchestrationConfig
-from .ingest import OfferIngestionOrchestrator
+from .jobs_ingestor import JobsIngestionOrchestrator
 from .llm_extractors import OfferLLMOrchestrator
 
 
@@ -20,7 +20,7 @@ class OfferPipelineOrchestrator:
 
     def __init__(self, config: OrchestrationConfig) -> None:
         self.config = config
-        self.ingest = OfferIngestionOrchestrator(config)
+        self.ingest = JobsIngestionOrchestrator(config)
         self.llm = OfferLLMOrchestrator(config)
 
     def process_offer(self, offer_path: Path) -> dict[str, Any]:

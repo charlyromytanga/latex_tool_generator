@@ -7,9 +7,9 @@ import logging
 from typing import Callable, Any, Dict, List, Optional
 from frontend.app.services import ApiClientError
 from frontend.app.domain.tab_service import TabService
-from shared.db_orchestration.ingest import OfferIngestionOrchestrator
+from shared.db_orchestration.jobs_ingestor import JobsIngestionOrchestrator
 from shared.db_orchestration.config import OrchestrationConfig, LLMConfig
-from shared.db_orchestration.ingest import OfferSourceReader
+from shared.db_orchestration.jobs_ingestor import OfferSourceReader
 from shared.db_orchestration.database import Database, normalize_database_url
 from pathlib import Path
 from typing import Optional

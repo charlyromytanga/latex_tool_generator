@@ -11,11 +11,12 @@ CREATE TABLE IF NOT EXISTS cv_base (
     skills TEXT,
     experience TEXT,
     education TEXT,
+    technical TEXT,
     certifications TEXT,
     projects TEXT,
     languages TEXT,
     interests TEXT,
-    target_title TEXT
+    target_titles TEXT
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -53,6 +54,7 @@ CREATE TABLE IF NOT EXISTS cv_applications (
     skills TEXT,
     experience TEXT,
     education TEXT,
+    technical TEXT,
     certifications TEXT,
     projects TEXT,
     languages TEXT,

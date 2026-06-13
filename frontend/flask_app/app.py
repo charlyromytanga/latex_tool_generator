@@ -89,6 +89,7 @@ def _format_cv_base_record_for_display(record: dict) -> dict:
 def _build_generate_options(cv_record: dict) -> dict:
     experiences = _normalize_lines(cv_record.get("experience"))
     projects = _normalize_lines(cv_record.get("projects"))
+    technical = _normalize_lines(cv_record.get("technical"))
 
     def _pack(lines: list[str]) -> list[dict]:
         return [
@@ -98,7 +99,8 @@ def _build_generate_options(cv_record: dict) -> dict:
 
     return {
         "experiences": _pack(experiences),
-        "competences_techniques": _pack(projects),
+        "projects": _pack(projects),
+        "competences_techniques": _pack(technical),
     }
 
 
@@ -283,6 +285,10 @@ def generate_api():
         "selected_experience_indices",
     )
     selected_project_indices = _parse_optional_index_list(
+        body.get("selected_project_indices"),
+        "selected_project_indices",
+    )
+    selected_competence_technique_indices = _parse_optional_index_list(
         body.get("selected_competence_technique_indices"),
         "selected_competence_technique_indices",
     )
@@ -303,6 +309,7 @@ def generate_api():
             target_title_index=target_title_index,
             selected_experience_indices=selected_experience_indices,
             selected_project_indices=selected_project_indices,
+            selected_competence_technique_indices=selected_competence_technique_indices,
             max_projects=0,
             max_experiences=0,
         )

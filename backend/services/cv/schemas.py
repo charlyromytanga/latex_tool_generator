@@ -135,6 +135,7 @@ class CVGenerateFRSchema:
         "max_experiences",
         "selected_project_indices",
         "selected_experience_indices",
+        "selected_competence_technique_indices",
     ]
 
     @staticmethod
@@ -153,7 +154,11 @@ class CVGenerateFRSchema:
             if isinstance(value, int) and value < 0:
                 raise ValueError(f"'{field}' doit être un entier >= 0.")
 
-        for field in ("selected_project_indices", "selected_experience_indices"):
+        for field in (
+            "selected_project_indices",
+            "selected_experience_indices",
+            "selected_competence_technique_indices",
+        ):
             value = data.get(field)
             if value is None:
                 continue

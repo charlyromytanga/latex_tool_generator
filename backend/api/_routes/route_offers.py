@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from backend.api._run.common import LOGGER, api_error, get_config, get_database, repo_root, safe_json_loads
 from backend.api._run.engine_offer import OfferCreateRequest, OfferDetailsResponse
-from shared.db_orchestration.ingest import OfferIngestionOrchestrator
+from shared.db_orchestration.jobs_ingestor import JobsIngestionOrchestrator
 
 from backend.api._run.common import api_error, get_config, get_database
 
@@ -29,7 +29,7 @@ def create_offer(payload: OfferCreateRequest) -> OfferDetailsResponse:
         temp_offer_path.write_text(payload.offer_input, encoding="utf-8")
 
         config = get_config()
-        orchestrator = OfferIngestionOrchestrator(config)
+        orchestrator = JobsIngestionOrchestrator(config)
         result: Dict[str, object] = orchestrator.run_from_payload(
             payload.offer_input,
             payload.company,

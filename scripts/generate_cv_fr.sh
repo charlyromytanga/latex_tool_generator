@@ -21,6 +21,9 @@ gen = CVLatexGeneratorFR.from_db(
     db_path="$DB_PATH",
     cv_base_id="$CV_BASE_ID",
     job_id="$JOB_ID",
+    max_experiences=3,
+    max_projects=2,
+    max_competences_techniques=5,
 )
 tex_path, pdf_path = gen.generate()
 print(f"TEX: {tex_path}")
