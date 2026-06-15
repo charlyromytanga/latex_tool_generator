@@ -36,7 +36,7 @@ def _read_sqlite(db_path: str) -> dict[str, list[dict]]:
     return data
 
 
-def _push_to_supabase(data: dict[str, list[dict]], dry_run: bool) -> None:
+def _push_to_supabase(data: dict[str, list[dict]], dry_run: bool, upsert: bool = False) -> None:
     db_url = os.environ.get("DATABASE_URL", "")
     if not db_url or db_url.startswith("sqlite"):
         print("ERREUR : DATABASE_URL ne pointe pas vers Supabase.")
@@ -67,6 +67,7 @@ def _push_to_supabase(data: dict[str, list[dict]], dry_run: bool) -> None:
         db.create_all()
 
         total_inserted = 0
+        total_updated = 0
         total_skipped = 0
 
         for table in TABLES:
@@ -77,30 +78,46 @@ def _push_to_supabase(data: dict[str, list[dict]], dry_run: bool) -> None:
 
             model_cls = MODEL_MAP[table]
             inserted = 0
+            updated = 0
             skipped = 0
 
             for row in rows:
                 record_id = row.get("id")
                 existing = db.session.get(model_cls, record_id)
                 if existing:
-                    skipped += 1
-                    continue
-                if dry_run:
-                    print(f"  [DRY-RUN] {table}: insérerait id={record_id}")
+                    if not upsert:
+                        skipped += 1
+                        continue
+                    if dry_run:
+                        print(f"  [DRY-RUN] {table}: mettrait à jour id={record_id}")
+                        updated += 1
+                        continue
+                    for k, v in row.items():
+                        if hasattr(existing, k) and k != "id":
+                            setattr(existing, k, v)
+                    updated += 1
+                else:
+                    if dry_run:
+                        print(f"  [DRY-RUN] {table}: insérerait id={record_id}")
+                        inserted += 1
+                        continue
+                    obj = model_cls(**{k: v for k, v in row.items() if hasattr(model_cls, k)})
+                    db.session.add(obj)
                     inserted += 1
-                    continue
-                obj = model_cls(**{k: v for k, v in row.items() if hasattr(model_cls, k)})
-                db.session.add(obj)
-                inserted += 1
 
-            if not dry_run and inserted > 0:
+            if not dry_run and (inserted > 0 or updated > 0):
                 db.session.commit()
 
-            print(f"  {table}: {inserted} insérés, {skipped} déjà présents")
+            parts = []
+            if inserted: parts.append(f"{inserted} insérés")
+            if updated:  parts.append(f"{updated} mis à jour")
+            if skipped:  parts.append(f"{skipped} ignorés")
+            print(f"  {table}: {', '.join(parts) if parts else 'aucun changement'}")
             total_inserted += inserted
+            total_updated += updated
             total_skipped += skipped
 
-        print(f"\nTotal : {total_inserted} insérés, {total_skipped} ignorés (déjà dans Supabase)")
+        print(f"\nTotal : {total_inserted} insérés, {total_updated} mis à jour, {total_skipped} ignorés")
 
 
 def main():
@@ -109,6 +126,8 @@ def main():
                         help="Chemin vers jobcv.db (défaut: backend/db/jobcv.db)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Affiche ce qui serait migré sans écrire dans Supabase")
+    parser.add_argument("--upsert", action="store_true",
+                        help="Met à jour les enregistrements déjà présents dans Supabase")
     args = parser.parse_args()
 
     if not Path(args.db).exists():
@@ -117,17 +136,15 @@ def main():
 
     print(f"Source SQLite : {args.db}")
     print(f"Destination   : {os.environ.get('DATABASE_URL', '')[:60]}...")
-    if args.dry_run:
-        print("Mode         : DRY-RUN (aucune écriture)\n")
-    else:
-        print()
+    mode = "DRY-RUN" if args.dry_run else ("UPSERT" if args.upsert else "INSERT ONLY")
+    print(f"Mode          : {mode}\n")
 
     data = _read_sqlite(args.db)
     for table, rows in data.items():
         print(f"  Lu {len(rows):>3} ligne(s) depuis {table}")
     print()
 
-    _push_to_supabase(data, dry_run=args.dry_run)
+    _push_to_supabase(data, dry_run=args.dry_run, upsert=args.upsert)
 
 
 if __name__ == "__main__":

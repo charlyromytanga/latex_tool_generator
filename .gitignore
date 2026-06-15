@@ -89,3 +89,5 @@ pytest.init
 Dockerfile copy
 
 # Autres 
+shared/service_cv_latex/templates/_col_gauche/main_fr_v0
+shared/service_cv_latex/templates/_col_gauche/main_fr_v1
