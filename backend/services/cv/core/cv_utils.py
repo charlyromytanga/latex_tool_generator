@@ -1055,7 +1055,7 @@ class CVLatexGeneratorBase:
         snippets = []
         for line in lines:
             parts = [p.strip() for p in line.split(",") if p.strip()]
-            snippet = ", ".join(parts[:2])
+            snippet = ", ".join(parts[:2]) # Keep up to 2 parts
             snippets.append(self._escape(snippet))
         content = r" \\[0.5ex]" "\n".join(snippets) if snippets else "~"
         return (
@@ -1136,6 +1136,7 @@ class CVLatexGeneratorBase:
     # ----------------------------------------------------------------
     # Technical skills section : Used
     # ----------------------------------------------------------------
+
 
     def _competences_techniques_to_block(self, text: str, max_items: int = 0) -> str:
         """Render serialized competences techniques as simple blocks.
@@ -1229,31 +1230,33 @@ class CVLatexGeneratorBase:
                 line = line[1:].strip()
             # Parse line
             parts = line.split("|")
-            if len(parts) >= 6:
-                role, realisation, company, loc, period, desc = [p.strip() for p in parts[:6]]
+            if len(parts) >= 7:
+                role, realisation, company, loc, period, desc, mots_cles  = [p.strip() for p in parts[:7]]
             else:
                 # fallback propre si format incorrect
-                role = realisation = company = loc = period = desc = ""
+                role = realisation = company = loc = period = desc = mots_cles = ""
 
             # Escape 
+            clean_mots_cles = self.normalize_keywords(mots_cles)
             escaped_realisation = CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(realisation.strip()))
             
             # Protection contre les coupures de mots dans desc
             clean_desc = self.clean_ocr_text(desc)
             escaped_desc =  CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(clean_desc.strip()))
-            
+            escaped_mots_cles =  CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(clean_mots_cles.strip()))
+
             escaped_header = f"{period} : {escaped_realisation} {company} ({loc})"
             
-            
             escaped_subline = f"{escaped_desc}"
-
+            escaped_sub_subline = f"{escaped_mots_cles}"
             # Build LaTeX block
             latex_lines = [
-                r"\noindent " + escaped_header + r"\\" + "\n"
-                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
-                + escaped_subline
-                + r"}" + "\n" + r"\par",
-                r"\vspace{1em}"
+                r"\noindent " + escaped_header + r"\\",
+                r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + (escaped_subline or "") + r"}\\",
+                r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + self._label("keywords") + " : " + (escaped_sub_subline or "") + r"}",
+                r"\vspace{0.1em}"
             ]
             block = "\n".join(latex_lines) + "\n\\par"
             blocks.append(block)
