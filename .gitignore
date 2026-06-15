@@ -85,3 +85,7 @@ backend/latex_tool_generator_.egg-info/
 # Python test output
 pytest.init
 
+# Configuration docker
+Dockerfile copy
+
+# Autres 

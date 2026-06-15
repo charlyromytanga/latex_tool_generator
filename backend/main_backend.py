@@ -232,6 +232,10 @@ def _create_app() -> Flask:
     if db_url.startswith("sqlite:///") and not db_url.startswith("sqlite:////"):
         db_path = os.path.abspath(db_url[len("sqlite:///"):])
         db_url = f"sqlite:///{db_path}"
+    # psycopg3 requires the +psycopg dialect prefix; Supabase URLs omit it
+    if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 
     secret_key = os.environ.get("SECRET_KEY")
