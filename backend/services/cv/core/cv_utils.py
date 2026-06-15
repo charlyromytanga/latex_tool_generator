@@ -1078,7 +1078,7 @@ class CVLatexGeneratorBase:
         line2 = ", ".join(parts[2:4]) if len(parts) >= 3 else ""
         content = self._escape(line1)
         if line2:
-            content += r" \\[0.4ex]" "\n" + self._escape(line2)
+            content += r"," " \\[0.4ex]" "\n" + self._escape(line2)
         return (
             r"\headleft{" + self._label("interests") + r"}" "\n"
             r"\small " + content + "\n"

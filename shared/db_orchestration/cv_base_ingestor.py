@@ -67,7 +67,13 @@ def _serialize_experience(data: List[Dict[str, Any]]) -> str:
         loc     = exp.get("location", "")
         period   = exp.get("periode", "")
         desc    = exp.get("description", "")
-        header_parts = [part for part in (role, realisation, company, loc, period, desc) if part]
+        mots_cles = exp.get("mots-cles", exp.get("Mots-clés", []))
+        
+        # Conversion lite en string
+        if isinstance(mots_cles, list):
+            mots_cles = ", ".join(mots_cles)    
+        
+        header_parts = [part for part in (role, realisation, company, loc, period, desc, mots_cles) if part]
         header = " | ".join(header_parts)
         lines.append(header)
     return "\n".join(lines)
