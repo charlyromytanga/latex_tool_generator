@@ -14,6 +14,32 @@ try:
 except ImportError:
     db = CVBase = Jobs = CVApplications = Applications = None  # type: ignore
 
+
+def _get_flask_db():
+    """Returns the Flask-SQLAlchemy db object if inside a Flask app context, else None."""
+    if db is None or CVBase is None:
+        return None
+    try:
+        from flask import current_app
+        current_app._get_current_object()
+        return db
+    except (RuntimeError, ImportError):
+        return None
+
+
+_MODEL_MAP: Dict[str, Any] = {}
+
+
+def _model_map() -> Dict[str, Any]:
+    if CVBase is not None and not _MODEL_MAP:
+        _MODEL_MAP.update({
+            "cv_base": CVBase,
+            "jobs": Jobs,
+            "cv_applications": CVApplications,
+            "applications": Applications,
+        })
+    return _MODEL_MAP
+
 import logging
 from dotenv import load_dotenv
 load_dotenv()
@@ -64,10 +90,15 @@ class DatabaseManager:
 
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self._sa = _get_flask_db()
 
     # ------------------------------------------------------------------
-    # Helpers internes
+    # Helpers internes — SQLAlchemy (Flask/Supabase) ou SQLite (CLI)
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _obj_to_dict(obj: Any) -> Dict[str, Any]:
+        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -79,7 +110,18 @@ class DatabaseManager:
         return dict(row) if row else None
 
     def _upsert(self, table: str, data: Dict[str, Any]) -> None:
-        """INSERT OR REPLACE into table with the given data dict."""
+        if self._sa is not None:
+            model_cls = _model_map()[table]
+            existing = self._sa.session.get(model_cls, data.get("id"))
+            if existing:
+                for k, v in data.items():
+                    if hasattr(existing, k):
+                        setattr(existing, k, v)
+            else:
+                obj = model_cls(**{k: v for k, v in data.items() if hasattr(model_cls, k)})
+                self._sa.session.add(obj)
+            self._sa.session.commit()
+            return
         cols = [c for c in self._COLUMNS[table] if c in data]
         if not cols:
             raise ValueError(f"Aucune colonne valide fournie pour la table '{table}'")
@@ -91,7 +133,16 @@ class DatabaseManager:
             conn.execute(sql, values)
 
     def _update(self, table: str, record_id: str, **fields: Any) -> int:
-        """UPDATE table SET field=value, ... WHERE id=record_id. Returns rowcount."""
+        if self._sa is not None:
+            model_cls = _model_map()[table]
+            obj = self._sa.session.get(model_cls, record_id)
+            if not obj:
+                return 0
+            for k, v in fields.items():
+                if hasattr(obj, k) and k != "id":
+                    setattr(obj, k, v)
+            self._sa.session.commit()
+            return 1
         valid = {k: v for k, v in fields.items() if k in self._COLUMNS[table] and k != "id"}
         if not valid:
             raise ValueError(f"Aucun champ valide à mettre à jour dans '{table}'")
@@ -103,16 +154,33 @@ class DatabaseManager:
             return cur.rowcount
 
     def _get(self, table: str, record_id: str) -> Optional[Dict[str, Any]]:
+        if self._sa is not None:
+            obj = self._sa.session.get(_model_map()[table], record_id)
+            return self._obj_to_dict(obj) if obj else None
         with self._connect() as conn:
             cur = conn.execute(f"SELECT * FROM {table} WHERE id = ?", (record_id,))
             return self._row_to_dict(cur.fetchone())
 
     def _delete(self, table: str, record_id: str) -> int:
+        if self._sa is not None:
+            obj = self._sa.session.get(_model_map()[table], record_id)
+            if not obj:
+                return 0
+            self._sa.session.delete(obj)
+            self._sa.session.commit()
+            return 1
         with self._connect() as conn:
             cur = conn.execute(f"DELETE FROM {table} WHERE id = ?", (record_id,))
             return cur.rowcount
 
     def _list(self, table: str, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        if self._sa is not None:
+            model_cls = _model_map()[table]
+            query = self._sa.session.query(model_cls)
+            if filters:
+                for k, v in filters.items():
+                    query = query.filter(getattr(model_cls, k) == v)
+            return [self._obj_to_dict(obj) for obj in query.all()]
         sql = f"SELECT * FROM {table}"
         values: List[Any] = []
         if filters:
@@ -278,7 +346,13 @@ class DatabaseManager:
 
     def summary(self) -> Dict[str, int]:
         """Retourne le nombre d'enregistrements par table."""
-        result: Dict[str, int] = {}
+        if self._sa is not None:
+            from sqlalchemy import func
+            result: Dict[str, int] = {}
+            for table, model_cls in _model_map().items():
+                result[table] = self._sa.session.query(func.count()).select_from(model_cls).scalar() or 0
+            return result
+        result = {}
         with self._connect() as conn:
             for table in self._COLUMNS:
                 cur = conn.execute(f"SELECT COUNT(*) FROM {table}")
@@ -610,23 +684,33 @@ class CVLatexGeneratorBase:
                                     2 → Trading Analyst
                                     3 → Data Analyst
         """
-        with sqlite3.connect(db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-
-            cur.execute("SELECT * FROM cv_base WHERE id = ?", (cv_base_id,))
-            row_cv = cur.fetchone()
-            if row_cv is None:
-                raise ValueError(f"CVBase id '{cv_base_id}' not found in {db_path}")
-
-            cur.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
-            row_job = cur.fetchone()
-            if row_job is None:
-                raise ValueError(f"Job id '{job_id}' not found in {db_path}")
+        flask_db = _get_flask_db()
+        if flask_db is not None and CVBase is not None and Jobs is not None:
+            cv_obj = flask_db.session.get(CVBase, cv_base_id)
+            if cv_obj is None:
+                raise ValueError(f"CVBase id '{cv_base_id}' not found")
+            job_obj = flask_db.session.get(Jobs, job_id)
+            if job_obj is None:
+                raise ValueError(f"Job id '{job_id}' not found")
+            cv_dict = {c.name: getattr(cv_obj, c.name) for c in cv_obj.__table__.columns}
+            job_dict = {c.name: getattr(job_obj, c.name) for c in job_obj.__table__.columns}
+        else:
+            with sqlite3.connect(db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute("SELECT * FROM cv_base WHERE id = ?", (cv_base_id,))
+                row_cv = cur.fetchone()
+                if row_cv is None:
+                    raise ValueError(f"CVBase id '{cv_base_id}' not found in {db_path}")
+                cur.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
+                row_job = cur.fetchone()
+                if row_job is None:
+                    raise ValueError(f"Job id '{job_id}' not found in {db_path}")
+            cv_dict, job_dict = dict(row_cv), dict(row_job)
 
         return cls(
-            cv_base=dict(row_cv),
-            job=dict(row_job),
+            cv_base=cv_dict,
+            job=job_dict,
             personal=personal,
             output_dir=output_dir,
             target_title_index=target_title_index,
