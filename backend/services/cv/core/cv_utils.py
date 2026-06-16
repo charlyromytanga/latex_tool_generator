@@ -1247,11 +1247,10 @@ class CVLatexGeneratorBase:
             # Build LaTeX strings (strings, pas listes)
             escaped_degree = CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(degree.strip()))
             
-            header = f"{period} {escaped_degree}"
+            escaped_header = f"{self._escape(period)} {escaped_degree}"
             subline = f"{field} {school} ({location})"
 
             # Escape
-            escaped_header = self._escape(header)
             escaped_subline = self._escape(subline)
 
             # protection contre les coupures des mots dans desc
