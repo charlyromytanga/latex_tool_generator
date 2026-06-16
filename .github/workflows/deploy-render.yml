@@ -44,11 +44,17 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
 
     - name: Optional SQLite to PostgreSQL mirror
-      if: ${{ secrets.RENDER_POSTGRES_DSN != '' && vars.RENDER_RUN_SQLITE_MIRROR == 'true' }}
+      if: ${{ vars.RENDER_RUN_SQLITE_MIRROR == 'true' }}
+      env:
+        POSTGRES_DSN: ${{ secrets.RENDER_POSTGRES_DSN }}
       run: |
+        if [ -z "$POSTGRES_DSN" ]; then
+          echo "RENDER_POSTGRES_DSN non défini, mirror ignoré."
+          exit 0
+        fi
         python -m pip install --upgrade pip
         python -m pip install -e .
-        POSTGRES_DSN=${{ secrets.RENDER_POSTGRES_DSN }} bash scripts/mirror_sqlite_to_postgres.sh
+        bash scripts/mirror_sqlite_to_postgres.sh
 
     - name: Wait for deployment
       run: |
