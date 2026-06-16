@@ -132,3 +132,8 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["backend"]
+
+[tool.pylint.main]
+# frontend/flask_app/app.py imports api_client as a flat sibling module —
+# matches how the Docker image actually runs it (flask_app/ copied flat, no package).
+init-hook = "import sys; sys.path.append('frontend/flask_app')"

@@ -74,7 +74,7 @@ class OrchestrationConfig:
 
     def get_nlp(self, lang: str = "fr"):
         """Charge et retourne le modèle spaCy pour la langue demandée."""
-        import spacy
+        import spacy  # pylint: disable=import-error
         if lang not in self._NLP_MODELS:
             if lang == "fr":
                 self._NLP_MODELS["fr"] = spacy.load("fr_core_news_md")
@@ -108,7 +108,7 @@ class OrchestrationConfig:
 
     def get_keyword_pipeline(self):
         if self._keyword_pipe is None:
-            from transformers import pipeline
+            from transformers import pipeline  # pylint: disable=import-error
             self._keyword_pipe = pipeline("feature-extraction", model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
         return self._keyword_pipe
 
@@ -117,13 +117,13 @@ class OrchestrationConfig:
     def get_kw_model(self):
         if self._kw_model is None:
             import logging
-            import keybert
-            import sentence_transformers
+            import keybert  # pylint: disable=import-error
+            import sentence_transformers  # pylint: disable=import-error
             logging.info(f"[DEBUG] keybert version: {keybert.__version__}")
             logging.info(f"[DEBUG] sentence-transformers version: {sentence_transformers.__version__}")
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import SentenceTransformer  # pylint: disable=import-error
             model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            self._kw_model = KeyBERT(model)  # type: ignore # KeyBERT n'a pas de type officiel pour les modèles personnalisés
+            self._kw_model = keybert.KeyBERT(model)  # type: ignore # KeyBERT n'a pas de type officiel pour les modèles personnalisés
         return self._kw_model
 
     def extract_keywords(
@@ -196,7 +196,7 @@ class OrchestrationConfig:
 
     def get_model(self):
         if self._model is None:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import SentenceTransformer  # pylint: disable=import-error
             self._model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
         return self._model
 
@@ -205,7 +205,7 @@ class OrchestrationConfig:
         """
         Calcule la similarité sémantique entre deux textes (cosinus).
         """
-        from sentence_transformers import util
+        from sentence_transformers import util  # pylint: disable=import-error
         model = self.get_model()
         emb1 = model.encode(text1, convert_to_tensor=True)
         emb2 = model.encode(text2, convert_to_tensor=True)
@@ -217,7 +217,7 @@ class OrchestrationConfig:
         """
         Retourne les mots-clés les plus proches du texte cible.
         """
-        from sentence_transformers import util
+        from sentence_transformers import util  # pylint: disable=import-error
         model = self.get_model()
         text_emb = model.encode(text, convert_to_tensor=True)
         kw_embs = model.encode(keywords, convert_to_tensor=True)

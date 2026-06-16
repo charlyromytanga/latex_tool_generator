@@ -27,8 +27,8 @@ jobs:
     - name: Compile check (catches syntax/import errors)
       run: uv run python -m compileall -q backend frontend shared
 
-    - name: Lint with pylint (errors only, informational)
-      run: uv run pylint backend frontend shared --disable=all --enable=E,F || true
+    - name: Lint with pylint (errors only)
+      run: uv run pylint backend frontend shared --disable=all --enable=E,F
 
     - name: Format check with black (informational)
       run: uv run black backend frontend shared --check || true
