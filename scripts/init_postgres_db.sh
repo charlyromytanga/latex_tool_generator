@@ -20,7 +20,7 @@ echo "[init-postgres-db] Creating cv_base / jobs / cv_applications / application
 POSTGRES_DSN_ENV="${POSTGRES_DSN}" "${RUNNER[@]}" - <<'PY'
 import os
 
-db_url = os.environ["POSTGRES_DSN_ENV"]
+db_url = os.environ["POSTGRES_DSN_ENV"].strip()
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
 elif db_url.startswith("postgresql://"):
