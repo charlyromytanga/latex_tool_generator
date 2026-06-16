@@ -118,9 +118,6 @@ docker-logs-api:
 docker-logs-app:
 	$(COMPOSE) logs -f app
 
-docker-logs-runner:
-	$(COMPOSE) logs -f runner
-
 docker-shell:
 	$(COMPOSE) exec api bash
 

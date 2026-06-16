@@ -109,46 +109,6 @@ frontend = [
     "httpx>=0.27.0",
 ]
 
-runner = [
-    # Database
-    "sqlalchemy>=2.0.23",
-    "psycopg[binary]>=3.2.9",
-    "pysqlite3-binary>=0.5.4",
-    "alembic>=1.13.0",
-    
-    # NLP
-    "spacy",
-    "keybert>=0.7.0",
-    "sentence-transformers>=2.2.2",
-    "langdetect",
-    
-    # Document / LaTeX
-    "pylatexenc==2.10",
-    "latexcodec==2.0",
-    "PyPDF2>=3.0.1",
-    "Jinja2>=3.1.2",
-    "python-docx>=0.8.11",
-    "markdown>=3.5.1",
-    "chevron>=0.14.0",
-    "bleach>=6.1.0",
-    "markdownify>=0.11.5",
-    "pdfplumber>=0.10.3",
-    "pypdf>=4.0.1",
-    
-    # AI
-    "anthropic>=0.89.0",
-    "ollama>=0.1.0",
-    
-    # Config / scheduling
-    "omegaconf>=2.3.0",
-    "confuse>=2.0.1",
-    "APScheduler>=3.10.4",
-    
-    # UI (certains scripts runner affichent via streamlit)
-    "streamlit>=1.32.0",
-    "streamlit-antd-components",
-]
-
 test = [
     "pytest>=7.4.3",
     "pytest-cov>=4.1.0",
