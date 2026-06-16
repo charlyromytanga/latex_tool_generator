@@ -1292,14 +1292,6 @@ api = [
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-app = [
-    { name = "jinja2" },
-    { name = "langdetect" },
-    { name = "pysqlite3-binary" },
-    { name = "sqlalchemy" },
-    { name = "streamlit" },
-    { name = "streamlit-antd-components" },
-]
 cv = [
     { name = "langdetect" },
     { name = "sentence-transformers" },
@@ -1363,7 +1355,6 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "sqlalchemy" },
-    { name = "streamlit" },
     { name = "types-requests" },
     { name = "uvicorn" },
 ]
@@ -1401,14 +1392,12 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'frontend'", specifier = ">=0.27.0" },
     { name = "isort", marker = "extra == 'test'", specifier = ">=5.13.2" },
     { name = "jinja2", marker = "extra == 'api'", specifier = ">=3.1.2" },
-    { name = "jinja2", marker = "extra == 'app'", specifier = ">=3.1.2" },
     { name = "jinja2", marker = "extra == 'runner'", specifier = ">=3.1.2" },
     { name = "keybert", marker = "extra == 'api'", specifier = ">=0.7.0" },
     { name = "keybert", marker = "extra == 'lm'", specifier = ">=0.7.0" },
     { name = "keybert", marker = "extra == 'runner'", specifier = ">=0.7.0" },
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "langdetect", marker = "extra == 'api'" },
-    { name = "langdetect", marker = "extra == 'app'" },
     { name = "langdetect", marker = "extra == 'cv'" },
     { name = "langdetect", marker = "extra == 'runner'" },
     { name = "latexcodec", marker = "extra == 'api'", specifier = "==2.0" },
@@ -1443,7 +1432,6 @@ requires-dist = [
     { name = "pypdf2", marker = "extra == 'reports'", specifier = ">=3.0.1" },
     { name = "pypdf2", marker = "extra == 'runner'", specifier = ">=3.0.1" },
     { name = "pysqlite3-binary", marker = "extra == 'api'", specifier = ">=0.5.4" },
-    { name = "pysqlite3-binary", marker = "extra == 'app'", specifier = ">=0.5.4" },
     { name = "pysqlite3-binary", marker = "extra == 'runner'", specifier = ">=0.5.4" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=7.4.3" },
     { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.21.1" },
@@ -1467,13 +1455,9 @@ requires-dist = [
     { name = "spacy", marker = "extra == 'runner'" },
     { name = "sqlalchemy", specifier = ">=2.0.23" },
     { name = "sqlalchemy", marker = "extra == 'api'", specifier = ">=2.0.23" },
-    { name = "sqlalchemy", marker = "extra == 'app'", specifier = ">=2.0.23" },
     { name = "sqlalchemy", marker = "extra == 'runner'", specifier = ">=2.0.23" },
     { name = "sqlalchemy", marker = "extra == 'test'", specifier = ">=2.0.23" },
-    { name = "streamlit", marker = "extra == 'app'", specifier = ">=1.32.0" },
     { name = "streamlit", marker = "extra == 'runner'", specifier = ">=1.32.0" },
-    { name = "streamlit", marker = "extra == 'test'", specifier = ">=1.28.1" },
-    { name = "streamlit-antd-components", marker = "extra == 'app'" },
     { name = "streamlit-antd-components", marker = "extra == 'runner'" },
     { name = "tenacity", specifier = ">=8.2.3" },
     { name = "types-requests", marker = "extra == 'test'", specifier = ">=2.31.0.10" },
@@ -1481,7 +1465,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.27.0" },
     { name = "yagmail", marker = "extra == 'emails'" },
 ]
-provides-extras = ["cv", "emails", "lm", "reports", "api", "frontend", "app", "runner", "test"]
+provides-extras = ["cv", "emails", "lm", "reports", "api", "frontend", "runner", "test"]
 
 [[package]]
 name = "latexcodec"

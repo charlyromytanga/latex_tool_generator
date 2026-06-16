@@ -1,2 +1,0 @@
-"""Streamlit modular application package."""
-

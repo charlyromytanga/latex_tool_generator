@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "MIT"
-keywords = ["cv", "streamlit", "fastapi", "orchestration", "llm", "latex"]
+keywords = ["cv", "fastapi", "orchestration", "llm", "latex"]
 
 dependencies = [
     # Core
@@ -109,22 +109,6 @@ frontend = [
     "httpx>=0.27.0",
 ]
 
-app = [
-    # UI
-    "streamlit>=1.32.0",
-    "streamlit-antd-components",
-    
-    # Templating
-    "Jinja2>=3.1.2",
-    
-    # Accès base de données (requis par db_orchestration.database)
-    "sqlalchemy>=2.0.23",
-    "pysqlite3-binary>=0.5.4",
-    
-    # Détection de langue (requis par db_orchestration.ingest)
-    "langdetect",
-]
-
 runner = [
     # Database
     "sqlalchemy>=2.0.23",
@@ -181,7 +165,6 @@ test = [
     "uvicorn>=0.24.0",
     "sqlalchemy>=2.0.23",
     "markdown>=3.5.1",
-    "streamlit>=1.28.1",
 ]
 
 [build-system]
