@@ -1192,7 +1192,7 @@ class CVLatexGeneratorBase:
                 + (escaped_subline or "") + r"}\\",
                 r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
                 + self._label("keywords") + " : " + (escaped_sub_subline or "") + r"}",
-                r"\vspace{0.2em}"
+                r"\vspace{0.5em}"
             ]
             block = "\n".join(latex_lines) + "\n\\par"
             blocks.append(block)
