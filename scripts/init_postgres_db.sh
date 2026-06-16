@@ -2,43 +2,40 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCHEMA_FILE="${ROOT_DIR}/db/schema_postgres.sql"
 POSTGRES_DSN="${POSTGRES_DSN:-${DATABASE_URL:-}}"
-PYTHONPATH="${ROOT_DIR}/src${PYTHONPATH:+:${PYTHONPATH}}"
 
 if [[ -z "${POSTGRES_DSN}" ]]; then
   echo "ERROR: POSTGRES_DSN or DATABASE_URL must be set" >&2
   exit 1
 fi
 
-if [[ ! -f "${SCHEMA_FILE}" ]]; then
-  echo "ERROR: PostgreSQL schema file not found: ${SCHEMA_FILE}" >&2
-  exit 1
+RUNNER=(python3)
+if [[ -x "${ROOT_DIR}/.venv/bin/python" ]]; then
+  RUNNER=("${ROOT_DIR}/.venv/bin/python")
+elif command -v uv >/dev/null 2>&1; then
+  RUNNER=(uv run python)
 fi
 
-if command -v psql >/dev/null 2>&1; then
-  echo "[init-postgres-db] Using psql CLI"
-  psql "${POSTGRES_DSN}" -v ON_ERROR_STOP=1 -f "${SCHEMA_FILE}"
-else
-  echo "[init-postgres-db] psql binary not found, using Python fallback"
-  RUNNER=(python3)
-  if [[ -x "${ROOT_DIR}/.venv/bin/python" ]]; then
-    RUNNER=("${ROOT_DIR}/.venv/bin/python")
-  elif command -v uv >/dev/null 2>&1; then
-    RUNNER=(uv run python)
-  fi
-  POSTGRES_DSN_ENV="${POSTGRES_DSN}" SCHEMA_FILE_ENV="${SCHEMA_FILE}" PYTHONPATH="${PYTHONPATH}" "${RUNNER[@]}" - <<'PY'
+echo "[init-postgres-db] Creating cv_base / jobs / cv_applications / applications tables"
+POSTGRES_DSN_ENV="${POSTGRES_DSN}" "${RUNNER[@]}" - <<'PY'
 import os
-from pathlib import Path
 
-import psycopg
+db_url = os.environ["POSTGRES_DSN_ENV"]
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
-schema_file = Path(os.environ["SCHEMA_FILE_ENV"])
-dsn = os.environ["POSTGRES_DSN_ENV"]
+from flask import Flask
+from shared.bd_models.models import db
 
-with psycopg.connect(dsn, autocommit=True) as conn:
-    conn.execute(schema_file.read_text(encoding="utf-8"))
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
 PY
-fi
 
 echo "[init-postgres-db] PostgreSQL schema ready"
