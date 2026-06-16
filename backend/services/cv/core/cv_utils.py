@@ -887,71 +887,7 @@ class CVLatexGeneratorBase:
         lines = [l.strip() for l in text.splitlines() if l.strip()]
         return "\n".join(self._pick_lines(lines, max_items, selected_indices))
 
-    def _education_to_blocks(self, text: str, max_items: int = 0) -> str:
-        """Render serialized education as simple blocks.
 
-        Expected format per line:
-        'degree | field | school | location | period | description'
-
-        Output:
-        Line 1: period + degree
-        Line 2: field at school (location)
-        Line 3: description
-        """
-        if not text:
-            return "~"
-
-        blocks: List[str] = []
-
-        for raw_line in text.splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            # Remove bullet if present
-            if line.startswith("•"):
-                line = line[1:].strip()
-
-            # Parse line
-            parts = line.split("|")
-            if len(parts) >= 6:
-                degree, field, school, location, period, desc = [p.strip() for p in parts[:6]]
-            else:
-                # fallback propre si format incorrect
-                degree = field = school = location = period = desc = ""
-
-            # Build LaTeX strings (strings, pas listes)
-            header = f"{period} {degree}"
-            subline = f"{field} {school} ({location})"
-
-            # Escape
-            escaped_header = self._escape(header)
-            escaped_subline = self._escape(subline)
-
-            # protection contre les coupures des mots dans desc
-            clean_desc = self.clean_ocr_text(desc)
-            escaped_desc = self._escape(clean_desc)
-
-            # Build LaTeX block
-            latex_lines = [
-                r"\noindent " + escaped_header + r"\\" + "\n"
-                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
-                + escaped_subline
-                + r"}" + "\n" + r"\par",
-                r"\vspace{0.5em}"
-            ]
-            full_latex_lines = []
-            if escaped_desc:
-                full_latex_lines.append(rf"\noindent {escaped_desc}")
-
-            block = "\n".join(latex_lines) + "\n\\par"
-            blocks.append(block)
-
-        if max_items > 0:
-            blocks = blocks[:max_items]
-
-        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
-    
     
     def _output_stem(self) -> str:
         mm_yyyy = self._gen_date.strftime("%m_%Y")
@@ -1275,6 +1211,73 @@ class CVLatexGeneratorBase:
             r"}" "\n"
         )
 
+    def _education_to_blocks(self, text: str, max_items: int = 0) -> str:
+        """Render serialized education as simple blocks.
+
+        Expected format per line:
+        'degree | field | school | location | period | description'
+
+        Output:
+        Line 1: period + degree
+        Line 2: field at school (location)
+        Line 3: description
+        """
+        if not text:
+            return "~"
+
+        blocks: List[str] = []
+
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            # Remove bullet if present
+            if line.startswith("•"):
+                line = line[1:].strip()
+
+            # Parse line
+            parts = line.split("|")
+            if len(parts) >= 6:
+                degree, field, school, location, period, desc = [p.strip() for p in parts[:6]]
+            else:
+                # fallback propre si format incorrect
+                degree = field = school = location = period = desc = ""
+
+            # Build LaTeX strings (strings, pas listes)
+            escaped_degree = CVLatexGeneratorBase._md_inline(CVLatexGeneratorBase._escape(degree.strip()))
+            
+            header = f"{period} {escaped_degree}"
+            subline = f"{field} {school} ({location})"
+
+            # Escape
+            escaped_header = self._escape(header)
+            escaped_subline = self._escape(subline)
+
+            # protection contre les coupures des mots dans desc
+            clean_desc = self.clean_ocr_text(desc)
+            escaped_desc = self._escape(clean_desc)
+
+            # Build LaTeX block
+            latex_lines = [
+                r"\noindent " + escaped_header + r"\\" + "\n"
+                + r"\noindent\hspace*{10mm}\parbox[t]{\dimexpr\linewidth-10mm\relax}{"
+                + escaped_subline
+                + r"}" + "\n" + r"\par",
+                r"\vspace{0.5em}"
+            ]
+            full_latex_lines = []
+            if escaped_desc:
+                full_latex_lines.append(rf"\noindent {escaped_desc}")
+
+            block = "\n".join(latex_lines) + "\n\\par"
+            blocks.append(block)
+
+        if max_items > 0:
+            blocks = blocks[:max_items]
+
+        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
+    
 
     def _section_formations(self) -> str:
         blocks = self._education_to_blocks(self.cv.get("education", ""), max_items=4)
