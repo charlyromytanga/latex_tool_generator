@@ -73,7 +73,6 @@ backend/services/lm/
 # Fichiers/dossiers spécifiques à ton projet
 backend/db/backup/
 backend/db/jobcv.db
-backend/db/migrations/
 backend/db/sql_queries/
 backend/db/recruitment.db
 backend/db/recruitment_assistant.db
