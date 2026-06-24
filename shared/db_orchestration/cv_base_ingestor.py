@@ -168,6 +168,7 @@ def _serialize_target_titles(data: List[str]) -> str:
 class CVBaseRecord:
     id: str
     language: str
+    jobtype: str
     header: str
     summary: str
     skills: str
@@ -212,6 +213,7 @@ class CVBaseConverter:
         return CVBaseRecord(
             id             = data["id"],
             language       = data["language"],
+            jobtype        = data.get("jobtype", ""),
             header         = _serialize_header(data.get("header", {})),
             summary        = _serialize_summary(data.get("summary", [])),
             skills         = _serialize_skills(data.get("skills", {})),
@@ -271,6 +273,7 @@ class CVBaseIngestionOrchestrator:
             self.db.add_cv_base({
                 "id":            record.id,
                 "language":      record.language,
+                "jobtype":       record.jobtype,
                 "header":        record.header,
                 "summary":       record.summary,
                 "skills":        record.skills,

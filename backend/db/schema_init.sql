@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS cv_base (
     projects TEXT,
     languages TEXT,
     interests TEXT,
-    target_titles TEXT
+    target_titles TEXT,
+    jobtype TEXT
 );
 
 CREATE TABLE IF NOT EXISTS jobs (

@@ -68,7 +68,7 @@ class DatabaseManager:
     # Colonnes attendues par table (ordre d'INSERT)
     _COLUMNS: Dict[str, List[str]] = {
         "cv_base": [
-            "id", "language", "header", "summary", "skills",
+            "id", "language", "jobtype", "header", "summary", "skills",
             "experience", "education", "technical", "certifications", "projects",
             "languages", "interests", "target_titles",
         ],
@@ -619,6 +619,10 @@ class CVLatexGeneratorBase:
         self.language = self._LANGUAGE
         base_personal = _DEFAULT_PERSONAL_BY_LANGUAGE[self.language]
         self.personal = {**base_personal, **(personal or {})}
+        # Si cv_base porte son propre jobtype, il prend le dessus sur le défaut.
+        cv_jobtype = (cv_base.get("jobtype") or "").strip()
+        if cv_jobtype and not (personal or {}).get("jobtype"):
+            self.personal["jobtype"] = cv_jobtype
         self.output_dir = Path(output_dir) if output_dir else _OUTPUT_DIR_BY_LANGUAGE[self.language]
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._gen_date = datetime.now()
