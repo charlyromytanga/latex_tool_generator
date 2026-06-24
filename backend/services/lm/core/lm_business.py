@@ -26,7 +26,9 @@ def _resolve_repo_root() -> str :
             return str(candidate)
     return str(module_path.parents[4])  # fallback to the 4th parent of the module path
 
-    _REPO_ROOT = _resolve_repo_root()
+_REPO_ROOT = _resolve_repo_root()
 
-    try : 
-        from .lm_utils import * 
+try:
+    from .lm_utils import *
+except ImportError:
+    pass

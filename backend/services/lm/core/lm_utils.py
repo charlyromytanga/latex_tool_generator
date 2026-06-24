@@ -17,10 +17,10 @@ def _get_falsk_db():
     """ Returns the Flask SQLAlchemy db object if inside de Flask app context, otherwise returns None. """
     if db is None or CVBase is None or Jobs is None or CVApplications is None or Applications is None:
         return None
-    try : 
+    try:
         from flask import current_app
-            current_app._get_current_object()
-            return db
+        current_app._get_current_object()
+        return db
     except (RuntimeError, ImportError):
         return None
 
