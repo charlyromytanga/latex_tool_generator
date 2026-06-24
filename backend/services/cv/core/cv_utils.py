@@ -523,6 +523,53 @@ _DEFAULT_PERSONAL_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
     "en": _DEFAULT_PERSONAL_EN,
 }
 
+
+def _parse_personal_from_cv_base(cv_dict: Dict[str, Any]) -> Dict[str, str]:
+    """Parse personal info from a cv_base row dict.
+
+    Reads the `header` field (format below) plus the `jobtype`, `github`,
+    and `disponibilite` columns.  Returns an empty dict if the header
+    doesn't contain a recognisable name line.
+
+    Header format stored in cv_base.header:
+        <POSTE>
+        Full Name
+        Address | Phone | Email | https://www.linkedin.com/in/handle
+    """
+    result: Dict[str, str] = {}
+    header = (cv_dict.get("header") or "").strip()
+    lines = [l.strip() for l in header.splitlines() if l.strip() and l.strip() != "<POSTE>"]
+
+    if not lines:
+        return result
+
+    # Line 0 → full name
+    full_name = lines[0]
+    result["name"] = full_name
+    name_parts = full_name.rsplit(" ", 1)
+    result["firstname"] = name_parts[0] if len(name_parts) == 2 else full_name
+    result["lastname"]  = name_parts[1] if len(name_parts) == 2 else full_name
+
+    # Line 1 → address | phone | email | linkedin URL
+    if len(lines) >= 2:
+        contact = [p.strip() for p in lines[1].split("|")]
+        if len(contact) >= 1:
+            result["address"] = contact[0]
+        if len(contact) >= 2:
+            result["phone"] = contact[1]
+        if len(contact) >= 3:
+            result["mail"] = contact[2]
+        if len(contact) >= 4:
+            m = re.search(r'/in/([^/\s]+?)/?$', contact[3])
+            result["linkedin"] = m.group(1) if m else contact[3].strip()
+
+    # Dedicated columns
+    for col in ("jobtype", "github", "disponibilite"):
+        val = (cv_dict.get(col) or "").strip()
+        result[col] = val
+
+    return result
+
 _LABELS_BY_LANGUAGE: Dict[str, Dict[str, str]] = {
     "fr": {
         "availability": r"Disponibilit\'{e}",
@@ -617,7 +664,15 @@ class CVLatexGeneratorBase:
         self.cv = cv_base
         self.job = job
         self.language = self._LANGUAGE
-        base_personal = _DEFAULT_PERSONAL_BY_LANGUAGE[self.language]
+        # Lit les infos perso depuis cv_base (header + colonnes github/disponibilite).
+        # Si le header contient un nom, on part de zéros plutôt que des defaults
+        # hardcodés, pour éviter qu'un candidat hérite des infos d'un autre.
+        parsed = _parse_personal_from_cv_base(cv_base)
+        if parsed.get("name"):
+            _empty: Dict[str, str] = {k: "" for k in _DEFAULT_PERSONAL_BY_LANGUAGE[self.language]}
+            base_personal = {**_empty, **parsed}
+        else:
+            base_personal = _DEFAULT_PERSONAL_BY_LANGUAGE[self.language]
         self.personal = {**base_personal, **(personal or {})}
         # Si cv_base porte son propre jobtype, il prend le dessus sur le défaut.
         cv_jobtype = (cv_base.get("jobtype") or "").strip()
@@ -933,6 +988,12 @@ class CVLatexGeneratorBase:
 
     def _section_informations(self) -> str:
         p = self.personal
+        github_line = ""
+        if p.get("github"):
+            github_line = (
+                r"\textbf{" + self._label("github") + r":}\ \href{https://github.com/" + p["github"] + r"}{"
+                + self._escape(p["github"]) + r"} \\[0.5ex]" "\n"
+            )
         return (
             r"\headleft{" + self._label("contact") + r"}" "\n"
             r"\small" "\n"
@@ -940,9 +1001,8 @@ class CVLatexGeneratorBase:
             r"\textbf{" + self._label("phone") + r":}\ " + self._escape(p["phone"]) + r" \\[0.5ex]" "\n"
             r"\textbf{" + self._label("linkedin") + r":}\ \href{https://linkedin.com/in/" + p["linkedin"] + r"}{"
             + self._escape(p["linkedin"]) + r"} \\[0.5ex]" "\n"
-            r"\textbf{" + self._label("github") + r":}\ \href{https://github.com/" + p["github"] + r"}{"
-            + self._escape(p["github"]) + r"} \\[0.5ex]" "\n"
-            r"\textbf{" + self._label("location") + r":}\ " + self._escape(p["address"]) + "\n"
+            + github_line
+            + r"\textbf{" + self._label("location") + r":}\ " + self._escape(p["address"]) + "\n"
             r"\normalsize" "\n"
         )
 

@@ -18,6 +18,9 @@ class CVBase(db.Model):
     languages = db.Column(db.String)
     interests = db.Column(db.String)
     target_titles = db.Column(db.String)
+    jobtype = db.Column(db.String)
+    github = db.Column(db.String)
+    disponibilite = db.Column(db.String)
 
 class Jobs(db.Model):
     __tablename__ = 'jobs'
