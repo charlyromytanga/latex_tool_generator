@@ -1263,7 +1263,7 @@ class CVLatexGeneratorBase:
 
         if max_items > 0:
             blocks = blocks[:max_items]
-        return "\n\\vspace{0.2ex}\n".join(blocks) if blocks else "~"
+        return "\n\\vspace{1ex}\n".join(blocks) if blocks else "~"
 
     def _section_experiences(self) -> str:
         text = self._filter_text(self.cv.get("experience", ""), self.selected_experience_indices, self.max_experiences)
